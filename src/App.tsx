@@ -1439,11 +1439,21 @@ export default function JEEDashboard() {
 
   const handleStravaConnect = () => {
     setIsStravaLoading(true);
-    // Grab your Client ID from Vite environment metadata securely
-    const clientId = import.meta.env.VITE_STRAVA_CLIENT_ID || "";
-    const redirectUri = encodeURIComponent("http://localhost:5173/api/strava-callback");
+    
+    // Hardcoded Client ID to guarantee it doesn't read as undefined or empty
+    const clientId = "263722"; 
+    
+    // Dynamic URL detection: If it sees '.vercel.app', it forces the live domain
+    const isLive = window.location.hostname.includes('vercel.app');
+    const targetOrigin = isLive 
+      ? 'https://ashutoshbehera.vercel.app' 
+      : window.location.origin;
+
+    const redirectUri = encodeURIComponent(`${targetOrigin}/api/strava-callback`);
     const scope = "activity:read_all";
+    
     const stravaAuthUrl = `https://www.strava.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}`;
+    
     window.open(stravaAuthUrl, 'Connect with Strava', 'width=600,height=800');
   };
   const [introDone, setIntroDone] = useState(false);
