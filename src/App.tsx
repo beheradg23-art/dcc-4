@@ -7,7 +7,7 @@ import {
   TrendingUp, Activity, Timer, Calendar, X, ArrowUpRight, FlameKindling,
   ChevronLeft, Lock, Music2, Play, Pause, SkipBack, SkipForward,
   Volume2, Volume1, VolumeX, Search, Disc3, ListMusic, RotateCcw,
-  Crown, Swords
+  Crown, Swords, Download, Upload, ShieldCheck
 } from 'lucide-react';
 
 // ---------- Deep Interactive Knowledge Matrix ----------
@@ -878,7 +878,143 @@ function DailyTracker({ currentDayStr, checked, onToggle }) {
 
 // ---------- Tab Subcomponent: Performance Calendar Matrix ----------
 
-function PerformanceCalendar({ globalHistory, setModal }) {
+// ---------- Data Backup & Restore ----------
+// Everything in this app lives only in this browser's localStorage. There is
+// no server, no account, no sync — clear site data or switch devices and the
+// entire history is gone for good. This gives a way out: a single JSON file
+// download that captures the Daily Matrix history plus the cached Strava/
+// Spotify/Ash's Clock state, and a matching import to restore it anywhere.
+
+function DataBackupCard({ globalHistory, setGlobalHistory }) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  useEffect(() => {
+    if (!status) return;
+    const t = setTimeout(() => setStatus(null), 4000);
+    return () => clearTimeout(t);
+  }, [status]);
+
+  const collectBackupPayload = () => ({
+    _meta: {
+      app: 'Ashutosh — Dynamic Command Center',
+      exportedAt: new Date().toISOString(),
+      version: 1,
+    },
+    jee_command_history_v2: globalHistory,
+    ash_clock_focus_min: localStorage.getItem('ash_clock_focus_min'),
+    ash_clock_break_min: localStorage.getItem('ash_clock_break_min'),
+    ash_clock_hunter_level: localStorage.getItem('ash_clock_hunter_level'),
+    ash_clock_quests_cleared: localStorage.getItem('ash_clock_quests_cleared'),
+    strava_activities: localStorage.getItem('strava_activities'),
+    strava_connected: localStorage.getItem('strava_connected'),
+    spotify_profile: localStorage.getItem('spotify_profile'),
+    spotify_recent: localStorage.getItem('spotify_recent'),
+    spotify_connected: localStorage.getItem('spotify_connected'),
+  });
+
+  const handleExport = () => {
+    try {
+      const payload = collectBackupPayload();
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `command-center-backup-${getLocalDateString()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setStatus({ type: 'success', message: 'Backup downloaded — keep it somewhere safe (Drive, email to yourself, etc).' });
+    } catch {
+      setStatus({ type: 'error', message: 'Could not create the backup file. Try again.' });
+    }
+  };
+
+  const handleImportClick = () => fileInputRef.current?.click();
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const parsed = JSON.parse(String(evt.target?.result || ''));
+        if (!parsed || typeof parsed !== 'object' || !parsed.jee_command_history_v2) {
+          throw new Error('Not a valid backup file');
+        }
+
+        setGlobalHistory(parsed.jee_command_history_v2);
+
+        const passthroughKeys = [
+          'ash_clock_focus_min', 'ash_clock_break_min', 'ash_clock_hunter_level',
+          'ash_clock_quests_cleared', 'strava_activities', 'strava_connected',
+          'spotify_profile', 'spotify_recent', 'spotify_connected',
+        ];
+        passthroughKeys.forEach((key) => {
+          if (parsed[key] !== undefined && parsed[key] !== null) {
+            localStorage.setItem(key, parsed[key]);
+          }
+        });
+
+        setStatus({ type: 'success', message: 'Restored — reloading to apply everything…' });
+        setTimeout(() => window.location.reload(), 1100);
+      } catch {
+        setStatus({ type: 'error', message: 'That file is invalid or corrupted — nothing was changed.' });
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const dayCount = Object.keys(globalHistory || {}).length;
+
+  return (
+    <Card className="animate-fadeIn">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <SectionHeading
+          icon={ShieldCheck}
+          title="Data Backup & Restore"
+          subtitle={`${dayCount} day${dayCount === 1 ? '' : 's'} of history, stored only in this browser`}
+        />
+        <div className="flex items-center gap-2 shrink-0">
+          <RippleButton
+            onClick={handleExport}
+            className="cursor-target flex items-center gap-1.5 rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-2 text-[12px] font-semibold text-neutral-200 hover:bg-neutral-800 transition-colors"
+          >
+            <Download className="h-3.5 w-3.5" /> Export
+          </RippleButton>
+          <RippleButton
+            onClick={handleImportClick}
+            className="cursor-target flex items-center gap-1.5 rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-2 text-[12px] font-semibold text-neutral-200 hover:bg-neutral-800 transition-colors"
+          >
+            <Upload className="h-3.5 w-3.5" /> Import
+          </RippleButton>
+          <input ref={fileInputRef} type="file" accept="application/json" className="hidden" onChange={handleFileChange} />
+        </div>
+      </div>
+
+      <p className="mt-4 text-[12.5px] text-neutral-500 leading-relaxed">
+        Everything here — the Daily Matrix history, streak, Hunter Rank, and cached Strava/Spotify data — lives only in this browser's storage. Clearing site data, switching devices, or reinstalling the browser erases it permanently, with no way to recover it. Export a backup file regularly, and import it to restore everything on a new device or after a reset.
+      </p>
+
+      {status && (
+        <div
+          className={`mt-3 flex items-center gap-2 rounded-lg border px-3 py-2 text-[12px] font-medium animate-fadeIn ${
+            status.type === 'success'
+              ? 'border-emerald-800/40 bg-emerald-950/30 text-emerald-300'
+              : 'border-rose-800/40 bg-rose-950/30 text-rose-300'
+          }`}
+        >
+          {status.message}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function PerformanceCalendar({ globalHistory, setGlobalHistory, setModal }) {
   const [currentNavDate, setCurrentNavDate] = useState(new Date());
   
   const year = currentNavDate.getFullYear();
@@ -934,7 +1070,9 @@ function PerformanceCalendar({ globalHistory, setModal }) {
   };
 
   return (
-    <Card className="animate-fadeIn">
+    <div className="space-y-5">
+      <DataBackupCard globalHistory={globalHistory} setGlobalHistory={setGlobalHistory} />
+      <Card className="animate-fadeIn">
       <div className="flex items-center justify-between mb-6">
         <SectionHeading icon={Calendar} title="Execution Heatmap Analytics" subtitle="Persistent performance velocity tracing" />
         <div className="flex items-center gap-2 border border-neutral-800 bg-neutral-950/80 p-1 rounded-xl">
@@ -994,6 +1132,7 @@ function PerformanceCalendar({ globalHistory, setModal }) {
         <p className="text-[11px] text-neutral-500">Click any historic metric square to trace detailed logs.</p>
       </div>
     </Card>
+    </div>
   );
 }
 
@@ -2118,7 +2257,7 @@ export default function JEEDashboard() {
             onManualSync={() => syncStravaActivities()}
           />
         );
-      case 'history': return <PerformanceCalendar globalHistory={globalHistory} setModal={setModal} />;
+      case 'history': return <PerformanceCalendar globalHistory={globalHistory} setGlobalHistory={setGlobalHistory} setModal={setModal} />;
       default: return null;
     }
   };
