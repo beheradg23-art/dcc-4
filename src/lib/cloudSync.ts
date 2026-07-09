@@ -19,6 +19,7 @@ export const SYNC_KEYS = [
   'ash_clock_last_subject',
   'app_config_v1',
   'timeline_notifications_enabled',
+  'dcc_content_cache_v1',
 ] as const;
 
 export type CloudSnapshot = Record<string, string | null>;

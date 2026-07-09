@@ -8,12 +8,13 @@ import {
   ChevronLeft, Lock, Music2, Play, Pause, SkipForward,
   Search, RotateCcw,
   Crown, Swords, Download, Upload, ShieldCheck, ClipboardList, BarChart3, Trash2, Plus, Bell, BellOff,
-  Settings, Save, GripVertical, PenLine, RefreshCcw, Menu as MenuIcon, UserCircle2, KeyRound, LogOut
+  Settings, Save, GripVertical, PenLine, RefreshCcw, Menu as MenuIcon, UserCircle2, KeyRound, LogOut, Loader2
 } from 'lucide-react';
 import AuthGate from './components/AuthGate';
 import { useCloudAutoSync } from './lib/cloudSync';
 import CloudSyncCard from './components/CloudSyncCard';
 import { supabase } from './lib/supabaseClient';
+import { generateTopicDetails, generateExerciseGuide, generateProfileTargets } from './lib/contentGen';
 
 
 
@@ -61,13 +62,20 @@ const EXERCISE_GUIDE = {
   'Finger Roll Grip Curls': { target: 'Deep Forearm Flexor Thickness', instructions: ['Let barbell roll down to absolute fingertips.', 'Close hand tightly, then perform wrist extension curl.'], cues: 'Extremely effective high-pump burnout routine.' }
 };
 
-const PROFILE = {
+// Same convention as DEFAULT_TRACKER_ITEMS / DEFAULT_TIMELINE / DEFAULT_TRAINING
+// above: this is the fallback used whenever an account hasn't saved its own
+// `profile` yet (i.e. every existing account today, since this field is new),
+// so nothing changes visually for anyone until they actually edit it in
+// Settings > Profile & Goals. It's also the "Reset to default" target there.
+const DEFAULT_PROFILE = {
   name: 'Ashutosh Behera',
+  goalLabel: 'JEE 2027, Drop Year',
   age: 18,
   height: 188,
   weight: 76,
   category: 'OBC-NCL',
   baseline: 83,
+  baselineLabel: 'JEE Main Baseline',
   boards: 82,
   targets: [
     { rank: 1, name: 'IIT Bombay', course: 'Aerospace Engineering', tag: 'Absolute Top Priority', color: 'blue', desc: 'Closing Rank Target: Under AIR 800. Main leverage point: Advanced Physics mechanics dominance.' },
@@ -245,11 +253,12 @@ function hydrateTimeline(rawList: any[]): any[] {
   }));
 }
 
-function serializeConfig(config: { trackerItems: any[]; timeline: any[]; training: any[] }) {
+function serializeConfig(config: { trackerItems: any[]; timeline: any[]; training: any[]; profile: any }) {
   return {
     trackerItems: config.trackerItems,
     training: config.training,
     timeline: config.timeline.map(({ icon, ...rest }) => rest),
+    profile: config.profile,
   };
 }
 
@@ -258,6 +267,7 @@ function deserializeConfig(raw: any) {
     trackerItems: Array.isArray(raw?.trackerItems) && raw.trackerItems.length ? raw.trackerItems : DEFAULT_TRACKER_ITEMS,
     training: Array.isArray(raw?.training) && raw.training.length ? raw.training : DEFAULT_TRAINING,
     timeline: Array.isArray(raw?.timeline) && raw.timeline.length ? hydrateTimeline(raw.timeline) : hydrateTimeline(DEFAULT_TIMELINE_STORABLE),
+    profile: raw?.profile && typeof raw.profile === 'object' ? { ...DEFAULT_PROFILE, ...raw.profile } : DEFAULT_PROFILE,
   };
 }
 
@@ -267,12 +277,14 @@ const ConfigContext = React.createContext<{
   trackerItems: any[];
   timeline: any[];
   training: any[];
+  profile: any;
   updateConfig: (partial: Record<string, any>) => void;
-  resetConfigSection: (key: 'trackerItems' | 'timeline' | 'training') => void;
+  resetConfigSection: (key: 'trackerItems' | 'timeline' | 'training' | 'profile') => void;
 }>({
   trackerItems: DEFAULT_TRACKER_ITEMS,
   timeline: hydrateTimeline(DEFAULT_TIMELINE_STORABLE),
   training: DEFAULT_TRAINING,
+  profile: DEFAULT_PROFILE,
   updateConfig: () => {},
   resetConfigSection: () => {},
 });
@@ -492,6 +504,13 @@ function GlobalDetailModal({ modalData, onClose }) {
         </div>
 
         <div className="p-5 max-h-[70vh] overflow-y-auto space-y-4">
+          {modalData.loading && (
+            <div className="flex items-center gap-2.5 text-sm text-neutral-500 py-6 justify-center">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading details…
+            </div>
+          )}
+
           {modalData.textBody && (
             <p className="text-sm text-neutral-400 leading-relaxed bg-neutral-950/40 border border-neutral-800/60 p-3 rounded-xl">{modalData.textBody}</p>
           )}
@@ -1450,6 +1469,7 @@ function PerformanceCalendar({ globalHistory, setGlobalHistory, setModal }) {
 // ---------- Tab Subcomponent: Overview ----------
 
 function OverviewTab({ setModal }) {
+  const { profile } = React.useContext(ConfigContext);
   const latestWeight = useMemo(() => {
     try {
       const saved = localStorage.getItem(WEIGHT_LOG_KEY);
@@ -1461,6 +1481,13 @@ function OverviewTab({ setModal }) {
     }
   }, []);
 
+  const colorClass = (color: string) =>
+    color === 'blue'
+      ? 'border-sky-500/25 bg-sky-500/[0.06] hover:bg-sky-500/[0.12]'
+      : color === 'emerald'
+      ? 'border-emerald-500/25 bg-emerald-500/[0.06] hover:bg-emerald-500/[0.12]'
+      : 'border-amber-500/25 bg-amber-500/[0.06] hover:bg-amber-500/[0.12]';
+
   return (
     <div className="space-y-5 animate-fadeIn">
       <CountdownMatrix />
@@ -1470,25 +1497,25 @@ function OverviewTab({ setModal }) {
           <SectionHeading icon={GraduationCap} title="Profile" subtitle="Core identity & academic baseline" />
           <div className="flex flex-wrap items-center gap-x-6 gap-y-3 mb-4">
             <div>
-              <div className="text-[20px] font-semibold text-neutral-100 leading-tight">{PROFILE.name}</div>
-              <div className="text-[13px] text-neutral-500">{PROFILE.age}-year-old Male · Drop year, prepping for JEE 2027</div>
+              <div className="text-[20px] font-semibold text-neutral-100 leading-tight">{profile.name}</div>
+              <div className="text-[13px] text-neutral-500">{profile.age}-year-old · {profile.goalLabel}</div>
             </div>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-            <StatPill icon={Ruler} label="Height" value="188 cm" />
-            <StatPill icon={Weight} label="Weight" value={latestWeight ? `${latestWeight.weight} kg` : `${PROFILE.weight} kg`} />
-            <StatPill icon={Target} label="Category" value="OBC-NCL" accent="amber" />
-            <StatPill icon={TrendingUp} label="JEE Main Baseline" value="83 %ile" accent="blue" />
+            <StatPill icon={Ruler} label="Height" value={`${profile.height} cm`} />
+            <StatPill icon={Weight} label="Weight" value={latestWeight ? `${latestWeight.weight} kg` : `${profile.weight} kg`} />
+            <StatPill icon={Target} label="Category" value={profile.category} accent="amber" />
+            <StatPill icon={TrendingUp} label={profile.baselineLabel || 'Baseline'} value={`${profile.baseline}${typeof profile.baseline === 'number' && profile.baseline <= 100 ? ' %ile' : ''}`} accent="blue" />
           </div>
           <p className="mt-3 text-[12px] text-neutral-500 leading-relaxed">
-            Baseline achieved with zero self-study — just sitting in class. CBSE 12th boards: 82%.
+            {profile.boards ? `Boards / prior benchmark: ${profile.boards}%. ` : ''}Edit these anytime in Settings → Profile & Goals.
           </p>
         </Card>
 
         <Card>
           <SectionHeading icon={Target} title="Targets" subtitle="Ranked by priority (Click to view matrix)" />
           <div className="space-y-2.5">
-            {PROFILE.targets.map((t) => (
+            {profile.targets.map((t) => (
               <div
                 key={t.rank}
                 onClick={() => setModal({
@@ -1497,9 +1524,9 @@ function OverviewTab({ setModal }) {
                   icon: Target,
                   textBody: t.desc,
                   arrayTitle: 'Key Focus Vectors',
-                  arrayItems: ['Target Cutoff Percentile: 99.92+', 'Advanced Focus: High weightage mechanics & organic structures']
+                  arrayItems: ['Set specific focus vectors for this target in Settings → Profile & Goals.']
                 })}
-                className={`rounded-xl border p-3 cursor-pointer transition-all hover:scale-[1.02] ${t.color === 'blue' ? 'border-sky-500/25 bg-sky-500/[0.06] hover:bg-sky-500/[0.12]' : 'border-amber-500/25 bg-amber-500/[0.06] hover:bg-amber-500/[0.12]'}`}
+                className={`rounded-xl border p-3 cursor-pointer transition-all hover:scale-[1.02] ${colorClass(t.color)}`}
               >
                 <div className="flex items-center justify-between">
                   <span className={`text-[13px] font-semibold ${t.color === 'blue' ? 'text-sky-300' : 'text-amber-300'}`}>{t.name}</span>
@@ -1737,6 +1764,7 @@ function WeightTrendChart({ entries }) {
 }
 
 function WeightTrackerCard() {
+  const { profile } = React.useContext(ConfigContext);
   const [entries, setEntries] = useState<any[]>(() => {
     try {
       const saved = localStorage.getItem(WEIGHT_LOG_KEY);
@@ -1780,7 +1808,7 @@ function WeightTrackerCard() {
 
   const first = sortedEntries[0];
   const latest = sortedEntries[sortedEntries.length - 1];
-  const baseline = first ? first.weight : PROFILE.weight;
+  const baseline = first ? first.weight : profile.weight;
   const delta = latest ? +(latest.weight - baseline).toFixed(1) : 0;
 
   const last30 = useMemo(() => {
@@ -1913,17 +1941,40 @@ function TrainingFuelTab({ setModal, dietLog, setDietLog, currentDateStr }) {
     rest: 'bg-neutral-800 text-neutral-400 border-neutral-700',
   };
 
-  const handleExerciseClick = (exName, setsStr) => {
+  const handleExerciseClick = async (exName, setsStr) => {
     const defaultData = { target: 'General Conditioning', instructions: ['Execute standard range of motion patterns safely.', 'Keep load linear.'], cues: 'Focus on proper core tracking.' };
-    const targetedGuide = EXERCISE_GUIDE[exName] || defaultData;
-    
+    const known = EXERCISE_GUIDE[exName];
+
+    if (known) {
+      setModal({
+        title: exName,
+        subtitle: `Target Focus: ${known.target} · Routine Parameters: ${setsStr}`,
+        icon: Dumbbell,
+        arrayTitle: 'Step-By-Step Execution Instructions',
+        arrayItems: known.instructions,
+        cues: known.cues,
+      });
+      return;
+    }
+
+    // Not in the built-in library (i.e. a user-added exercise) — quietly
+    // fill in a real form guide in the background instead of showing the
+    // generic placeholder. No "AI" framing shown to the user.
+    setModal({
+      title: exName,
+      subtitle: `Routine Parameters: ${setsStr}`,
+      icon: Dumbbell,
+      loading: true,
+    });
+    const generated = await generateExerciseGuide(exName);
+    const targetedGuide = generated || defaultData;
     setModal({
       title: exName,
       subtitle: `Target Focus: ${targetedGuide.target} · Routine Parameters: ${setsStr}`,
       icon: Dumbbell,
       arrayTitle: 'Step-By-Step Execution Instructions',
       arrayItems: targetedGuide.instructions,
-      cues: targetedGuide.cues
+      cues: targetedGuide.cues,
     });
   };
 
@@ -2109,19 +2160,42 @@ function SyllabusTab({ setModal }) {
       .sort((a, b) => (b.days || 0) - (a.days || 0));
   }, [revisionLog]);
 
-  const handleTopicClick = (topicName) => {
-    const meta = TOPIC_DETAILS[topicName] || { 
-      chapters: ['General Conceptual Practice Modules'], 
-      focus: ['Complete all textbook back exercises', 'Review core formulas & dynamic testing metrics'] 
+  const handleTopicClick = async (topicName) => {
+    const defaultMeta = {
+      chapters: ['General Conceptual Practice Modules'],
+      focus: ['Complete all textbook back exercises', 'Review core formulas & dynamic testing metrics'],
     };
+    const known = TOPIC_DETAILS[topicName];
 
+    if (known) {
+      setModal({
+        title: topicName,
+        subtitle: `Syllabus Structural Tracking Units`,
+        icon: BookOpen,
+        arrayTitle: 'Sub-Chapters Checklist',
+        arrayItems: known.chapters,
+        focusPoints: known.focus,
+      });
+      return;
+    }
+
+    // A topic the user added themselves — quietly generate a real
+    // chapter/focus breakdown instead of the generic placeholder.
+    setModal({
+      title: topicName,
+      subtitle: `Syllabus Structural Tracking Units`,
+      icon: BookOpen,
+      loading: true,
+    });
+    const generated = await generateTopicDetails(topicName);
+    const meta = generated || defaultMeta;
     setModal({
       title: topicName,
       subtitle: `Syllabus Structural Tracking Units`,
       icon: BookOpen,
       arrayTitle: 'Sub-Chapters Checklist',
       arrayItems: meta.chapters,
-      focusPoints: meta.focus
+      focusPoints: meta.focus,
     });
   };
 
@@ -3211,10 +3285,165 @@ function TrainingEditor() {
   );
 }
 
+function ProfileEditor() {
+  const { profile, updateConfig, resetConfigSection } = React.useContext(ConfigContext);
+  const [draft, setDraft] = useState(profile);
+  const [dirty, setDirty] = useState(false);
+  const [suggesting, setSuggesting] = useState(false);
+  const [suggestError, setSuggestError] = useState('');
+
+  useEffect(() => { setDraft(profile); setDirty(false); }, [profile]);
+
+  const patch = (patchObj: Record<string, any>) => {
+    setDraft((prev) => ({ ...prev, ...patchObj }));
+    setDirty(true);
+  };
+  const patchTarget = (i: number, patchObj: Record<string, any>) => {
+    setDraft((prev) => ({
+      ...prev,
+      targets: prev.targets.map((t: any, idx: number) => (idx === i ? { ...t, ...patchObj } : t)),
+    }));
+    setDirty(true);
+  };
+  const removeTarget = (i: number) => {
+    setDraft((prev) => ({ ...prev, targets: prev.targets.filter((_: any, idx: number) => idx !== i) }));
+    setDirty(true);
+  };
+  const addTarget = () => {
+    setDraft((prev) => ({
+      ...prev,
+      targets: [...prev.targets, { rank: prev.targets.length + 1, name: 'New Target', course: '', tag: 'Target', color: 'blue', desc: '' }],
+    }));
+    setDirty(true);
+  };
+  const save = () => {
+    updateConfig({ profile: draft });
+    setDirty(false);
+  };
+
+  // This is the "hidden" content-generation hook for profile setup: type a
+  // goal in plain English (e.g. "NEET 2027, aiming for a government
+  // medical college") and the app quietly asks the backend for a realistic
+  // starter list of targets instead of leaving three empty rows for the
+  // user to fill in by hand. Nothing about this button says "AI" — from
+  // the user's side it just looks like the app being helpful.
+  const handleSuggestTargets = async () => {
+    if (!draft.goalLabel.trim()) {
+      setSuggestError('Enter your goal above first (e.g. "NEET 2027" or "UPSC CSE").');
+      return;
+    }
+    setSuggesting(true);
+    setSuggestError('');
+    try {
+      const result = await generateProfileTargets(draft.goalLabel);
+      if (result?.targets?.length) {
+        setDraft((prev) => ({
+          ...prev,
+          targets: result.targets,
+          baselineLabel: result.baselineLabel || prev.baselineLabel,
+        }));
+        setDirty(true);
+      } else {
+        setSuggestError("Couldn't generate suggestions — fill targets in manually, or try again.");
+      }
+    } catch {
+      setSuggestError("Couldn't generate suggestions — fill targets in manually, or try again.");
+    } finally {
+      setSuggesting(false);
+    }
+  };
+
+  return (
+    <Card className="animate-fadeIn">
+      <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
+        <SectionHeading icon={GraduationCap} title="Profile & Goals" subtitle="Your identity, exam/goal, and priority targets — this is what makes the app yours" />
+        <div className="flex items-center gap-2 shrink-0">
+          <RippleButton onClick={() => { resetConfigSection('profile'); setDirty(false); }} className={btnGhost}>
+            <RefreshCcw className="h-3.5 w-3.5" /> Reset
+          </RippleButton>
+          <RippleButton onClick={save} disabled={!dirty} className={btnSave(dirty)}>
+            <Save className="h-3.5 w-3.5" /> Save
+          </RippleButton>
+        </div>
+      </div>
+
+      <div className="grid sm:grid-cols-2 gap-2.5 mb-4">
+        <div>
+          <label className={fieldLabel}>Name</label>
+          <input value={draft.name} onChange={(e) => patch({ name: e.target.value })} className={fieldInput} />
+        </div>
+        <div>
+          <label className={fieldLabel}>Goal / Exam</label>
+          <input value={draft.goalLabel} onChange={(e) => patch({ goalLabel: e.target.value })} placeholder="e.g. NEET 2027, UPSC CSE, CAT 2026" className={fieldInput} />
+        </div>
+        <div>
+          <label className={fieldLabel}>Age</label>
+          <input type="number" value={draft.age} onChange={(e) => patch({ age: +e.target.value })} className={fieldInput} />
+        </div>
+        <div>
+          <label className={fieldLabel}>Category</label>
+          <input value={draft.category} onChange={(e) => patch({ category: e.target.value })} className={fieldInput} />
+        </div>
+        <div>
+          <label className={fieldLabel}>Height (cm)</label>
+          <input type="number" value={draft.height} onChange={(e) => patch({ height: +e.target.value })} className={fieldInput} />
+        </div>
+        <div>
+          <label className={fieldLabel}>Weight (kg)</label>
+          <input type="number" value={draft.weight} onChange={(e) => patch({ weight: +e.target.value })} className={fieldInput} />
+        </div>
+        <div>
+          <label className={fieldLabel}>Baseline Label</label>
+          <input value={draft.baselineLabel} onChange={(e) => patch({ baselineLabel: e.target.value })} placeholder="e.g. JEE Main Percentile" className={fieldInput} />
+        </div>
+        <div>
+          <label className={fieldLabel}>Baseline Score</label>
+          <input type="number" value={draft.baseline} onChange={(e) => patch({ baseline: +e.target.value })} className={fieldInput} />
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between mb-2.5">
+        <span className="text-[11px] uppercase tracking-wide text-neutral-600 font-bold">Priority Targets</span>
+        <RippleButton onClick={handleSuggestTargets} disabled={suggesting} className={btnGhost}>
+          <Sparkles className="h-3.5 w-3.5" /> {suggesting ? 'Thinking…' : 'Suggest targets for me'}
+        </RippleButton>
+      </div>
+      {suggestError && <p className="text-[11.5px] text-rose-400 mb-2.5">{suggestError}</p>}
+
+      <div className="space-y-2">
+        {draft.targets.map((t: any, i: number) => (
+          <div key={i} className="rounded-lg border border-neutral-800 bg-neutral-950/40 p-3 space-y-2">
+            <div className="grid sm:grid-cols-2 gap-2">
+              <input value={t.name} onChange={(e) => patchTarget(i, { name: e.target.value })} placeholder="Institution / outcome" className={fieldInput} />
+              <input value={t.course} onChange={(e) => patchTarget(i, { course: e.target.value })} placeholder="Course / program" className={fieldInput} />
+            </div>
+            <div className="grid sm:grid-cols-[1fr_1fr_auto] gap-2 items-center">
+              <input value={t.tag} onChange={(e) => patchTarget(i, { tag: e.target.value })} placeholder="Priority tag" className={fieldInput} />
+              <select value={t.color} onChange={(e) => patchTarget(i, { color: e.target.value })} className={fieldInput}>
+                <option value="blue">Blue</option>
+                <option value="amber">Amber</option>
+                <option value="emerald">Emerald</option>
+              </select>
+              <button onClick={() => removeTarget(i)} className="cursor-target flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-800 bg-neutral-900 text-neutral-500 hover:text-rose-400 hover:border-rose-500/30 transition-colors">
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            <textarea value={t.desc} onChange={(e) => patchTarget(i, { desc: e.target.value })} placeholder="Short description with a concrete benchmark" rows={2} className={`${fieldInput} resize-none`} />
+          </div>
+        ))}
+      </div>
+      <RippleButton onClick={addTarget} className="cursor-target mt-3 flex items-center gap-1.5 rounded-lg border border-dashed border-neutral-700 px-3 py-2 text-[12px] font-medium text-neutral-400 hover:text-neutral-200 hover:border-neutral-500 transition-colors">
+        <Plus className="h-3.5 w-3.5" /> Add Target
+      </RippleButton>
+    </Card>
+  );
+}
+
 function ConfigEditorTab() {
   return (
     <div className="space-y-5 animate-fadeIn">
-      <SectionHeading icon={Settings} title="Settings" subtitle="Edit the Daily Checklist, Timeline, and Training Split — changes apply everywhere instantly, no code required" />
+      <SectionHeading icon={Settings} title="Settings" subtitle="Every part of the app is editable here — changes apply everywhere instantly, no code required" />
+      <ProfileEditor />
       <TrackerItemsEditor />
       <TimelineEditor />
       <TrainingEditor />
@@ -3312,13 +3541,15 @@ export default function JEEDashboard() {
     setConfig((prev) => ({ ...prev, ...partial }));
   };
 
-  const resetConfigSection = (key: 'trackerItems' | 'timeline' | 'training') => {
+  const resetConfigSection = (key: 'trackerItems' | 'timeline' | 'training' | 'profile') => {
     setConfig((prev) => ({
       ...prev,
       [key]: key === 'timeline'
         ? hydrateTimeline(DEFAULT_TIMELINE_STORABLE)
         : key === 'training'
         ? DEFAULT_TRAINING
+        : key === 'profile'
+        ? DEFAULT_PROFILE
         : DEFAULT_TRACKER_ITEMS,
     }));
   };
@@ -3549,6 +3780,7 @@ export default function JEEDashboard() {
         trackerItems: config.trackerItems,
         timeline: config.timeline,
         training: config.training,
+        profile: config.profile,
         updateConfig,
         resetConfigSection,
       }}
