@@ -8,11 +8,12 @@ import {
   ChevronLeft, Lock, Music2, Play, Pause, SkipForward,
   Search, RotateCcw,
   Crown, Swords, Download, Upload, ShieldCheck, ClipboardList, BarChart3, Trash2, Plus, Bell, BellOff,
-  Settings, Save, GripVertical, PenLine, RefreshCcw
+  Settings, Save, GripVertical, PenLine, RefreshCcw, Menu as MenuIcon, UserCircle2, KeyRound, LogOut
 } from 'lucide-react';
 import AuthGate from './components/AuthGate';
 import { useCloudAutoSync } from './lib/cloudSync';
 import CloudSyncCard from './components/CloudSyncCard';
+import { supabase } from './lib/supabaseClient';
 
 
 
@@ -331,7 +332,6 @@ const TABS = [
   { id: 'ashclock', label: "Ash's Clock", icon: Timer },
   { id: 'grooming', label: 'Clinical Grooming', icon: Sparkles },
   { id: 'history', label: 'Performance Calendar', icon: Calendar },
-  { id: 'settings', label: 'Config & Settings', icon: Settings },
 ];
 
 const SUBJECT_STYLE = {
@@ -1156,6 +1156,175 @@ function DataBackupCard({ globalHistory, setGlobalHistory }) {
   );
 }
 
+// ---------- Change Password (inside Account Menu) ----------
+
+function ChangePasswordCard() {
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  useEffect(() => {
+    if (!status) return;
+    const t = setTimeout(() => setStatus(null), 4000);
+    return () => clearTimeout(t);
+  }, [status]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword.length < 6) {
+      setStatus({ type: 'error', message: 'Password must be at least 6 characters.' });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setStatus({ type: 'error', message: "Those didn't match — try again." });
+      return;
+    }
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      setStatus({ type: 'success', message: 'Password updated.' });
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err: any) {
+      setStatus({ type: 'error', message: err?.message || 'Could not update your password.' });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="rounded-2xl border border-neutral-800 bg-neutral-950/60 p-4 sm:p-5">
+      <div className="flex items-center gap-3 mb-3.5">
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-sky-400 via-violet-500 to-fuchsia-500">
+          <KeyRound className="h-4.5 w-4.5 text-neutral-950" strokeWidth={2} />
+        </div>
+        <h3 className="text-[13.5px] font-bold text-neutral-100">Change Password</h3>
+      </div>
+      <form onSubmit={handleSubmit} className="space-y-2.5">
+        <input
+          type="password"
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+          placeholder="New password (min 6 characters)"
+          autoComplete="new-password"
+          className="w-full rounded-lg border border-neutral-800 bg-neutral-950/60 px-3 py-2.5 text-[13px] text-neutral-100 placeholder:text-neutral-600 outline-none focus:border-violet-500/50"
+        />
+        <input
+          type="password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          placeholder="Confirm new password"
+          autoComplete="new-password"
+          className="w-full rounded-lg border border-neutral-800 bg-neutral-950/60 px-3 py-2.5 text-[13px] text-neutral-100 placeholder:text-neutral-600 outline-none focus:border-violet-500/50"
+        />
+        <button
+          type="submit"
+          disabled={busy}
+          className="w-full rounded-lg bg-gradient-to-br from-sky-400 via-violet-500 to-fuchsia-500 py-2.5 text-[12.5px] font-semibold text-neutral-950 transition-opacity disabled:opacity-50"
+        >
+          {busy ? 'Saving…' : 'Update Password'}
+        </button>
+      </form>
+      {status && (
+        <div
+          className={`mt-3 flex items-center gap-2 rounded-lg px-3 py-2 text-[12px] ${
+            status.type === 'success' ? 'bg-violet-500/10 text-violet-300' : 'bg-rose-500/10 text-rose-300'
+          }`}
+        >
+          {status.message}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------- Account Menu ----------
+// Slide-over panel replacing the old standalone "Config & Settings" tab.
+// Holds account identity, cloud sync, password change, data backup/restore,
+// the entry point into Settings, and sign out — everything that isn't
+// day-to-day tracking content lives here now instead of the main nav.
+
+function AccountMenu({
+  open, onClose, onOpenSettings, globalHistory, setGlobalHistory,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onOpenSettings: () => void;
+  globalHistory: any;
+  setGlobalHistory: (v: any) => void;
+}) {
+  const [email, setEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
+  }, [open]);
+
+  const handleSignOut = async () => {
+    sessionStorage.removeItem('dcc_cloud_synced_this_session');
+    localStorage.removeItem('dcc_passcode_hash');
+    await supabase.auth.signOut();
+    window.location.reload();
+  };
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-[900]">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fadeIn" onClick={onClose} />
+      <div className="absolute right-0 top-0 h-full w-full max-w-sm bg-neutral-950/98 border-l border-neutral-800 overflow-y-auto animate-slideInRight">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-neutral-800 bg-neutral-950/95 backdrop-blur-xl px-5 py-4">
+          <h2 className="text-[14px] font-bold text-neutral-100">Account</h2>
+          <button onClick={onClose} className="rounded-lg p-1.5 text-neutral-500 hover:bg-neutral-900 hover:text-neutral-200 transition-colors">
+            <X className="h-4.5 w-4.5" />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-5">
+          <div className="flex items-center gap-3 rounded-2xl border border-neutral-800 bg-gradient-to-br from-violet-500/[0.08] via-neutral-950 to-sky-500/[0.05] p-4">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sky-400 via-violet-500 to-fuchsia-500 text-[15px] font-bold text-neutral-950">
+              {email ? email[0].toUpperCase() : <UserCircle2 className="h-6 w-6 text-neutral-950" />}
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-[13px] font-semibold text-neutral-100">{email || 'Not signed in'}</p>
+              <p className="text-[11.5px] text-neutral-500">Signed in via Supabase</p>
+            </div>
+          </div>
+
+          <CloudSyncCard />
+          <ChangePasswordCard />
+
+          <DataBackupCard globalHistory={globalHistory} setGlobalHistory={setGlobalHistory} />
+
+          <button
+            onClick={onOpenSettings}
+            className="flex w-full items-center gap-3 rounded-2xl border border-neutral-800 bg-neutral-950/60 px-4 py-3.5 text-left transition-colors hover:bg-neutral-900"
+          >
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-neutral-900 border border-neutral-800">
+              <Settings className="h-4 w-4 text-neutral-300" />
+            </div>
+            <div className="flex-1">
+              <p className="text-[13px] font-semibold text-neutral-100">Settings</p>
+              <p className="text-[11.5px] text-neutral-500">Edit Daily Checklist, Timeline & Training Split</p>
+            </div>
+            <ChevronRight className="h-4 w-4 text-neutral-600" />
+          </button>
+
+          <button
+            onClick={handleSignOut}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-rose-900/40 bg-rose-950/20 px-4 py-3 text-[13px] font-semibold text-rose-300 transition-colors hover:bg-rose-950/40"
+          >
+            <LogOut className="h-4 w-4" />
+            Log Out
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function PerformanceCalendar({ globalHistory, setGlobalHistory, setModal }) {
   const { trackerItems } = React.useContext(ConfigContext);
   const [currentNavDate, setCurrentNavDate] = useState(new Date());
@@ -1214,7 +1383,6 @@ function PerformanceCalendar({ globalHistory, setGlobalHistory, setModal }) {
 
   return (
     <div className="space-y-5">
-      <DataBackupCard globalHistory={globalHistory} setGlobalHistory={setGlobalHistory} />
       <Card className="animate-fadeIn">
       <div className="flex items-center justify-between mb-6">
         <SectionHeading icon={Calendar} title="Execution Heatmap Analytics" subtitle="Persistent performance velocity tracing" />
@@ -3046,8 +3214,7 @@ function TrainingEditor() {
 function ConfigEditorTab() {
   return (
     <div className="space-y-5 animate-fadeIn">
-      <SectionHeading icon={Settings} title="Config & Settings" subtitle="Edit the Daily Checklist, Timeline, and Training Split — changes apply everywhere instantly, no code required" />
-      <CloudSyncCard />
+      <SectionHeading icon={Settings} title="Settings" subtitle="Edit the Daily Checklist, Timeline, and Training Split — changes apply everywhere instantly, no code required" />
       <TrackerItemsEditor />
       <TimelineEditor />
       <TrainingEditor />
@@ -3062,6 +3229,7 @@ export default function JEEDashboard() {
   useCloudAutoSync(unlocked);
   const [introDone, setIntroDone] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
+  const [menuOpen, setMenuOpen] = useState(false);
   const [modal, setModal] = useState(null);
 
   // ---------- Swipe-to-switch-tabs (Instagram-style) ----------
@@ -3420,6 +3588,13 @@ export default function JEEDashboard() {
               <span className="h-1.5 w-1.5 rounded-full bg-violet-400 animate-pulse" />
               <span className="text-[11.5px] font-medium text-neutral-400">Execution Quotient: <span className="text-violet-400 tabular-nums">{overallPct}%</span></span>
             </div>
+            <button
+              onClick={() => setMenuOpen(true)}
+              aria-label="Open account menu"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-800 bg-neutral-900/60 text-neutral-300 transition-colors hover:border-violet-500/40 hover:text-violet-300"
+            >
+              <MenuIcon className="h-4 w-4" />
+            </button>
           </div>
         </header>
 
@@ -3485,6 +3660,15 @@ export default function JEEDashboard() {
       {/* Global Context-Aware Modal Overlay */}
       <GlobalDetailModal modalData={modal} onClose={() => setModal(null)} />
 
+      {/* Account Menu — account info, cloud sync, password, backup/restore, settings, sign out */}
+      <AccountMenu
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        onOpenSettings={() => { setActiveTab('settings'); setMenuOpen(false); }}
+        globalHistory={globalHistory}
+        setGlobalHistory={setGlobalHistory}
+      />
+
       {/* "System" Quest-Clear Notification — fires on hitting 100% for the day */}
       <QuestClearNotification data={questClear} onDismiss={() => setQuestClear(null)} />
 
@@ -3505,6 +3689,11 @@ export default function JEEDashboard() {
           to { opacity: 1; transform: translateY(0); }
         }
         .animate-fadeInUp { animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both; }
+        @keyframes slideInRight {
+          from { opacity: 0; transform: translateX(24px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        .animate-slideInRight { animation: slideInRight 0.28s cubic-bezier(0.16, 1, 0.3, 1) both; }
         @keyframes rippleExpand {
           from { transform: translate(-50%, -50%) scale(0); opacity: 0.35; }
           to { transform: translate(-50%, -50%) scale(26); opacity: 0; }

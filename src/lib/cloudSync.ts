@@ -17,11 +17,6 @@ export const SYNC_KEYS = [
   'ash_clock_quests_cleared',
   'pomodoro_subject_log',
   'ash_clock_last_subject',
-  'strava_activities',
-  'strava_connected',
-  'spotify_profile',
-  'spotify_recent',
-  'spotify_connected',
   'app_config_v1',
   'timeline_notifications_enabled',
 ] as const;

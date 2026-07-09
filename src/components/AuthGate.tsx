@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Lock, Mail, Loader2, ShieldCheck } from 'lucide-react';
+import { Lock, Mail, Loader2, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import {
   pullFromCloud,
@@ -21,7 +21,7 @@ const PASSCODE_LENGTH = 6;
 // stops it from looping.
 const SYNCED_FLAG = 'dcc_cloud_synced_this_session';
 
-type Stage = 'checking' | 'auth' | 'syncing' | 'setPasscode' | 'passcode';
+type Stage = 'checking' | 'auth' | 'syncing' | 'setPasscode' | 'passcode' | 'forgotPassword' | 'resetPassword';
 
 export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
   const [stage, setStage] = useState<Stage>('checking');
@@ -48,6 +48,18 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
   const [pcError, setPcError] = useState(false);
   const [pcChecking, setPcChecking] = useState(false);
   const pcInputRef = useRef<HTMLInputElement>(null);
+
+  // --- forgot-password (send reset email) state ---
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetBusy, setResetBusy] = useState(false);
+  const [resetError, setResetError] = useState('');
+  const [resetSent, setResetSent] = useState(false);
+
+  // --- set-new-password (after clicking the emailed recovery link) state ---
+  const [newPassword, setNewPassword] = useState('');
+  const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
+  const [newPasswordBusy, setNewPasswordBusy] = useState(false);
+  const [newPasswordError, setNewPasswordError] = useState('');
 
   const decidePostSyncStage = (userId: string) => {
     setPendingUserId(userId);
@@ -86,6 +98,16 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
         setStage('auth');
       }
     });
+
+    // Clicking the "reset your password" link in the email lands back here
+    // with a temporary recovery session. Supabase fires this event when
+    // that happens — intercept it before the normal auth flow takes over.
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setStage('resetPassword');
+      }
+    });
+    return () => sub.subscription.unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -209,6 +231,51 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
     }
   };
 
+  const handleSendResetEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetError('');
+    setResetBusy(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: window.location.origin,
+      });
+      if (error) throw error;
+      setResetSent(true);
+    } catch (err: any) {
+      setResetError(err?.message || 'Could not send the reset email. Try again.');
+    } finally {
+      setResetBusy(false);
+    }
+  };
+
+  const handleSetNewPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setNewPasswordError('');
+    if (newPassword.length < 6) {
+      setNewPasswordError('Password must be at least 6 characters.');
+      return;
+    }
+    if (newPassword !== newPasswordConfirm) {
+      setNewPasswordError("Those didn't match — try again.");
+      return;
+    }
+    setNewPasswordBusy(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      const { data } = await supabase.auth.getSession();
+      if (data.session?.user) {
+        await syncThenContinue(data.session.user.id);
+      } else {
+        setStage('auth');
+      }
+    } catch (err: any) {
+      setNewPasswordError(err?.message || 'Could not update your password. Try again.');
+    } finally {
+      setNewPasswordBusy(false);
+    }
+  };
+
   const makeDigitHandler = (setter: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setter(e.target.value.replace(/\D/g, '').slice(0, PASSCODE_LENGTH));
   };
@@ -218,7 +285,7 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
   if (stage === 'checking' || stage === 'syncing') {
     return (
       <div className="fixed inset-0 z-[999] flex flex-col items-center justify-center bg-zinc-950 px-6 gap-3">
-        <Loader2 className="h-6 w-6 text-sky-400 animate-spin" strokeWidth={2} />
+        <Loader2 className="h-6 w-6 text-violet-400 animate-spin" strokeWidth={2} />
         <p className="text-[12.5px] text-neutral-500">
           {stage === 'syncing' ? 'Syncing your data from the cloud…' : 'Loading…'}
         </p>
@@ -229,7 +296,7 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
   if (stage === 'auth') {
     return (
       <div className="fixed inset-0 z-[999] flex flex-col items-center justify-center bg-zinc-950 px-6">
-        <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-emerald-500 shadow-lg shadow-sky-500/10">
+        <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 via-violet-500 to-fuchsia-500 shadow-lg shadow-violet-500/20">
           <Mail className="h-5 w-5 text-neutral-950" strokeWidth={2} />
         </div>
 
@@ -250,7 +317,7 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Email"
-            className="w-full rounded-xl border border-neutral-800 bg-neutral-900/80 px-4 py-3 text-[13px] text-neutral-100 placeholder-neutral-600 outline-none transition-colors focus:border-sky-500/50"
+            className="w-full rounded-xl border border-neutral-800 bg-neutral-900/80 px-4 py-3 text-[13px] text-neutral-100 placeholder-neutral-600 outline-none transition-colors focus:border-violet-500/50"
           />
           <input
             type="password"
@@ -260,20 +327,34 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Password (min 6 characters)"
-            className="w-full rounded-xl border border-neutral-800 bg-neutral-900/80 px-4 py-3 text-[13px] text-neutral-100 placeholder-neutral-600 outline-none transition-colors focus:border-sky-500/50"
+            className="w-full rounded-xl border border-neutral-800 bg-neutral-900/80 px-4 py-3 text-[13px] text-neutral-100 placeholder-neutral-600 outline-none transition-colors focus:border-violet-500/50"
           />
 
           {authError && <p className="text-[12px] text-rose-400">{authError}</p>}
-          {signupNotice && <p className="text-[12px] text-emerald-400">{signupNotice}</p>}
+          {signupNotice && <p className="text-[12px] text-violet-400">{signupNotice}</p>}
 
           <button
             type="submit"
             disabled={authBusy}
-            className="w-full rounded-xl bg-gradient-to-br from-sky-500 to-emerald-500 py-3 text-[13px] font-semibold text-neutral-950 transition-opacity disabled:opacity-60"
+            className="w-full rounded-xl bg-gradient-to-br from-sky-400 via-violet-500 to-fuchsia-500 py-3 text-[13px] font-semibold text-neutral-950 transition-opacity disabled:opacity-60"
           >
             {authBusy ? 'Please wait…' : authMode === 'signin' ? 'Sign In' : 'Sign Up'}
           </button>
         </form>
+
+        {authMode === 'signin' && (
+          <button
+            onClick={() => {
+              setResetEmail(email);
+              setResetError('');
+              setResetSent(false);
+              setStage('forgotPassword');
+            }}
+            className="mt-4 text-[12px] font-medium text-neutral-500 hover:text-neutral-300"
+          >
+            Forgot password?
+          </button>
+        )}
 
         <button
           onClick={() => {
@@ -281,7 +362,7 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
             setAuthError('');
             setSignupNotice('');
           }}
-          className="mt-5 text-[12px] font-medium text-sky-400 hover:text-sky-300"
+          className="mt-5 text-[12px] font-medium text-violet-400 hover:text-violet-300"
         >
           {authMode === 'signin' ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
         </button>
@@ -297,7 +378,7 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
         className="fixed inset-0 z-[999] flex flex-col items-center justify-center bg-zinc-950 px-6"
         onClick={() => pcSetupInputRef.current?.focus()}
       >
-        <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-emerald-500 shadow-lg shadow-sky-500/10">
+        <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 via-violet-500 to-fuchsia-500 shadow-lg shadow-violet-500/20">
           <ShieldCheck className="h-5 w-5 text-neutral-950" strokeWidth={2} />
         </div>
 
@@ -321,7 +402,7 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
                   pcSetupError
                     ? 'border-rose-500/50 bg-rose-500/[0.06] text-rose-300'
                     : isCurrent
-                    ? 'border-sky-500/50 bg-neutral-900/80 text-neutral-100'
+                    ? 'border-violet-500/50 bg-neutral-900/80 text-neutral-100'
                     : filled
                     ? 'border-neutral-700 bg-neutral-900/80 text-neutral-100'
                     : 'border-neutral-800 bg-neutral-900/40 text-neutral-700'
@@ -353,6 +434,107 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
     );
   }
 
+  if (stage === 'forgotPassword') {
+    return (
+      <div className="fixed inset-0 z-[999] flex flex-col items-center justify-center bg-zinc-950 px-6">
+        <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 via-violet-500 to-fuchsia-500 shadow-lg shadow-violet-500/20">
+          <Mail className="h-5 w-5 text-neutral-950" strokeWidth={2} />
+        </div>
+
+        <h1 className="mb-1.5 text-[15px] font-semibold tracking-tight text-neutral-50">
+          Reset Your Password
+        </h1>
+        <p className="mb-8 max-w-xs text-center text-[12.5px] leading-relaxed text-neutral-500">
+          {resetSent
+            ? "Check your inbox — we've sent a link to reset your password."
+            : "Enter your account email and we'll send you a reset link."}
+        </p>
+
+        {!resetSent ? (
+          <form onSubmit={handleSendResetEmail} className="w-full max-w-xs space-y-3">
+            <input
+              type="email"
+              required
+              autoComplete="email"
+              value={resetEmail}
+              onChange={(e) => setResetEmail(e.target.value)}
+              placeholder="Email"
+              className="w-full rounded-xl border border-neutral-800 bg-neutral-900/80 px-4 py-3 text-[13px] text-neutral-100 placeholder-neutral-600 outline-none transition-colors focus:border-violet-500/50"
+            />
+            {resetError && <p className="text-[12px] text-rose-400">{resetError}</p>}
+            <button
+              type="submit"
+              disabled={resetBusy}
+              className="w-full rounded-xl bg-gradient-to-br from-sky-400 via-violet-500 to-fuchsia-500 py-3 text-[13px] font-semibold text-neutral-950 transition-opacity disabled:opacity-60"
+            >
+              {resetBusy ? 'Sending…' : 'Send Reset Link'}
+            </button>
+          </form>
+        ) : (
+          <CheckCircle2 className="h-8 w-8 text-violet-400" strokeWidth={2} />
+        )}
+
+        <button
+          onClick={() => {
+            setAuthError('');
+            setStage('auth');
+          }}
+          className="mt-6 text-[12px] font-medium text-violet-400 hover:text-violet-300"
+        >
+          Back to sign in
+        </button>
+      </div>
+    );
+  }
+
+  if (stage === 'resetPassword') {
+    return (
+      <div className="fixed inset-0 z-[999] flex flex-col items-center justify-center bg-zinc-950 px-6">
+        <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 via-violet-500 to-fuchsia-500 shadow-lg shadow-violet-500/20">
+          <ShieldCheck className="h-5 w-5 text-neutral-950" strokeWidth={2} />
+        </div>
+
+        <h1 className="mb-1.5 text-[15px] font-semibold tracking-tight text-neutral-50">
+          Set a New Password
+        </h1>
+        <p className="mb-8 max-w-xs text-center text-[12.5px] leading-relaxed text-neutral-500">
+          Choose a new password for your account.
+        </p>
+
+        <form onSubmit={handleSetNewPassword} className="w-full max-w-xs space-y-3">
+          <input
+            type="password"
+            required
+            minLength={6}
+            autoComplete="new-password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            placeholder="New password (min 6 characters)"
+            className="w-full rounded-xl border border-neutral-800 bg-neutral-900/80 px-4 py-3 text-[13px] text-neutral-100 placeholder-neutral-600 outline-none transition-colors focus:border-violet-500/50"
+          />
+          <input
+            type="password"
+            required
+            minLength={6}
+            autoComplete="new-password"
+            value={newPasswordConfirm}
+            onChange={(e) => setNewPasswordConfirm(e.target.value)}
+            placeholder="Confirm new password"
+            className="w-full rounded-xl border border-neutral-800 bg-neutral-900/80 px-4 py-3 text-[13px] text-neutral-100 placeholder-neutral-600 outline-none transition-colors focus:border-violet-500/50"
+          />
+          {newPasswordError && <p className="text-[12px] text-rose-400">{newPasswordError}</p>}
+          <button
+            type="submit"
+            disabled={newPasswordBusy}
+            className="w-full rounded-xl bg-gradient-to-br from-sky-400 via-violet-500 to-fuchsia-500 py-3 text-[13px] font-semibold text-neutral-950 transition-opacity disabled:opacity-60"
+          >
+            {newPasswordBusy ? 'Saving…' : 'Save New Password'}
+          </button>
+        </form>
+      </div>
+    );
+  }
+
   // stage === 'passcode'
   const boxes = Array.from({ length: PASSCODE_LENGTH });
   return (
@@ -360,7 +542,7 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
       className="fixed inset-0 z-[999] flex flex-col items-center justify-center bg-zinc-950 px-6"
       onClick={() => pcInputRef.current?.focus()}
     >
-      <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-emerald-500 shadow-lg shadow-sky-500/10">
+      <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 via-violet-500 to-fuchsia-500 shadow-lg shadow-violet-500/20">
         <Lock className="h-5 w-5 text-neutral-950" strokeWidth={2} />
       </div>
 
@@ -380,7 +562,7 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
                 pcError
                   ? 'border-rose-500/50 bg-rose-500/[0.06] text-rose-300'
                   : isCurrent
-                  ? 'border-sky-500/50 bg-neutral-900/80 text-neutral-100'
+                  ? 'border-violet-500/50 bg-neutral-900/80 text-neutral-100'
                   : filled
                   ? 'border-neutral-700 bg-neutral-900/80 text-neutral-100'
                   : 'border-neutral-800 bg-neutral-900/40 text-neutral-700'
