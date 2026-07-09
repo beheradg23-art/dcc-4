@@ -5,8 +5,8 @@ import {
   Droplets, Sunrise, Sun, Moon, Utensils, Flame,
   AlertTriangle, ChevronRight, Eye, Smile, Scissors, Wind,
   TrendingUp, Activity, Timer, Calendar, X, ArrowUpRight, FlameKindling,
-  ChevronLeft, Lock, Music2, Play, Pause, SkipBack, SkipForward,
-  Volume2, Volume1, VolumeX, Search, Disc3, ListMusic, RotateCcw,
+  ChevronLeft, Lock, Music2, Play, Pause, SkipForward,
+  Search, RotateCcw,
   Crown, Swords, Download, Upload, ShieldCheck, ClipboardList, BarChart3, Trash2, Plus, Bell, BellOff,
   Settings, Save, GripVertical, PenLine, RefreshCcw
 } from 'lucide-react';
@@ -283,7 +283,7 @@ const ConfigContext = React.createContext<{
 const HUNTER_RANKS = [
   { rank: 'E', threshold: 0, label: 'E-Rank Hunter', color: '#94a3b8' },
   { rank: 'D', threshold: 5, label: 'D-Rank Hunter', color: '#38bdf8' },
-  { rank: 'C', threshold: 15, label: 'C-Rank Hunter', color: '#34d399' },
+  { rank: 'C', threshold: 15, label: 'C-Rank Hunter', color: '#22d3ee' },
   { rank: 'B', threshold: 30, label: 'B-Rank Hunter', color: '#a78bfa' },
   { rank: 'A', threshold: 60, label: 'A-Rank Hunter', color: '#fbbf24' },
   { rank: 'S', threshold: 100, label: 'S-Rank — Shadow Monarch', color: '#f472b6' },
@@ -330,8 +330,6 @@ const TABS = [
   { id: 'mocktests', label: 'Mock Test Tracker', icon: ClipboardList },
   { id: 'ashclock', label: "Ash's Clock", icon: Timer },
   { id: 'grooming', label: 'Clinical Grooming', icon: Sparkles },
-  { id: 'spotify', label: 'Spotify Player', icon: Music2 },
-  { id: 'strava', label: 'Strava Sync', icon: Activity },
   { id: 'history', label: 'Performance Calendar', icon: Calendar },
   { id: 'settings', label: 'Config & Settings', icon: Settings },
 ];
@@ -339,7 +337,7 @@ const TABS = [
 const SUBJECT_STYLE = {
   math: { text: 'text-sky-400', bg: 'bg-sky-500/10', border: 'border-sky-500/30', dot: 'bg-sky-400' },
   physics: { text: 'text-violet-400', bg: 'bg-violet-500/10', border: 'border-violet-500/30', dot: 'bg-violet-400' },
-  chem: { text: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', dot: 'bg-emerald-400' },
+  chem: { text: 'text-fuchsia-400', bg: 'bg-fuchsia-500/10', border: 'border-fuchsia-500/30', dot: 'bg-fuchsia-400' },
   mixed: { text: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30', dot: 'bg-amber-400' },
 };
 
@@ -799,7 +797,7 @@ function StatPill({ icon: Icon, label, value, accent = 'neutral' }) {
     neutral: 'text-neutral-300',
     blue: 'text-sky-400',
     amber: 'text-amber-400',
-    emerald: 'text-emerald-400',
+    violet: 'text-violet-400',
     rose: 'text-rose-400'
   };
   return (
@@ -880,7 +878,7 @@ function TrackerItemButton({ item, isChecked, onToggle, isDerived }) {
       title={isDerived ? 'Auto-synced from the Fuel Matrix meal log — click to go log meals' : undefined}
       className={`cursor-target relative flex flex-col items-start justify-between overflow-hidden p-3.5 rounded-xl border text-left transition-colors duration-200 group ${
         isChecked
-          ? 'bg-emerald-500/[0.08] border-emerald-500/30 shadow-[inset_0_0_12px_rgba(16,185,129,0.05)]'
+          ? 'bg-violet-500/[0.08] border-violet-500/30 shadow-[inset_0_0_12px_rgba(167,139,250,0.05)]'
           : 'bg-neutral-900/40 border-neutral-800 hover:bg-neutral-800/60 hover:border-neutral-700'
       }`}
       style={{
@@ -890,7 +888,7 @@ function TrackerItemButton({ item, isChecked, onToggle, isDerived }) {
     >
       <div className="flex w-full justify-between items-start mb-2.5">
         {isChecked ? (
-          <CheckCircle2 className="h-4.5 w-4.5 text-emerald-400 shrink-0" strokeWidth={2} />
+          <CheckCircle2 className="h-4.5 w-4.5 text-violet-400 shrink-0" strokeWidth={2} />
         ) : (
           <Circle className="h-4.5 w-4.5 text-neutral-600 group-hover:text-neutral-400 shrink-0 transition-colors" strokeWidth={1.75} />
         )}
@@ -898,7 +896,7 @@ function TrackerItemButton({ item, isChecked, onToggle, isDerived }) {
           <span className="text-[8.5px] uppercase tracking-wider font-bold text-neutral-600 group-hover:text-neutral-400 transition-colors">Auto</span>
         )}
       </div>
-      <span className={`text-[11.5px] font-medium leading-snug transition-colors ${isChecked ? 'text-emerald-200/90' : 'text-neutral-300 group-hover:text-neutral-200'}`}>
+      <span className={`text-[11.5px] font-medium leading-snug transition-colors ${isChecked ? 'text-violet-200/90' : 'text-neutral-300 group-hover:text-neutral-200'}`}>
         {item.label}
       </span>
       {rippleNodes}
@@ -951,7 +949,7 @@ function DailyTracker({ currentDayStr, checked, onToggle, setActiveTab }) {
           </div>
           <div className="flex flex-col items-end">
             <span className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold">Day Ending In</span>
-            <div className="flex items-center gap-1.5 text-emerald-400/90 font-mono text-[13px] font-semibold tracking-tight">
+            <div className="flex items-center gap-1.5 text-violet-400/90 font-mono text-[13px] font-semibold tracking-tight">
               <Timer className="h-3.5 w-3.5" />
               {timeLeft}
             </div>
@@ -964,7 +962,7 @@ function DailyTracker({ currentDayStr, checked, onToggle, setActiveTab }) {
         <div className="relative h-2 w-full overflow-visible rounded-full bg-neutral-800">
           <div className="h-full w-full overflow-hidden rounded-full">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-500 ease-out"
+              className="h-full rounded-full bg-gradient-to-r from-violet-500 to-violet-400 transition-all duration-500 ease-out"
               style={{ width: `${pct}%` }}
             />
           </div>
@@ -1023,8 +1021,8 @@ function DailyTracker({ currentDayStr, checked, onToggle, setActiveTab }) {
 // Everything in this app lives only in this browser's localStorage. There is
 // no server, no account, no sync — clear site data or switch devices and the
 // entire history is gone for good. This gives a way out: a single JSON file
-// download that captures the Daily Matrix history plus the cached Strava/
-// Spotify/Ash's Clock state, and a matching import to restore it anywhere.
+// download that captures the Daily Matrix history plus Ash's Clock state,
+// and a matching import to restore it anywhere.
 
 function DataBackupCard({ globalHistory, setGlobalHistory }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1053,11 +1051,6 @@ function DataBackupCard({ globalHistory, setGlobalHistory }) {
     ash_clock_quests_cleared: localStorage.getItem('ash_clock_quests_cleared'),
     pomodoro_subject_log: localStorage.getItem('pomodoro_subject_log'),
     ash_clock_last_subject: localStorage.getItem('ash_clock_last_subject'),
-    strava_activities: localStorage.getItem('strava_activities'),
-    strava_connected: localStorage.getItem('strava_connected'),
-    spotify_profile: localStorage.getItem('spotify_profile'),
-    spotify_recent: localStorage.getItem('spotify_recent'),
-    spotify_connected: localStorage.getItem('spotify_connected'),
     app_config_v1: localStorage.getItem('app_config_v1'),
   });
 
@@ -1100,8 +1093,6 @@ function DataBackupCard({ globalHistory, setGlobalHistory }) {
           'mock_test_log', 'topic_revision_log', 'diet_log_v1', 'weight_log_v1',
           'ash_clock_focus_min', 'ash_clock_break_min', 'ash_clock_hunter_level',
           'ash_clock_quests_cleared', 'pomodoro_subject_log', 'ash_clock_last_subject',
-          'strava_activities', 'strava_connected',
-          'spotify_profile', 'spotify_recent', 'spotify_connected',
           'app_config_v1',
         ];
         passthroughKeys.forEach((key) => {
@@ -1147,14 +1138,14 @@ function DataBackupCard({ globalHistory, setGlobalHistory }) {
       </div>
 
       <p className="mt-4 text-[12.5px] text-neutral-500 leading-relaxed">
-        Everything here — the Daily Matrix history, streak, Hunter Rank, mock test scores, weight log, and cached Strava/Spotify data — lives only in this browser's storage. Clearing site data, switching devices, or reinstalling the browser erases it permanently, with no way to recover it. Export a backup file regularly, and import it to restore everything on a new device or after a reset.
+        Everything here — the Daily Matrix history, streak, Hunter Rank, mock test scores, and weight log — lives only in this browser's storage. Clearing site data, switching devices, or reinstalling the browser erases it permanently, with no way to recover it. Export a backup file regularly, and import it to restore everything on a new device or after a reset.
       </p>
 
       {status && (
         <div
           className={`mt-3 flex items-center gap-2 rounded-lg border px-3 py-2 text-[12px] font-medium animate-fadeIn ${
             status.type === 'success'
-              ? 'border-emerald-800/40 bg-emerald-950/30 text-emerald-300'
+              ? 'border-violet-800/40 bg-violet-950/30 text-violet-300'
               : 'border-rose-800/40 bg-rose-950/30 text-rose-300'
           }`}
         >
@@ -1217,8 +1208,8 @@ function PerformanceCalendar({ globalHistory, setGlobalHistory, setModal }) {
     if (score === 0) return 'bg-neutral-900 border-neutral-800 text-neutral-500';
     if (pct <= 0.3) return 'bg-rose-950/60 border-rose-800/40 text-rose-300 hover:bg-rose-900/50';
     if (pct <= 0.6) return 'bg-amber-950/60 border-amber-800/40 text-amber-300 hover:bg-amber-900/50';
-    if (pct < 1) return 'bg-emerald-950/40 border-emerald-800/40 text-emerald-300 hover:bg-emerald-900/40';
-    return 'bg-gradient-to-br from-emerald-500 to-teal-500 text-neutral-950 border-emerald-400 font-bold';
+    if (pct < 1) return 'bg-violet-950/40 border-violet-800/40 text-violet-300 hover:bg-violet-900/40';
+    return 'bg-gradient-to-br from-violet-500 to-fuchsia-500 text-neutral-950 border-violet-400 font-bold';
   };
 
   return (
@@ -1278,8 +1269,8 @@ function PerformanceCalendar({ globalHistory, setGlobalHistory, setModal }) {
           <div className="flex items-center gap-1"><div className="h-3 w-3 rounded bg-neutral-900 border border-neutral-800" /> <span>0%</span></div>
           <div className="flex items-center gap-1"><div className="h-3 w-3 rounded bg-rose-950/60 border border-rose-800/40" /> <span>1-30%</span></div>
           <div className="flex items-center gap-1"><div className="h-3 w-3 rounded bg-amber-950/60 border border-amber-800/40" /> <span>31-60%</span></div>
-          <div className="flex items-center gap-1"><div className="h-3 w-3 rounded bg-emerald-950/40 border border-emerald-800/40" /> <span>61-99%</span></div>
-          <div className="flex items-center gap-1"><div className="h-3 w-3 rounded bg-gradient-to-br from-emerald-500 to-teal-500" /> <span>100%</span></div>
+          <div className="flex items-center gap-1"><div className="h-3 w-3 rounded bg-violet-950/40 border border-violet-800/40" /> <span>61-99%</span></div>
+          <div className="flex items-center gap-1"><div className="h-3 w-3 rounded bg-gradient-to-br from-violet-500 to-fuchsia-500" /> <span>100%</span></div>
         </div>
         <p className="text-[11px] text-neutral-500">Click any historic metric square to trace detailed logs.</p>
       </div>
@@ -1376,7 +1367,7 @@ function OverviewTab({ setModal }) {
           <SectionHeading icon={Flame} title="Fuel Snapshot" subtitle="V-Taper matrix ratios" />
           <div className="space-y-2.5">
             <StatPill icon={Flame} label="Calories" value={DIET.target.split('·')[0].trim()} accent="amber" />
-            <StatPill icon={Activity} label="Protein" value="165–175g+" accent="emerald" />
+            <StatPill icon={Activity} label="Protein" value="165–175g+" accent="violet" />
             <StatPill icon={Droplets} label="Hydration" value="4–4.5 L / day" accent="blue" />
           </div>
         </Card>
@@ -1430,14 +1421,14 @@ function TimelineTab({ setModal, notificationsEnabled, notificationPermission, o
   const { timeline } = React.useContext(ConfigContext);
   const typeStyle = {
     study: 'border-l-sky-500',
-    gym: 'border-l-emerald-500',
+    gym: 'border-l-violet-500',
     meal: 'border-l-amber-500',
     prep: 'border-l-neutral-600',
     sleep: 'border-l-violet-500',
   };
   const typeBg = {
     study: 'bg-sky-500/10 text-sky-400',
-    gym: 'bg-emerald-500/10 text-emerald-400',
+    gym: 'bg-violet-500/10 text-violet-400',
     meal: 'bg-amber-500/10 text-amber-400',
     prep: 'bg-neutral-800 text-neutral-400',
     sleep: 'bg-violet-500/10 text-violet-400',
@@ -1451,7 +1442,7 @@ function TimelineTab({ setModal, notificationsEnabled, notificationPermission, o
           onClick={onToggleNotifications}
           className={`cursor-target shrink-0 flex items-center gap-2 rounded-full border px-3.5 py-2 text-[12px] font-semibold transition-colors ${
             notificationsEnabled
-              ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/15'
+              ? 'border-violet-500/30 bg-violet-500/10 text-violet-300 hover:bg-violet-500/15'
               : 'border-neutral-800 bg-neutral-900 text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800'
           }`}
         >
@@ -1672,9 +1663,9 @@ function WeightTrackerCard() {
         <>
           <div className="mb-4 flex flex-wrap gap-2.5">
             <StatPill icon={Weight} label="Latest" value={`${latest.weight} kg`} />
-            <StatPill icon={Calendar} label="Since First Log" value={`${delta > 0 ? '+' : ''}${delta} kg`} accent={delta === 0 ? 'neutral' : delta > 0 ? 'emerald' : 'blue'} />
+            <StatPill icon={Calendar} label="Since First Log" value={`${delta > 0 ? '+' : ''}${delta} kg`} accent={delta === 0 ? 'neutral' : delta > 0 ? 'violet' : 'blue'} />
             {delta30 !== null && (
-              <StatPill icon={TrendingUp} label="Last 30 Days" value={`${delta30 > 0 ? '+' : ''}${delta30} kg`} accent={delta30 === 0 ? 'neutral' : delta30 > 0 ? 'emerald' : 'blue'} />
+              <StatPill icon={TrendingUp} label="Last 30 Days" value={`${delta30 > 0 ? '+' : ''}${delta30} kg`} accent={delta30 === 0 ? 'neutral' : delta30 > 0 ? 'violet' : 'blue'} />
             )}
           </div>
 
@@ -1750,7 +1741,7 @@ function TrainingFuelTab({ setModal, dietLog, setDietLog, currentDateStr }) {
 
   const modeStyle = {
     gym: 'bg-sky-500/10 text-sky-400 border-sky-500/25',
-    calisthenics: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25',
+    calisthenics: 'bg-violet-500/10 text-violet-400 border-violet-500/25',
     rest: 'bg-neutral-800 text-neutral-400 border-neutral-700',
   };
 
@@ -1822,13 +1813,13 @@ function TrainingFuelTab({ setModal, dietLog, setDietLog, currentDateStr }) {
         <SectionHeading icon={Flame} title="V-Taper Fuel Matrix" subtitle={`${DIET.target} · ${DIET.protein}`} />
         <div className="mb-4 flex flex-wrap gap-2.5">
           <StatPill icon={Flame} label="Calorie Target" value="~2200–2300 kcal" accent="amber" />
-          <StatPill icon={Activity} label="Protein Target" value="165g–175g+" accent="emerald" />
+          <StatPill icon={Activity} label="Protein Target" value="165g–175g+" accent="violet" />
           <StatPill icon={Droplets} label="Hydration" value={DIET.hydration} accent="blue" />
         </div>
 
         <div className="mb-4 flex items-center justify-between flex-wrap gap-3 rounded-xl border border-neutral-800 bg-neutral-900/40 px-4 py-3">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className={`h-4 w-4 ${mealsLoggedToday === DIET.meals.length ? 'text-emerald-400' : 'text-neutral-500'}`} />
+            <CheckCircle2 className={`h-4 w-4 ${mealsLoggedToday === DIET.meals.length ? 'text-violet-400' : 'text-neutral-500'}`} />
             <span className="text-[12.5px] text-neutral-300">
               <span className="font-semibold text-neutral-100 tabular-nums">{mealsLoggedToday}/{DIET.meals.length}</span> meals logged today
               <span className="text-neutral-600"> · syncs the "All 6 Meals Hit" box on the Daily Matrix</span>
@@ -1845,7 +1836,7 @@ function TrainingFuelTab({ setModal, dietLog, setDietLog, currentDateStr }) {
                   className={`h-5 w-5 rounded-md flex items-center justify-center text-[8.5px] font-bold ${isToday ? 'ring-1 ring-neutral-500' : ''}`}
                   style={{
                     backgroundColor: pct === 0 ? 'rgba(255,255,255,0.04)' : `rgba(52,211,153,${0.15 + pct * 0.65})`,
-                    color: pct > 0.6 ? '#052e1f' : '#71717a',
+                    color: pct > 0.6 ? '#2e1065' : '#71717a',
                   }}
                 >
                   {d.count > 0 ? d.count : ''}
@@ -1869,7 +1860,7 @@ function TrainingFuelTab({ setModal, dietLog, setDietLog, currentDateStr }) {
                   arrayItems: m.items,
                   cues: 'Avoid heavy hydration consumption simultaneously during solid meals to keep enzyme kinetics tracking perfectly.'
                 })}
-                className={isLogged ? 'border-emerald-500/30 bg-emerald-500/[0.03]' : ''}
+                className={isLogged ? 'border-violet-500/30 bg-violet-500/[0.03]' : ''}
               >
                 <div className="flex items-center justify-between mb-2.5">
                   <div className="flex items-center gap-2.5">
@@ -1888,7 +1879,7 @@ function TrainingFuelTab({ setModal, dietLog, setDietLog, currentDateStr }) {
                       className="cursor-target p-1 rounded-md hover:bg-neutral-800 transition-colors"
                     >
                       {isLogged ? (
-                        <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                        <CheckCircle2 className="h-4 w-4 text-violet-400" />
                       ) : (
                         <Circle className="h-4 w-4 text-neutral-600" />
                       )}
@@ -2046,7 +2037,7 @@ function SyllabusTab({ setModal }) {
                 const { status, days } = getRevisionStatus(revisionLog[key]);
                 const dotColor =
                   status === 'never' ? 'bg-neutral-700' :
-                  status === 'fresh' ? 'bg-emerald-400' :
+                  status === 'fresh' ? 'bg-violet-400' :
                   status === 'due' ? 'bg-amber-400' : 'bg-rose-400';
                 const badgeText =
                   status === 'never' ? 'Not yet revised' :
@@ -2054,7 +2045,7 @@ function SyllabusTab({ setModal }) {
                   status === 'due' ? `Due · ${days}d ago` : `Overdue · ${days}d ago`;
                 const badgeClass =
                   status === 'never' ? 'text-neutral-600' :
-                  status === 'fresh' ? 'text-emerald-400' :
+                  status === 'fresh' ? 'text-violet-400' :
                   status === 'due' ? 'text-amber-400' : 'text-rose-400';
 
                 return (
@@ -2123,7 +2114,7 @@ function ScoreTrendChart({ tests }) {
   const series = [
     { key: 'math', color: '#38bdf8', label: 'Math' },
     { key: 'physics', color: '#a78bfa', label: 'Physics' },
-    { key: 'chem', color: '#34d399', label: 'Chemistry' },
+    { key: 'chem', color: '#e879f9', label: 'Chemistry' },
   ];
 
   return (
@@ -2344,14 +2335,14 @@ function MockTestTab() {
                 type="number" inputMode="decimal" min={0} value={formChem}
                 onChange={(e) => setFormChem(e.target.value)}
                 placeholder="Score"
-                className="w-full min-w-0 rounded-lg border border-neutral-800 bg-neutral-950/60 px-3 py-3 sm:py-2 text-base sm:text-[13px] font-semibold text-neutral-50 placeholder:font-normal placeholder:text-neutral-600 focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/30"
+                className="w-full min-w-0 rounded-lg border border-neutral-800 bg-neutral-950/60 px-3 py-3 sm:py-2 text-base sm:text-[13px] font-semibold text-neutral-50 placeholder:font-normal placeholder:text-neutral-600 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/30"
               />
               <span className="flex items-center text-neutral-600 text-[13px] shrink-0">/</span>
               <input
                 type="number" inputMode="decimal" min={1} value={formChemMax}
                 onChange={(e) => setFormChemMax(e.target.value)}
                 title="Full marks for this subject in this test"
-                className="w-20 sm:w-16 shrink-0 rounded-lg border border-neutral-800 bg-neutral-950/60 px-2 py-3 sm:py-2 text-base sm:text-[13px] font-medium text-neutral-300 text-center focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/30"
+                className="w-20 sm:w-16 shrink-0 rounded-lg border border-neutral-800 bg-neutral-950/60 px-2 py-3 sm:py-2 text-base sm:text-[13px] font-medium text-neutral-300 text-center focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/30"
               />
             </div>
           </div>
@@ -2484,7 +2475,7 @@ function GroomingTab({ setModal }) {
     skincare: 'bg-violet-500/10 text-violet-300 border-violet-500/25',
     watch: 'bg-amber-500/10 text-amber-300 border-amber-500/25',
     dental: 'bg-sky-500/10 text-sky-300 border-sky-500/25',
-    posture: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/25',
+    posture: 'bg-violet-500/10 text-violet-300 border-violet-500/25',
     routine: 'bg-neutral-800 text-neutral-400 border-neutral-700',
     vision: 'bg-sky-500/10 text-sky-300 border-sky-500/25',
   };
@@ -2587,7 +2578,7 @@ function PasswordGate({ onUnlock }) {
       }`}
       onClick={() => inputRef.current && inputRef.current.focus()}
     >
-      <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-emerald-500 shadow-lg shadow-sky-500/10">
+      <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 via-violet-500 to-fuchsia-500 shadow-lg shadow-violet-500/20">
         <Lock className="h-5 w-5 text-neutral-950" strokeWidth={2} />
       </div>
 
@@ -2710,7 +2701,7 @@ function IntroLoader({ onFinish }) {
           phase === 'loading' ? 'opacity-100 scale-100' : 'opacity-0 scale-[0.97]'
         }`}
       >
-        <div className="mb-5 flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-sky-500 to-emerald-500 shadow-lg shadow-sky-500/10 animate-fadeInUp">
+        <div className="mb-5 flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-sky-400 via-violet-500 to-fuchsia-500 shadow-lg shadow-violet-500/20 animate-fadeInUp">
           <GraduationCap className="h-4.5 w-4.5 text-neutral-950" strokeWidth={2} />
         </div>
 
@@ -2738,7 +2729,7 @@ function IntroLoader({ onFinish }) {
 
         <div className="mt-6 h-px w-36 sm:w-52 overflow-hidden rounded-full bg-neutral-800">
           <div
-            className="h-full bg-gradient-to-r from-sky-500 to-emerald-500 transition-[width] duration-100 ease-linear"
+            className="h-full bg-gradient-to-r from-sky-400 via-violet-500 to-fuchsia-500 transition-[width] duration-100 ease-linear"
             style={{ width: `${percent}%` }}
           />
         </div>
@@ -2761,7 +2752,7 @@ function IntroLoader({ onFinish }) {
 // therefore to every other tab reading it) until "Save" is pressed.
 
 const btnGhost = 'cursor-target flex items-center gap-1.5 rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-2 text-[12px] font-semibold text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800 transition-colors';
-const btnSave = (dirty: boolean) => `cursor-target flex items-center gap-1.5 rounded-lg border px-3 py-2 text-[12px] font-semibold transition-colors ${dirty ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/15' : 'border-neutral-800 bg-neutral-900 text-neutral-600'}`;
+const btnSave = (dirty: boolean) => `cursor-target flex items-center gap-1.5 rounded-lg border px-3 py-2 text-[12px] font-semibold transition-colors ${dirty ? 'border-violet-500/30 bg-violet-500/10 text-violet-300 hover:bg-violet-500/15' : 'border-neutral-800 bg-neutral-900 text-neutral-600'}`;
 const fieldInput = 'w-full rounded-lg border border-neutral-800 bg-neutral-950/50 px-2.5 py-1.5 text-[12px] text-neutral-200 focus:outline-none focus:border-neutral-600';
 const fieldLabel = 'text-[10px] uppercase tracking-wide text-neutral-600 font-bold block mb-1';
 
@@ -3069,332 +3060,6 @@ function ConfigEditorTab() {
 export default function JEEDashboard() {
   const [unlocked, setUnlocked] = useState(false);
   useCloudAutoSync(unlocked);
-  // --- Strava Sync Engine States ---
-  // This reads cached workouts from the browser disk immediately on page load
-  const [stravaActivities, setStravaActivities] = useState<any[]>(() => {
-    const savedActivities = localStorage.getItem('strava_activities');
-    return savedActivities ? JSON.parse(savedActivities) : [];
-  });
-  
-  const [isStravaLoading, setIsStravaLoading] = useState(false);
-  const [isStravaSyncing, setIsStravaSyncing] = useState(false);
-  const [stravaLastSynced, setStravaLastSynced] = useState<number | null>(null);
-
-  // This new state tracks whether the user is connected to hide/show buttons
-  const [isStravaConnected, setIsStravaConnected] = useState(() => {
-    return localStorage.getItem('strava_connected') === 'true';
-  });
-
-  // The actual OAuth tokens — without these persisted, "connected" is just
-  // a flag with nothing behind it, and the app can never pull fresh data
-  // without forcing a full reconnect.
-  const [stravaTokens, setStravaTokens] = useState<{ access_token: string; refresh_token: string; expires_at: number } | null>(() => {
-    try {
-      const saved = localStorage.getItem('strava_tokens');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
-
-  const persistStravaTokens = (tokens: { access_token: string; refresh_token: string; expires_at: number }) => {
-    setStravaTokens(tokens);
-    localStorage.setItem('strava_tokens', JSON.stringify(tokens));
-  };
-
-  // Pulls fresh activities using only the stored refresh_token — no popup,
-  // no reconnect. Safe to call on a timer or whenever the tab regains focus.
-  const syncStravaActivities = async (refreshToken?: string) => {
-    const tokenToUse = refreshToken ?? stravaTokens?.refresh_token;
-    if (!tokenToUse) return;
-
-    setIsStravaSyncing(true);
-    try {
-      const response = await fetch('/api/strava-sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refresh_token: tokenToUse }),
-      });
-
-      if (response.status === 401) {
-        // Refresh token was rejected — Strava access was revoked elsewhere.
-        // Reflect that honestly instead of pretending we're still connected.
-        handleStravaDisconnect();
-        return;
-      }
-
-      if (!response.ok) return;
-
-      const result = await response.json();
-      setStravaActivities(result.activities);
-      localStorage.setItem('strava_activities', JSON.stringify(result.activities));
-      persistStravaTokens(result.tokens);
-      setStravaLastSynced(Date.now());
-    } catch {
-      // Network hiccup — leave existing cached data in place and try again
-      // on the next scheduled sync rather than disconnecting the user.
-    } finally {
-      setIsStravaSyncing(false);
-    }
-  };
-
-  useEffect(() => {
-    const handleStravaMessage = (event: any) => {
-      // Accept data from local environments or your live production domain
-      const isTrustedOrigin = 
-        event.origin === window.location.origin || 
-        event.origin.includes('vercel.app') || 
-        event.origin.includes('webcontainer.io');
-
-      if (!isTrustedOrigin) return;
-
-      if (event.data && event.data.type === 'STRAVA_DATA') {
-        const activities = event.data.data;
-        const tokens = event.data.tokens;
-        
-        // 1. Update the React interface states
-        setStravaActivities(activities);
-        setIsStravaConnected(true);
-        setStravaLastSynced(Date.now());
-        
-        // 2. Lock the data into the browser disk memory
-        localStorage.setItem('strava_activities', JSON.stringify(activities));
-        localStorage.setItem('strava_connected', 'true');
-        if (tokens) {
-          persistStravaTokens(tokens);
-        }
-        
-        setIsStravaLoading(false);
-      }
-    };
-
-    window.addEventListener('message', handleStravaMessage);
-    return () => window.removeEventListener('message', handleStravaMessage);
-  }, []);
-
-  // Keep data fresh without any user action: sync once on load, then every
-  // 5 minutes while connected, and again whenever the tab regains focus.
-  useEffect(() => {
-    if (!isStravaConnected || !stravaTokens?.refresh_token) return;
-
-    syncStravaActivities();
-
-    const intervalId = setInterval(() => syncStravaActivities(), 5 * 60 * 1000);
-
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') syncStravaActivities();
-    };
-    document.addEventListener('visibilitychange', handleVisibility);
-
-    return () => {
-      clearInterval(intervalId);
-      document.removeEventListener('visibilitychange', handleVisibility);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isStravaConnected]);
-
-  const handleStravaDisconnect = () => {
-    // 1. Clear out the live React application states
-    setStravaActivities([]);
-    setIsStravaConnected(false);
-    setStravaTokens(null);
-    setStravaLastSynced(null);
-    
-    // 2. Erase the cached entries from the browser disk storage
-    localStorage.removeItem('strava_activities');
-    localStorage.removeItem('strava_connected');
-    localStorage.removeItem('strava_tokens');
-  };
-  
-  const handleStravaConnect = () => {
-    setIsStravaLoading(true);
-    
-    // Hardcoded Client ID to guarantee it doesn't read as undefined or empty
-    const clientId = "263722"; 
-    
-    // Dynamic URL detection: If it sees '.vercel.app', it forces the live domain
-    const isLive = window.location.hostname.includes('vercel.app');
-    const targetOrigin = isLive 
-      ? 'https://ashutoshbehera.vercel.app' 
-      : window.location.origin;
-
-    const redirectUri = encodeURIComponent(`${targetOrigin}/api/strava-callback`);
-    const scope = "activity:read_all";
-    
-    const stravaAuthUrl = `https://www.strava.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}`;
-    
-    window.open(stravaAuthUrl, 'Connect with Strava', 'width=600,height=800');
-  };
-
-  // --- Spotify Sync Engine States ---
-  // Mirrors the Strava engine exactly: refresh_token persisted to disk means
-  // the session survives a hard refresh, a closed tab, or a new day — no
-  // re-authorization popup required unless the user explicitly disconnects
-  // or revokes access from Spotify's own account settings.
-  const [spotifyTokens, setSpotifyTokens] = useState<{ access_token: string; refresh_token: string; expires_at: number } | null>(() => {
-    try {
-      const saved = localStorage.getItem('spotify_tokens');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
-
-  const [isSpotifyConnected, setIsSpotifyConnected] = useState(() => {
-    return localStorage.getItem('spotify_connected') === 'true';
-  });
-
-  const [isSpotifyLoading, setIsSpotifyLoading] = useState(false);
-  const [isSpotifySyncing, setIsSpotifySyncing] = useState(false);
-  const [spotifyLastSynced, setSpotifyLastSynced] = useState<number | null>(null);
-
-  const [spotifyProfile, setSpotifyProfile] = useState<any>(() => {
-    try {
-      const saved = localStorage.getItem('spotify_profile');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
-
-  const [spotifyRecentlyPlayed, setSpotifyRecentlyPlayed] = useState<any[]>(() => {
-    try {
-      const saved = localStorage.getItem('spotify_recent');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-
-  const persistSpotifyTokens = (tokens: { access_token: string; refresh_token: string; expires_at: number }) => {
-    setSpotifyTokens(tokens);
-    localStorage.setItem('spotify_tokens', JSON.stringify(tokens));
-  };
-
-  // Pulls a fresh access_token + profile + recently-played using only the
-  // stored refresh_token. Safe to call on a timer or on tab focus — this is
-  // what keeps the "connected" state alive across refreshes indefinitely.
-  const syncSpotifyData = async (refreshToken?: string) => {
-    const tokenToUse = refreshToken ?? spotifyTokens?.refresh_token;
-    if (!tokenToUse) return;
-
-    setIsSpotifySyncing(true);
-    try {
-      const response = await fetch('/api/spotify-sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refresh_token: tokenToUse }),
-      });
-
-      if (response.status === 401) {
-        // Refresh token rejected — access was revoked on Spotify's side.
-        handleSpotifyDisconnect();
-        return;
-      }
-
-      if (!response.ok) return;
-
-      const result = await response.json();
-      setSpotifyProfile(result.profile);
-      setSpotifyRecentlyPlayed(result.recentlyPlayed || []);
-      localStorage.setItem('spotify_profile', JSON.stringify(result.profile));
-      localStorage.setItem('spotify_recent', JSON.stringify(result.recentlyPlayed || []));
-      persistSpotifyTokens(result.tokens);
-      setSpotifyLastSynced(Date.now());
-    } catch {
-      // Network hiccup — keep cached data, retry on next scheduled sync.
-    } finally {
-      setIsSpotifySyncing(false);
-    }
-  };
-
-  useEffect(() => {
-    const handleSpotifyMessage = (event: any) => {
-      const isTrustedOrigin =
-        event.origin === window.location.origin ||
-        event.origin.includes('vercel.app') ||
-        event.origin.includes('webcontainer.io');
-
-      if (!isTrustedOrigin) return;
-
-      if (event.data && event.data.type === 'SPOTIFY_DATA') {
-        const { profile, recentlyPlayed, tokens } = event.data;
-
-        setSpotifyProfile(profile);
-        setSpotifyRecentlyPlayed(recentlyPlayed || []);
-        setIsSpotifyConnected(true);
-        setSpotifyLastSynced(Date.now());
-
-        localStorage.setItem('spotify_profile', JSON.stringify(profile));
-        localStorage.setItem('spotify_recent', JSON.stringify(recentlyPlayed || []));
-        localStorage.setItem('spotify_connected', 'true');
-        if (tokens) persistSpotifyTokens(tokens);
-
-        setIsSpotifyLoading(false);
-      }
-    };
-
-    window.addEventListener('message', handleSpotifyMessage);
-    return () => window.removeEventListener('message', handleSpotifyMessage);
-  }, []);
-
-  // Keep the account data fresh automatically: once on load, every 5 minutes
-  // while connected, and again the instant the tab regains focus — same
-  // real-time-feeling cadence as the Strava engine.
-  useEffect(() => {
-    if (!isSpotifyConnected || !spotifyTokens?.refresh_token) return;
-
-    syncSpotifyData();
-
-    const intervalId = setInterval(() => syncSpotifyData(), 5 * 60 * 1000);
-
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') syncSpotifyData();
-    };
-    document.addEventListener('visibilitychange', handleVisibility);
-
-    return () => {
-      clearInterval(intervalId);
-      document.removeEventListener('visibilitychange', handleVisibility);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSpotifyConnected]);
-
-  const handleSpotifyDisconnect = () => {
-    setSpotifyProfile(null);
-    setSpotifyRecentlyPlayed([]);
-    setIsSpotifyConnected(false);
-    setSpotifyTokens(null);
-    setSpotifyLastSynced(null);
-
-    localStorage.removeItem('spotify_profile');
-    localStorage.removeItem('spotify_recent');
-    localStorage.removeItem('spotify_connected');
-    localStorage.removeItem('spotify_tokens');
-  };
-
-  const handleSpotifyConnect = () => {
-    setIsSpotifyLoading(true);
-
-    // Replace with your own Spotify Developer Dashboard Client ID —
-    // the same way the Strava client_id above is wired up.
-    const clientId = '2f4cd23001604c63936002f1d7a52660';
-
-    const isLive = window.location.hostname.includes('vercel.app');
-    const targetOrigin = isLive
-      ? 'https://ashutoshbehera.vercel.app'
-      : window.location.origin;
-
-    const redirectUri = encodeURIComponent(`${targetOrigin}/api/spotify-callback`);
-    const scope = encodeURIComponent(
-      'streaming user-read-email user-read-private user-read-playback-state user-modify-playback-state user-read-currently-playing user-read-recently-played user-top-read'
-    );
-
-    const spotifyAuthUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=${scope}`;
-
-    window.open(spotifyAuthUrl, 'Connect with Spotify', 'width=600,height=800');
-  };
-
   const [introDone, setIntroDone] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [modal, setModal] = useState(null);
@@ -3704,35 +3369,6 @@ export default function JEEDashboard() {
       case 'mocktests': return <MockTestTab />;
       case 'ashclock': return <AshClockTab />;
       case 'grooming': return <GroomingTab setModal={setModal} />;
-      case 'spotify':
-        return (
-          <SpotifyTab
-            spotifyTokens={spotifyTokens}
-            isSpotifyConnected={isSpotifyConnected}
-            isSpotifyLoading={isSpotifyLoading}
-            handleSpotifyConnect={handleSpotifyConnect}
-            handleSpotifyDisconnect={handleSpotifyDisconnect}
-            spotifyProfile={spotifyProfile}
-            spotifyRecentlyPlayed={spotifyRecentlyPlayed}
-            isSpotifySyncing={isSpotifySyncing}
-            spotifyLastSynced={spotifyLastSynced}
-            onManualSync={() => syncSpotifyData()}
-            persistSpotifyTokens={persistSpotifyTokens}
-          />
-        );
-      case 'strava': 
-        return (
-          <StravaTab 
-            stravaActivities={stravaActivities} 
-            isStravaLoading={isStravaLoading} 
-            handleStravaConnect={handleStravaConnect} 
-            isStravaConnected={isStravaConnected}
-            handleStravaDisconnect={handleStravaDisconnect}
-            isStravaSyncing={isStravaSyncing}
-            stravaLastSynced={stravaLastSynced}
-            onManualSync={() => syncStravaActivities()}
-          />
-        );
       case 'history': return <PerformanceCalendar globalHistory={globalHistory} setGlobalHistory={setGlobalHistory} setModal={setModal} />;
       case 'settings': return <ConfigEditorTab />;
       default: return null;
@@ -3749,14 +3385,19 @@ export default function JEEDashboard() {
         resetConfigSection,
       }}
     >
-    <div className="min-h-screen w-full bg-zinc-950 text-neutral-200 font-sans antialiased">
+    <div className="min-h-screen w-full bg-zinc-950 text-neutral-200 font-sans antialiased relative overflow-x-hidden">
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        <div className="absolute -top-40 -left-40 h-[32rem] w-[32rem] rounded-full bg-violet-600/10 blur-[120px]" />
+        <div className="absolute top-1/3 -right-40 h-[28rem] w-[28rem] rounded-full bg-sky-500/10 blur-[120px]" />
+        <div className="absolute bottom-0 left-1/4 h-[24rem] w-[24rem] rounded-full bg-fuchsia-600/[0.07] blur-[110px]" />
+      </div>
       {!introDone && <IntroLoader onFinish={() => setIntroDone(true)} />}
-      <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8 py-6">
+      <div className="relative z-10 mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8 py-6">
 
         {/* Header Elements */}
         <header className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-emerald-500 shadow-lg shadow-sky-500/10">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 via-violet-500 to-fuchsia-500 shadow-lg shadow-violet-500/20">
               <GraduationCap className="h-5.5 w-5.5 text-neutral-950" strokeWidth={2} />
             </div>
             <div>
@@ -3776,8 +3417,8 @@ export default function JEEDashboard() {
               </span>
             </div>
             <div className="hidden sm:flex items-center gap-2 rounded-full border border-neutral-800 bg-neutral-900/60 px-3.5 py-1.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-[11.5px] font-medium text-neutral-400">Execution Quotient: <span className="text-emerald-400 tabular-nums">{overallPct}%</span></span>
+              <span className="h-1.5 w-1.5 rounded-full bg-violet-400 animate-pulse" />
+              <span className="text-[11.5px] font-medium text-neutral-400">Execution Quotient: <span className="text-violet-400 tabular-nums">{overallPct}%</span></span>
             </div>
           </div>
         </header>
@@ -4006,577 +3647,6 @@ export default function JEEDashboard() {
     </ConfigContext.Provider>
   );
 }
-
-
-
-interface StravaTabProps {
-  stravaActivities: any[];
-  isStravaLoading: boolean;
-  handleStravaConnect: () => void;
-  isStravaConnected: boolean;
-  handleStravaDisconnect: () => void;
-  isStravaSyncing: boolean;
-  stravaLastSynced: number | null;
-  onManualSync: () => void;
-}
-
-// ---------- Tab Subcomponent: Strava Feed ----------
-function StravaTab({
-  stravaActivities,
-  isStravaLoading,
-  handleStravaConnect,
-  isStravaConnected,
-  handleStravaDisconnect,
-  isStravaSyncing,
-  stravaLastSynced,
-  onManualSync,
-}: StravaTabProps) {
-  const lastSyncedLabel = stravaLastSynced
-    ? new Date(stravaLastSynced).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
-    : null;
-
-  return (
-    <div className="space-y-5 animate-fadeIn">
-      <div className="border border-neutral-800 bg-gradient-to-br from-neutral-900 to-neutral-950/40 rounded-2xl p-6 shadow-xl">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-neutral-800 pb-4 mb-4">
-          <div>
-            <div className="flex items-center gap-2 text-orange-500 font-semibold text-sm uppercase tracking-wider">
-              <span>🎛️ Telemetry Engine</span>
-            </div>
-            <h3 className="text-lg font-bold text-neutral-200 mt-1">Strava Integration Panel</h3>
-            <p className="text-xs text-neutral-500">
-              {isStravaConnected
-                ? isStravaSyncing
-                  ? 'Syncing latest activity data…'
-                  : lastSyncedLabel
-                    ? `Connected · last synced ${lastSyncedLabel}`
-                    : 'Connected to Strava'
-                : 'Secure real-time athletic activity telemetry synchronization'}
-            </p>
-          </div>
-
-          <div className="w-full sm:w-auto flex items-center gap-2">
-            {isStravaConnected && (
-              <button
-                onClick={onManualSync}
-                disabled={isStravaSyncing}
-                className="px-3 py-2.5 bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 text-neutral-300 font-semibold rounded-xl transition-all duration-200 text-xs tracking-wider flex items-center justify-center gap-1.5 disabled:opacity-50"
-                title="Sync now"
-              >
-                <Activity className={`w-3.5 h-3.5 ${isStravaSyncing ? 'animate-spin' : ''}`} />
-              </button>
-            )}
-
-            <button
-              onClick={isStravaConnected ? handleStravaDisconnect : handleStravaConnect}
-              className={
-                isStravaConnected
-                  ? "w-full sm:w-auto px-5 py-2.5 bg-neutral-900 hover:bg-red-950/40 border border-neutral-700 hover:border-red-800 text-neutral-300 hover:text-red-400 font-bold rounded-xl transition-all duration-200 text-xs tracking-wider flex items-center justify-center gap-2 group cursor-target active:scale-98"
-                  : "w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-neutral-950 font-bold rounded-xl shadow-lg shadow-orange-500/10 transition-all duration-200 text-xs tracking-wider flex items-center justify-center gap-2 group cursor-target active:scale-98"
-              }
-            >
-              <Activity className="w-3.5 h-3.5 group-hover:rotate-12 transition-transform" />
-              {isStravaConnected ? 'DISCONNECT STRAVA' : 'CONNECT STRAVA ACCOUNT'}
-            </button>
-          </div>
-        </div>
-
-        {stravaActivities.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[50vh] overflow-y-auto pr-1">
-            {stravaActivities.map((activity: any) => {
-              const activityDate = new Date(activity.start_date_local).toLocaleDateString(undefined, {
-                month: 'short', day: 'numeric', year: 'numeric'
-              });
-              
-              return (
-                <div key={activity.id} className="flex items-center justify-between p-3.5 bg-neutral-950/40 border border-neutral-800 rounded-xl hover:border-neutral-700 transition-all">
-                  <div className="flex items-center gap-3">
-                    <div className="text-xl bg-neutral-900 border border-neutral-800 p-2 rounded-lg">
-                      {activity.type === 'Run' ? '🏃' : activity.type === 'Ride' ? '🚴' : activity.type === 'Swim' ? '🏊' : '💪'}
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-neutral-200 truncate max-w-[200px]">{activity.name}</p>
-                      <span className="text-[11px] text-neutral-500 font-medium">{activityDate} · {activity.type}</span>
-                    </div>
-                  </div>
-                  <div className="text-right font-mono">
-                    <p className="text-xs font-bold text-orange-400">
-                      {(activity.distance / 1000).toFixed(2)} km
-                    </p>
-                    <p className="text-[11px] text-neutral-500">
-                      {Math.floor(activity.moving_time / 60)} mins
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-12 text-center bg-neutral-950/20 rounded-xl border border-dashed border-neutral-800">
-            <p className="text-xs text-neutral-400 font-medium mb-1">No Strava metrics imported yet.</p>
-            <p className="text-[11px] text-neutral-500">Trigger standard authorization protocol above to download your logs.</p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ---------- Tab Subcomponent: Spotify Live Player ----------
-
-interface SpotifyTabProps {
-  spotifyTokens: { access_token: string; refresh_token: string; expires_at: number } | null;
-  isSpotifyConnected: boolean;
-  isSpotifyLoading: boolean;
-  handleSpotifyConnect: () => void;
-  handleSpotifyDisconnect: () => void;
-  spotifyProfile: any;
-  spotifyRecentlyPlayed: any[];
-  isSpotifySyncing: boolean;
-  spotifyLastSynced: number | null;
-  onManualSync: () => void;
-  persistSpotifyTokens: (tokens: { access_token: string; refresh_token: string; expires_at: number }) => void;
-}
-
-function formatMs(ms: number) {
-  if (!ms || ms < 0) return '0:00';
-  const totalSec = Math.floor(ms / 1000);
-  const min = Math.floor(totalSec / 60);
-  const sec = totalSec % 60;
-  return `${min}:${sec.toString().padStart(2, '0')}`;
-}
-
-function SpotifyTab({
-  spotifyTokens,
-  isSpotifyConnected,
-  isSpotifyLoading,
-  handleSpotifyConnect,
-  handleSpotifyDisconnect,
-  spotifyProfile,
-  spotifyRecentlyPlayed,
-  isSpotifySyncing,
-  spotifyLastSynced,
-  onManualSync,
-  persistSpotifyTokens,
-}: SpotifyTabProps) {
-  const [player, setPlayer] = useState<any>(null);
-  const [deviceId, setDeviceId] = useState<string | null>(null);
-  const [playerStatus, setPlayerStatus] = useState<'idle' | 'connecting' | 'ready' | 'error'>('idle');
-  const [playerError, setPlayerError] = useState<string | null>(null);
-  const [playbackState, setPlaybackState] = useState<any>(null);
-  const [localPosition, setLocalPosition] = useState(0);
-  const [volume, setVolume] = useState(0.5);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
-
-  const accessTokenRef = useRef<string | undefined>(spotifyTokens?.access_token);
-  const positionTickRef = useRef<any>(null);
-  const searchDebounceRef = useRef<any>(null);
-
-  useEffect(() => {
-    accessTokenRef.current = spotifyTokens?.access_token;
-  }, [spotifyTokens?.access_token]);
-
-  const lastSyncedLabel = spotifyLastSynced
-    ? new Date(spotifyLastSynced).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
-    : null;
-
-  // ----- Load the Web Playback SDK once we have a live session -----
-  useEffect(() => {
-    if (!isSpotifyConnected || !spotifyTokens?.access_token) return;
-
-    const initPlayer = () => {
-      const w = window as any;
-      if (!w.Spotify) return;
-
-      setPlayerStatus('connecting');
-
-      const spotifyPlayer = new w.Spotify.Player({
-        name: 'Command Center Player',
-        getOAuthToken: (cb: (token: string) => void) => cb(accessTokenRef.current || ''),
-        volume: 0.5,
-      });
-
-      spotifyPlayer.addListener('ready', ({ device_id }: { device_id: string }) => {
-        setDeviceId(device_id);
-        setPlayerStatus('ready');
-        setPlayerError(null);
-        // Transfer playback to this browser tab so it becomes the active device.
-        fetch('https://api.spotify.com/v1/me/player', {
-          method: 'PUT',
-          headers: {
-            Authorization: `Bearer ${accessTokenRef.current}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ device_ids: [device_id], play: false }),
-        }).catch(() => {});
-      });
-
-      spotifyPlayer.addListener('not_ready', () => setPlayerStatus('idle'));
-
-      spotifyPlayer.addListener('initialization_error', () => {
-        setPlayerStatus('error');
-        setPlayerError('This browser could not initialize the player.');
-      });
-      spotifyPlayer.addListener('authentication_error', () => {
-        setPlayerStatus('error');
-        setPlayerError('Session expired — reconnect your account.');
-      });
-      spotifyPlayer.addListener('account_error', () => {
-        setPlayerStatus('error');
-        setPlayerError('Spotify Premium is required for in-browser playback.');
-      });
-
-      spotifyPlayer.addListener('player_state_changed', (state: any) => {
-        if (!state) return;
-        setPlaybackState(state);
-        setLocalPosition(state.position);
-      });
-
-      spotifyPlayer.connect();
-      setPlayer(spotifyPlayer);
-    };
-
-    const w = window as any;
-    if (w.Spotify) {
-      initPlayer();
-    } else if (!document.getElementById('spotify-player-sdk')) {
-      const script = document.createElement('script');
-      script.id = 'spotify-player-sdk';
-      script.src = 'https://sdk.scdn.co/spotify-player.js';
-      script.async = true;
-      document.body.appendChild(script);
-      w.onSpotifyWebPlaybackSDKReady = initPlayer;
-    }
-
-    return () => {
-      player?.disconnect?.();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSpotifyConnected]);
-
-  // ----- Local ticking progress bar between state_changed events -----
-  useEffect(() => {
-    if (positionTickRef.current) clearInterval(positionTickRef.current);
-    if (playbackState && !playbackState.paused) {
-      positionTickRef.current = setInterval(() => {
-        setLocalPosition((p) => Math.min(p + 1000, playbackState.duration || p + 1000));
-      }, 1000);
-    }
-    return () => clearInterval(positionTickRef.current);
-  }, [playbackState?.paused, playbackState?.track_window?.current_track?.id]);
-
-  // ----- Track search against Spotify's catalog (debounced) -----
-  useEffect(() => {
-    if (!searchQuery.trim() || !spotifyTokens?.access_token) {
-      setSearchResults([]);
-      return;
-    }
-    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-    searchDebounceRef.current = setTimeout(async () => {
-      setIsSearching(true);
-      try {
-        const res = await fetch(
-          `https://api.spotify.com/v1/search?q=${encodeURIComponent(searchQuery)}&type=track&limit=8`,
-          { headers: { Authorization: `Bearer ${accessTokenRef.current}` } }
-        );
-        const data = await res.json();
-        setSearchResults(data?.tracks?.items || []);
-      } catch {
-        setSearchResults([]);
-      } finally {
-        setIsSearching(false);
-      }
-    }, 400);
-    return () => clearTimeout(searchDebounceRef.current);
-  }, [searchQuery, spotifyTokens?.access_token]);
-
-  const playUri = async (uri: string) => {
-    if (!deviceId || !accessTokenRef.current) return;
-    await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
-      method: 'PUT',
-      headers: {
-        Authorization: `Bearer ${accessTokenRef.current}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ uris: [uri] }),
-    }).catch(() => {});
-  };
-
-  const togglePlay = () => player?.togglePlay?.();
-  const skipNext = () => player?.nextTrack?.();
-  const skipPrev = () => player?.previousTrack?.();
-
-  const handleVolumeChange = (v: number) => {
-    setVolume(v);
-    player?.setVolume?.(v);
-  };
-
-  const currentTrack = playbackState?.track_window?.current_track;
-  const isPlaying = playbackState && !playbackState.paused;
-  const duration = playbackState?.duration || currentTrack?.duration_ms || 0;
-  const progressPct = duration ? Math.min(100, (localPosition / duration) * 100) : 0;
-
-  return (
-    <div className="space-y-5 animate-fadeIn">
-      {/* Header / Connect Panel */}
-      <div className="border border-neutral-800 bg-gradient-to-br from-neutral-900 to-neutral-950/40 rounded-2xl p-6 shadow-xl">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-neutral-800 pb-4 mb-4">
-          <div className="flex items-center gap-3">
-            <div className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-green-600 shadow-lg shadow-emerald-500/20">
-              {isSpotifyConnected && isPlaying && (
-                <span className="absolute inset-0 rounded-xl bg-emerald-400 animate-pulseGlow" />
-              )}
-              <Music2 className="h-5.5 w-5.5 text-neutral-950 relative" strokeWidth={2} />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-neutral-200 leading-tight">Spotify Live Player</h3>
-              <p className="text-[12px] text-neutral-500 mt-0.5">
-                {isSpotifyConnected
-                  ? spotifyProfile?.display_name
-                    ? `Connected as ${spotifyProfile.display_name}${lastSyncedLabel ? ` · synced ${lastSyncedLabel}` : ''}`
-                    : isSpotifySyncing
-                      ? 'Syncing account…'
-                      : 'Connected to Spotify'
-                  : 'Stream and control your music directly from this dashboard'}
-              </p>
-            </div>
-          </div>
-
-          <div className="w-full sm:w-auto flex items-center gap-2">
-            {isSpotifyConnected && (
-              <button
-                onClick={onManualSync}
-                disabled={isSpotifySyncing}
-                className="px-3 py-2.5 bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 text-neutral-300 font-semibold rounded-xl transition-all duration-200 text-xs tracking-wider flex items-center justify-center gap-1.5 disabled:opacity-50"
-                title="Sync now"
-              >
-                <Activity className={`w-3.5 h-3.5 ${isSpotifySyncing ? 'animate-spin' : ''}`} />
-              </button>
-            )}
-
-            <button
-              onClick={isSpotifyConnected ? handleSpotifyDisconnect : handleSpotifyConnect}
-              disabled={isSpotifyLoading}
-              className={
-                isSpotifyConnected
-                  ? "w-full sm:w-auto px-5 py-2.5 bg-neutral-900 hover:bg-red-950/40 border border-neutral-700 hover:border-red-800 text-neutral-300 hover:text-red-400 font-bold rounded-xl transition-all duration-200 text-xs tracking-wider flex items-center justify-center gap-2 group cursor-target active:scale-98"
-                  : "w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-neutral-950 font-bold rounded-xl shadow-lg shadow-emerald-500/10 transition-all duration-200 text-xs tracking-wider flex items-center justify-center gap-2 group cursor-target active:scale-98 disabled:opacity-60"
-              }
-            >
-              <Music2 className="w-3.5 h-3.5 group-hover:rotate-12 transition-transform" />
-              {isSpotifyLoading ? 'CONNECTING…' : isSpotifyConnected ? 'DISCONNECT SPOTIFY' : 'CONNECT SPOTIFY ACCOUNT'}
-            </button>
-          </div>
-        </div>
-
-        {!isSpotifyConnected && (
-          <div className="flex flex-col items-center justify-center py-12 text-center bg-neutral-950/20 rounded-xl border border-dashed border-neutral-800">
-            <Disc3 className="w-8 h-8 text-neutral-700 mb-2" />
-            <p className="text-xs text-neutral-400 font-medium mb-1">No Spotify account linked yet.</p>
-            <p className="text-[11px] text-neutral-500 max-w-sm">
-              Link your account once — the session stays connected across refreshes automatically, no repeated logins. Requires Spotify Premium for direct in-browser playback.
-            </p>
-          </div>
-        )}
-
-        {isSpotifyConnected && playerStatus === 'error' && (
-          <div className="flex items-center gap-2 py-3 px-4 bg-red-950/20 border border-red-900/40 rounded-xl text-[11.5px] text-red-400">
-            <AlertTriangle className="w-4 h-4 shrink-0" />
-            {playerError}
-          </div>
-        )}
-      </div>
-
-      {isSpotifyConnected && (
-        <>
-          {/* Now Playing / Player Card */}
-          <div className="relative overflow-hidden border border-emerald-900/30 bg-gradient-to-br from-emerald-950/20 via-neutral-900 to-neutral-950 rounded-2xl p-6 shadow-xl">
-            {isPlaying && (
-              <div className="absolute -top-24 -right-24 w-64 h-64 rounded-full bg-emerald-500/10 blur-3xl animate-pulseGlow" />
-            )}
-
-            <div className="relative flex flex-col sm:flex-row items-center gap-5">
-              {/* Album Art */}
-              <div className="relative shrink-0">
-                <div className={`w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden border-4 border-neutral-800 shadow-lg ${isPlaying ? 'animate-discSpin' : ''}`}>
-                  {currentTrack?.album?.images?.[0]?.url ? (
-                    <img src={currentTrack.album.images[0].url} alt={currentTrack.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full bg-neutral-800 flex items-center justify-center">
-                      <Disc3 className="w-8 h-8 text-neutral-600" />
-                    </div>
-                  )}
-                </div>
-                <div className="absolute inset-0 rounded-full ring-1 ring-inset ring-black/40 pointer-events-none" />
-                <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-neutral-950 border-2 border-neutral-800" />
-              </div>
-
-              {/* Track Info + Progress */}
-              <div className="flex-1 w-full min-w-0 text-center sm:text-left">
-                <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
-                  <p className="text-sm font-bold text-neutral-100 truncate max-w-[260px]">
-                    {currentTrack?.name || (playerStatus === 'ready' ? 'Nothing playing yet' : 'Waking up the player…')}
-                  </p>
-                  {isPlaying && (
-                    <span className="flex items-end gap-[2px] h-3">
-                      <span className="w-[3px] bg-emerald-400 rounded-full animate-eqBar1 h-full" />
-                      <span className="w-[3px] bg-emerald-400 rounded-full animate-eqBar2 h-full" />
-                      <span className="w-[3px] bg-emerald-400 rounded-full animate-eqBar3 h-full" />
-                      <span className="w-[3px] bg-emerald-400 rounded-full animate-eqBar4 h-full" />
-                    </span>
-                  )}
-                </div>
-                <p className="text-[12px] text-neutral-500 mb-3 truncate">
-                  {currentTrack?.artists?.map((a: any) => a.name).join(', ') || 'Search a track below to start streaming'}
-                </p>
-
-                <div className="w-full h-1.5 bg-neutral-800 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-emerald-400 to-green-500 rounded-full transition-all duration-1000 ease-linear"
-                    style={{ width: `${progressPct}%` }}
-                  />
-                </div>
-                <div className="flex justify-between mt-1 text-[10.5px] text-neutral-600 font-mono tabular-nums">
-                  <span>{formatMs(localPosition)}</span>
-                  <span>{formatMs(duration)}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Controls */}
-            <div className="relative flex items-center justify-center gap-4 mt-6">
-              <button
-                onClick={skipPrev}
-                disabled={playerStatus !== 'ready'}
-                className="cursor-target p-2.5 text-neutral-400 hover:text-neutral-100 transition-colors disabled:opacity-30 active:scale-90"
-              >
-                <SkipBack className="w-5 h-5" fill="currentColor" />
-              </button>
-              <button
-                onClick={togglePlay}
-                disabled={playerStatus !== 'ready'}
-                className="cursor-target w-12 h-12 flex items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-green-600 text-neutral-950 shadow-lg shadow-emerald-500/20 hover:scale-105 active:scale-95 transition-transform disabled:opacity-40"
-              >
-                {isPlaying ? <Pause className="w-5 h-5" fill="currentColor" /> : <Play className="w-5 h-5 ml-0.5" fill="currentColor" />}
-              </button>
-              <button
-                onClick={skipNext}
-                disabled={playerStatus !== 'ready'}
-                className="cursor-target p-2.5 text-neutral-400 hover:text-neutral-100 transition-colors disabled:opacity-30 active:scale-90"
-              >
-                <SkipForward className="w-5 h-5" fill="currentColor" />
-              </button>
-
-              <div className="hidden sm:flex items-center gap-2 ml-4">
-                {volume === 0 ? <VolumeX className="w-4 h-4 text-neutral-500" /> : volume < 0.5 ? <Volume1 className="w-4 h-4 text-neutral-500" /> : <Volume2 className="w-4 h-4 text-neutral-500" />}
-                <input
-                  type="range"
-                  min={0}
-                  max={1}
-                  step={0.01}
-                  value={volume}
-                  onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
-                  className="w-24 accent-emerald-400"
-                />
-              </div>
-            </div>
-
-            {playerStatus === 'connecting' && (
-              <p className="relative text-center text-[10.5px] text-neutral-600 mt-4">Initializing browser playback device…</p>
-            )}
-          </div>
-
-          {/* Search */}
-          <div className="border border-neutral-800 bg-gradient-to-br from-neutral-900 to-neutral-950/40 rounded-2xl p-5 shadow-xl">
-            <div className="flex items-center gap-2 mb-3">
-              <Search className="w-4 h-4 text-neutral-500" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => { setSearchQuery(e.target.value); setSearchOpen(true); }}
-                onFocus={() => setSearchOpen(true)}
-                placeholder="Search any song, artist, or album…"
-                className="flex-1 bg-transparent text-sm text-neutral-200 placeholder-neutral-600 outline-none"
-              />
-              {isSearching && <span className="text-[10.5px] text-neutral-600">searching…</span>}
-            </div>
-
-            {searchOpen && searchQuery.trim() && (
-              <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
-                {searchResults.length === 0 && !isSearching && (
-                  <p className="text-[11.5px] text-neutral-600 py-4 text-center">No matches found.</p>
-                )}
-                {searchResults.map((track: any) => (
-                  <button
-                    key={track.id}
-                    onClick={() => playUri(track.uri)}
-                    disabled={playerStatus !== 'ready'}
-                    className="cursor-target w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-neutral-800/60 transition-all text-left disabled:opacity-40 animate-slideInFade group"
-                  >
-                    <img
-                      src={track.album?.images?.[track.album.images.length - 1]?.url}
-                      alt={track.name}
-                      className="w-10 h-10 rounded-md object-cover shrink-0 bg-neutral-800"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-semibold text-neutral-200 truncate">{track.name}</p>
-                      <p className="text-[11px] text-neutral-500 truncate">{track.artists?.map((a: any) => a.name).join(', ')}</p>
-                    </div>
-                    <Play className="w-4 h-4 text-neutral-600 group-hover:text-emerald-400 transition-colors shrink-0" fill="currentColor" />
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Recently Played */}
-          <div className="border border-neutral-800 bg-gradient-to-br from-neutral-900 to-neutral-950/40 rounded-2xl p-6 shadow-xl">
-            <div className="flex items-center gap-2 mb-4">
-              <ListMusic className="w-4 h-4 text-neutral-500" />
-              <h4 className="text-sm font-bold text-neutral-300">Recently Played</h4>
-            </div>
-
-            {spotifyRecentlyPlayed.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[40vh] overflow-y-auto pr-1">
-                {spotifyRecentlyPlayed.map((item: any, idx: number) => {
-                  const track = item.track || item;
-                  return (
-                    <button
-                      key={`${track.id}-${idx}`}
-                      onClick={() => playUri(track.uri)}
-                      disabled={playerStatus !== 'ready'}
-                      className="cursor-target flex items-center gap-3 p-3 bg-neutral-950/40 border border-neutral-800 rounded-xl hover:border-emerald-800/50 hover:bg-emerald-950/10 transition-all text-left disabled:opacity-50 group"
-                    >
-                      <img
-                        src={track.album?.images?.[track.album.images.length - 1]?.url}
-                        alt={track.name}
-                        className="w-10 h-10 rounded-md object-cover shrink-0 bg-neutral-800"
-                      />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-semibold text-neutral-200 truncate">{track.name}</p>
-                        <span className="text-[11px] text-neutral-500 truncate block">{track.artists?.map((a: any) => a.name).join(', ')}</span>
-                      </div>
-                      <Play className="w-3.5 h-3.5 text-neutral-700 group-hover:text-emerald-400 transition-colors shrink-0" fill="currentColor" />
-                    </button>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-10 text-center bg-neutral-950/20 rounded-xl border border-dashed border-neutral-800">
-                <p className="text-xs text-neutral-400 font-medium mb-1">No listening history synced yet.</p>
-                <p className="text-[11px] text-neutral-500">Play a track above or on any device — it'll show up here on the next sync.</p>
-              </div>
-            )}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
 
 // ---------- Tab Subcomponent: Ash's Clock (Fade-Digit Clock + Pomodoro) ----------
 
