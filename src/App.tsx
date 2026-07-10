@@ -95,20 +95,34 @@ const DEFAULT_PROFILE = {
   ],
 };
 
-// A standalone personal countdown — deliberately NOT tied to `profile.targets`.
+// Standalone personal countdowns — deliberately NOT tied to `profile.targets`.
 // Someone might want a live countdown to, say, JEE Main's actual exam date
 // without that date needing to exist as one of their formal priority targets.
-// Fully editable in Settings > Countdown; empty by default so nothing is
-// fabricated until the user sets it themselves.
-const DEFAULT_COUNTDOWN = {
-  label: '',
-  targetDate: '', // 'YYYY-MM-DD'
-  targetTime: '00:00', // 'HH:MM', 24h — defaults to midnight of targetDate
-  // Timestamp (ms) of when this countdown was set — powers the depleting
+// Fully editable in Settings > Countdown, and there can be more than one
+// (e.g. "JEE Main" + "Boards" + "Scholarship Interview" all ticking at
+// once). Empty by default so nothing is fabricated until the user adds one.
+type CountdownItem = {
+  id: string;
+  label: string;
+  targetDate: string; // 'YYYY-MM-DD'
+  targetTime: string; // 'HH:MM', 24h — defaults to midnight of targetDate
+  // Timestamp (ms) of when this countdown was set — powers its depleting
   // progress bar (full at startMs, empty at the target). Auto-set whenever
   // the target date/time is (re)saved; null falls back to a generic span.
-  startMs: null as number | null,
+  startMs: number | null;
 };
+
+const DEFAULT_COUNTDOWNS: CountdownItem[] = [];
+
+const makeCountdownId = () => `cd_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+const makeBlankCountdown = (): CountdownItem => ({
+  id: makeCountdownId(),
+  label: '',
+  targetDate: '',
+  targetTime: '00:00',
+  startMs: null,
+});
 
 const DEFAULT_TIMELINE = [
   { start: '05:00', end: '05:20', label: 'Wake & Prep', detail: 'Pre-breakfast drinks, Vitamin D3', icon: Sunrise, type: 'prep', longDesc: 'Instant waking routine. Rehydrating the system with 500ml water + Chia seeds immediately to eliminate sleep inertia. Take single high-dose Vitamin D3 drop.' },
@@ -291,7 +305,7 @@ function hydrateTimeline(rawList: any[]): any[] {
   }));
 }
 
-function serializeConfig(config: { trackerItems: any[]; timeline: any[]; training: any[]; profile: any; subjects: any[]; syllabus: any[]; countdown: any }) {
+function serializeConfig(config: { trackerItems: any[]; timeline: any[]; training: any[]; profile: any; subjects: any[]; syllabus: any[]; countdowns: any[] }) {
   return {
     trackerItems: config.trackerItems,
     training: config.training,
@@ -299,19 +313,39 @@ function serializeConfig(config: { trackerItems: any[]; timeline: any[]; trainin
     profile: config.profile,
     subjects: config.subjects,
     syllabus: config.syllabus,
-    countdown: config.countdown,
+    countdowns: config.countdowns,
+  };
+}
+
+function hydrateCountdown(raw: any): CountdownItem {
+  return {
+    id: typeof raw?.id === 'string' && raw.id ? raw.id : makeCountdownId(),
+    label: typeof raw?.label === 'string' ? raw.label : '',
+    targetDate: typeof raw?.targetDate === 'string' ? raw.targetDate : '',
+    targetTime: typeof raw?.targetTime === 'string' ? raw.targetTime : '00:00',
+    startMs: typeof raw?.startMs === 'number' ? raw.startMs : null,
   };
 }
 
 function deserializeConfig(raw: any) {
-  // One-time migration: earlier versions stored the countdown target date on
-  // `profile.targetDate`. If someone already set that and hasn't got a
-  // `countdown` section yet, carry it over so they don't lose it — but from
-  // here on the two are fully independent.
-  const legacyProfileTargetDate = typeof raw?.profile?.targetDate === 'string' ? raw.profile.targetDate : '';
-  const migratedCountdown = !raw?.countdown && legacyProfileTargetDate
-    ? { ...DEFAULT_COUNTDOWN, targetDate: legacyProfileTargetDate, label: raw?.profile?.targets?.[0]?.name || raw?.profile?.goalLabel || '' }
-    : DEFAULT_COUNTDOWN;
+  // Migration chain, oldest to newest, so nobody's already-set countdown
+  // silently disappears when this shipped as multi-countdown:
+  //  1. `countdowns` array (current shape) — used as-is if present.
+  //  2. a single `countdown` object (the shape this shipped with initially)
+  //     — wrapped into a one-item array.
+  //  3. `profile.targetDate` (the very first version, before Settings had
+  //     its own Countdown section at all) — wrapped into a one-item array.
+  let migratedCountdowns: CountdownItem[] | null = null;
+  if (!Array.isArray(raw?.countdowns)) {
+    if (raw?.countdown && typeof raw.countdown === 'object' && raw.countdown.targetDate) {
+      migratedCountdowns = [hydrateCountdown(raw.countdown)];
+    } else if (typeof raw?.profile?.targetDate === 'string' && raw.profile.targetDate) {
+      migratedCountdowns = [hydrateCountdown({
+        targetDate: raw.profile.targetDate,
+        label: raw?.profile?.targets?.[0]?.name || raw?.profile?.goalLabel || '',
+      })];
+    }
+  }
 
   return {
     trackerItems: Array.isArray(raw?.trackerItems) && raw.trackerItems.length ? raw.trackerItems : DEFAULT_TRACKER_ITEMS,
@@ -320,7 +354,9 @@ function deserializeConfig(raw: any) {
     profile: raw?.profile && typeof raw.profile === 'object' ? { ...DEFAULT_PROFILE, ...raw.profile } : DEFAULT_PROFILE,
     subjects: Array.isArray(raw?.subjects) && raw.subjects.length ? raw.subjects : DEFAULT_SUBJECTS,
     syllabus: Array.isArray(raw?.syllabus) && raw.syllabus.length ? raw.syllabus : DEFAULT_SYLLABUS,
-    countdown: raw?.countdown && typeof raw.countdown === 'object' ? { ...DEFAULT_COUNTDOWN, ...raw.countdown } : migratedCountdown,
+    countdowns: Array.isArray(raw?.countdowns)
+      ? raw.countdowns.map(hydrateCountdown)
+      : (migratedCountdowns ?? DEFAULT_COUNTDOWNS),
   };
 }
 
@@ -333,9 +369,9 @@ const ConfigContext = React.createContext<{
   profile: any;
   subjects: any[];
   syllabus: any[];
-  countdown: any;
+  countdowns: CountdownItem[];
   updateConfig: (partial: Record<string, any>) => void;
-  resetConfigSection: (key: 'trackerItems' | 'timeline' | 'training' | 'profile' | 'subjects' | 'syllabus' | 'countdown') => void;
+  resetConfigSection: (key: 'trackerItems' | 'timeline' | 'training' | 'profile' | 'subjects' | 'syllabus' | 'countdowns') => void;
 }>({
   trackerItems: DEFAULT_TRACKER_ITEMS,
   timeline: hydrateTimeline(DEFAULT_TIMELINE_STORABLE),
@@ -343,7 +379,7 @@ const ConfigContext = React.createContext<{
   profile: DEFAULT_PROFILE,
   subjects: DEFAULT_SUBJECTS,
   syllabus: DEFAULT_SYLLABUS,
-  countdown: DEFAULT_COUNTDOWN,
+  countdowns: DEFAULT_COUNTDOWNS,
   updateConfig: () => {},
   resetConfigSection: () => {},
 });
@@ -939,20 +975,47 @@ function StatPill({ icon: Icon, label, value, accent = 'neutral' }) {
 // that isn't one of their formal priority targets. Ticks live: shows
 // "DD:HH:MM" while more than a day remains, and switches to a live
 // second-by-second "HH:MM:SS" once under 24 hours remain.
+// Renders every countdown the user has set up in Settings > Countdown.
+// A single shared 1s ticker drives all of them (one interval, not N) —
+// each countdown is rendered by CountdownCard below. Zero configured
+// countdowns falls back to a single prompt card.
 function CountdownMatrix() {
-  const { countdown } = React.useContext(ConfigContext);
-  const targetDate: string = countdown?.targetDate || '';
-  const targetTime: string = countdown?.targetTime || '00:00';
-  const label = countdown?.label || 'Your Countdown';
+  const { countdowns } = React.useContext(ConfigContext);
+  const hasAny = Array.isArray(countdowns) && countdowns.length > 0;
 
   const [nowMs, setNowMs] = useState(() => Date.now());
   useEffect(() => {
-    if (!targetDate) return;
+    if (!hasAny) return;
     const tick = () => setNowMs(Date.now());
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, [targetDate, targetTime]);
+  }, [hasAny]);
+
+  if (!hasAny) {
+    return (
+      <Card className="border border-neutral-800/80 bg-gradient-to-br from-neutral-900/90 to-neutral-950/40">
+        <SectionHeading icon={Target} title="Countdown" subtitle="Set a target date to see it here" />
+        <p className="text-[12.5px] text-neutral-500">
+          Add one in <span className="text-neutral-300 font-medium">Settings &gt; Countdown</span> to track live time remaining toward it — you can add more than one.
+        </p>
+      </Card>
+    );
+  }
+
+  return (
+    <div className={countdowns.length > 1 ? 'grid sm:grid-cols-2 xl:grid-cols-3 gap-4' : ''}>
+      {countdowns.map((cd) => (
+        <CountdownCard key={cd.id} countdown={cd} nowMs={nowMs} />
+      ))}
+    </div>
+  );
+}
+
+function CountdownCard({ countdown, nowMs }: { countdown: CountdownItem; nowMs: number }) {
+  const targetDate: string = countdown?.targetDate || '';
+  const targetTime: string = countdown?.targetTime || '00:00';
+  const label = countdown?.label || 'Your Countdown';
 
   const result = useMemo(
     () => (targetDate ? getPreciseCountdown(targetDate, targetTime, nowMs) : null),
@@ -960,11 +1023,13 @@ function CountdownMatrix() {
   );
 
   if (!targetDate || !result) {
+    // An incomplete entry (label set but no date yet, etc.) — don't hide it
+    // entirely, just nudge back to Settings rather than showing bad math.
     return (
       <Card className="border border-neutral-800/80 bg-gradient-to-br from-neutral-900/90 to-neutral-950/40">
-        <SectionHeading icon={Target} title="Countdown" subtitle="Set a target date to see it here" />
+        <SectionHeading icon={Target} title={label} subtitle="Missing a target date" />
         <p className="text-[12.5px] text-neutral-500">
-          Set one up in <span className="text-neutral-300 font-medium">Settings &gt; Countdown</span> to track live time remaining toward it.
+          Finish setting this up in <span className="text-neutral-300 font-medium">Settings &gt; Countdown</span>.
         </p>
       </Card>
     );
@@ -972,7 +1037,7 @@ function CountdownMatrix() {
 
   const unitLabels = result.mode === 'dhm' ? 'DAYS : HRS : MINS' : 'HRS : MINS : SECS';
 
-  // Depleting bar: full when the countdown was first set, empty at the
+  // Depleting bar: full when this countdown was first set, empty at the
   // target. `startMs` is stamped automatically whenever the target
   // date/time is (re)saved in Settings > Countdown. Older/migrated
   // countdowns without a startMs fall back to a generic 180-day span so the
@@ -3500,39 +3565,49 @@ function ProfileEditor() {
 // care about (e.g. the actual JEE Main exam date) without it needing to be
 // one of their formal targets.
 function CountdownEditor() {
-  const { countdown, updateConfig, resetConfigSection } = React.useContext(ConfigContext);
-  const [draft, setDraft] = useState(countdown);
+  const { countdowns, updateConfig, resetConfigSection } = React.useContext(ConfigContext);
+  const [draft, setDraft] = useState<CountdownItem[]>(countdowns);
   const [dirty, setDirty] = useState(false);
 
-  useEffect(() => { setDraft(countdown); setDirty(false); }, [countdown]);
+  useEffect(() => { setDraft(countdowns); setDirty(false); }, [countdowns]);
 
-  const patch = (patchObj: Record<string, any>) => {
-    setDraft((prev: any) => ({ ...prev, ...patchObj }));
+  const patchItem = (id: string, patchObj: Partial<CountdownItem>) => {
+    setDraft((prev) => prev.map((cd) => (cd.id === id ? { ...cd, ...patchObj } : cd)));
+    setDirty(true);
+  };
+  const removeItem = (id: string) => {
+    setDraft((prev) => prev.filter((cd) => cd.id !== id));
+    setDirty(true);
+  };
+  const addItem = () => {
+    setDraft((prev) => [...prev, makeBlankCountdown()]);
     setDirty(true);
   };
   const save = () => {
-    // Stamp a fresh start point whenever the target date/time actually
-    // changes (or there wasn't one yet) — that's what the depleting
-    // progress bar measures from. Editing only the label doesn't reset it.
-    const targetChanged = draft.targetDate !== countdown.targetDate || draft.targetTime !== countdown.targetTime;
-    const next = {
-      ...draft,
-      startMs: draft.targetDate ? (targetChanged || !draft.startMs ? Date.now() : draft.startMs) : null,
-    };
-    updateConfig({ countdown: next });
+    // Stamp a fresh start point for any item whose target date/time is new
+    // or changed since the last save — that's what each countdown's own
+    // depleting progress bar measures from. Editing just the label, or
+    // leaving an existing date untouched, doesn't reset its bar.
+    const savedById = new Map(countdowns.map((cd) => [cd.id, cd]));
+    const next = draft.map((cd) => {
+      const prevSaved = savedById.get(cd.id);
+      const targetChanged = !prevSaved || prevSaved.targetDate !== cd.targetDate || prevSaved.targetTime !== cd.targetTime;
+      return {
+        ...cd,
+        startMs: cd.targetDate ? (targetChanged || !cd.startMs ? Date.now() : cd.startMs) : null,
+      };
+    });
+    updateConfig({ countdowns: next });
     setDraft(next);
     setDirty(false);
-  };
-  const clear = () => {
-    patch({ label: '', targetDate: '', targetTime: '00:00', startMs: null });
   };
 
   return (
     <Card className="animate-fadeIn">
       <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
-        <SectionHeading icon={Clock3} title="Countdown" subtitle="A personal countdown for the Overview tab — independent of your Priority Targets" />
+        <SectionHeading icon={Clock3} title="Countdown" subtitle="Personal countdowns for the Overview tab — independent of your Priority Targets. Add as many as you like." />
         <div className="flex items-center gap-2 shrink-0">
-          <RippleButton onClick={() => { resetConfigSection('countdown'); setDirty(false); }} className={btnGhost}>
+          <RippleButton onClick={() => { resetConfigSection('countdowns'); setDirty(false); }} className={btnGhost}>
             <RefreshCcw className="h-3.5 w-3.5" /> Reset
           </RippleButton>
           <RippleButton onClick={save} disabled={!dirty} className={btnSave(dirty)}>
@@ -3541,28 +3616,40 @@ function CountdownEditor() {
         </div>
       </div>
 
-      <div className="grid sm:grid-cols-2 gap-2.5 mb-2">
-        <div className="sm:col-span-2">
-          <label className={fieldLabel}>Label</label>
-          <input value={draft.label} onChange={(e) => patch({ label: e.target.value })} placeholder="e.g. JEE Main, Boards Exam, Interview Day" className={fieldInput} />
-        </div>
-        <div>
-          <label className={fieldLabel}>Target Date</label>
-          <input type="date" value={draft.targetDate || ''} onChange={(e) => patch({ targetDate: e.target.value })} className={fieldInput} />
-        </div>
-        <div>
-          <label className={fieldLabel}>Target Time</label>
-          <input type="time" value={draft.targetTime || '00:00'} onChange={(e) => patch({ targetTime: e.target.value })} className={fieldInput} />
-        </div>
-      </div>
-      <p className="text-[11.5px] text-neutral-600 mb-2">
-        Shows on the Overview tab as <span className="text-neutral-400 font-medium">DD:HH:MM</span> while more than a day remains, switching to a live <span className="text-neutral-400 font-medium">HH:MM:SS</span> once under 24 hours are left.
+      <p className="text-[11.5px] text-neutral-600 mb-3">
+        Each one shows on the Overview tab as <span className="text-neutral-400 font-medium">DD:HH:MM</span> while more than a day remains, switching to a live <span className="text-neutral-400 font-medium">HH:MM:SS</span> once under 24 hours are left.
       </p>
-      {draft.targetDate && (
-        <button onClick={clear} className="cursor-target text-[11.5px] text-neutral-500 hover:text-rose-400 transition-colors underline decoration-dotted underline-offset-2">
-          Clear countdown
-        </button>
+
+      {draft.length === 0 && (
+        <p className="text-[12.5px] text-neutral-500 mb-3">No countdowns yet — add one below.</p>
       )}
+
+      <div className="space-y-2.5">
+        {draft.map((cd) => (
+          <div key={cd.id} className="rounded-lg border border-neutral-800 bg-neutral-950/40 p-3 space-y-2">
+            <div className="grid sm:grid-cols-[1fr_auto] gap-2 items-start">
+              <input value={cd.label} onChange={(e) => patchItem(cd.id, { label: e.target.value })} placeholder="e.g. JEE Main, Boards Exam, Interview Day" className={fieldInput} />
+              <button onClick={() => removeItem(cd.id)} className="cursor-target flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-800 bg-neutral-900 text-neutral-500 hover:text-rose-400 hover:border-rose-500/30 transition-colors shrink-0">
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-2">
+              <div>
+                <label className={fieldLabel}>Target Date</label>
+                <input type="date" value={cd.targetDate || ''} onChange={(e) => patchItem(cd.id, { targetDate: e.target.value })} className={fieldInput} />
+              </div>
+              <div>
+                <label className={fieldLabel}>Target Time</label>
+                <input type="time" value={cd.targetTime || '00:00'} onChange={(e) => patchItem(cd.id, { targetTime: e.target.value })} className={fieldInput} />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <RippleButton onClick={addItem} className="cursor-target mt-3 flex items-center gap-1.5 rounded-lg border border-dashed border-neutral-700 px-3 py-2 text-[12px] font-medium text-neutral-400 hover:text-neutral-200 hover:border-neutral-500 transition-colors">
+        <Plus className="h-3.5 w-3.5" /> Add Countdown
+      </RippleButton>
     </Card>
   );
 }
@@ -3873,7 +3960,7 @@ export default function JEEDashboard() {
     setConfig((prev) => ({ ...prev, ...partial }));
   };
 
-  const resetConfigSection = (key: 'trackerItems' | 'timeline' | 'training' | 'profile' | 'subjects' | 'syllabus' | 'countdown') => {
+  const resetConfigSection = (key: 'trackerItems' | 'timeline' | 'training' | 'profile' | 'subjects' | 'syllabus' | 'countdowns') => {
     setConfig((prev) => ({
       ...prev,
       [key]: key === 'timeline'
@@ -3886,8 +3973,8 @@ export default function JEEDashboard() {
         ? DEFAULT_SUBJECTS
         : key === 'syllabus'
         ? DEFAULT_SYLLABUS
-        : key === 'countdown'
-        ? DEFAULT_COUNTDOWN
+        : key === 'countdowns'
+        ? DEFAULT_COUNTDOWNS
         : DEFAULT_TRACKER_ITEMS,
     }));
   };
@@ -4146,7 +4233,7 @@ export default function JEEDashboard() {
         profile: config.profile,
         subjects: config.subjects,
         syllabus: config.syllabus,
-        countdown: config.countdown,
+        countdowns: config.countdowns,
         updateConfig,
         resetConfigSection,
       }}
