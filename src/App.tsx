@@ -5114,7 +5114,7 @@ export default function JEEDashboard() {
                   onClick={() => { setActiveTab(tab.id); setSidebarOpen(false); }}
                   title={tab.label}
                   className={`cursor-target group relative flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all duration-200 active:scale-[0.98] ${
-                    !sidebarExpanded ? 'lg:justify-center lg:px-0' : ''
+                    !sidebarExpanded ? 'lg:w-11 lg:h-11 lg:justify-center lg:gap-0 lg:px-0 lg:py-0 lg:mx-auto' : ''
                   } ${
                     isActive
                       ? 'bg-neutral-100 text-neutral-900 shadow-sm'
@@ -5135,7 +5135,7 @@ export default function JEEDashboard() {
             onClick={() => { setActiveTab('settings'); setSidebarOpen(false); }}
             title="Settings"
             className={`cursor-target flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all duration-200 active:scale-[0.98] ${
-              !sidebarExpanded ? 'lg:justify-center lg:px-0' : ''
+              !sidebarExpanded ? 'lg:w-11 lg:h-11 lg:justify-center lg:gap-0 lg:px-0 lg:py-0 lg:mx-auto' : ''
             } ${
               activeTab === 'settings'
                 ? 'bg-neutral-100 text-neutral-900 shadow-sm'
@@ -5149,7 +5149,7 @@ export default function JEEDashboard() {
             onClick={() => { setActiveTab('account'); setSidebarOpen(false); }}
             title="Account"
             className={`cursor-target flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all duration-200 active:scale-[0.98] ${
-              !sidebarExpanded ? 'lg:justify-center lg:px-0' : ''
+              !sidebarExpanded ? 'lg:w-11 lg:h-11 lg:justify-center lg:gap-0 lg:px-0 lg:py-0 lg:mx-auto' : ''
             } ${
               activeTab === 'account'
                 ? 'bg-neutral-100 text-neutral-900 shadow-sm'
