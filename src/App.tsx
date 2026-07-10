@@ -632,7 +632,7 @@ function hydrateDiet(rawList: any): DietMeal[] {
   });
 }
 
-function serializeConfig(config: { trackerItems: any[]; timeline: any[]; training: any[]; profile: any; subjects: any[]; syllabus: any[]; countdowns: any[]; overviewOverrides: Record<OverviewOverrideKey, string>; diet: DietMeal[]; dietOverrides: Record<DietOverrideKey, string> }) {
+function serializeConfig(config: { trackerItems: any[]; timeline: any[]; training: any[]; profile: any; subjects: any[]; syllabus: any[]; countdowns: any[]; overviewOverrides: Record<OverviewOverrideKey, string>; diet: DietMeal[]; dietOverrides: Record<DietOverrideKey, string>; tabLabels: Record<TabLabelKey, string> }) {
   return {
     trackerItems: config.trackerItems,
     training: config.training,
@@ -644,6 +644,7 @@ function serializeConfig(config: { trackerItems: any[]; timeline: any[]; trainin
     overviewOverrides: config.overviewOverrides,
     diet: config.diet.map(({ icon, ...rest }) => rest),
     dietOverrides: config.dietOverrides,
+    tabLabels: config.tabLabels,
   };
 }
 
@@ -695,10 +696,42 @@ function deserializeConfig(raw: any) {
     overviewOverrides: hydrateOverviewOverrides(raw?.overviewOverrides),
     diet: hydrateDiet(raw?.diet),
     dietOverrides: hydrateDietOverrides(raw?.dietOverrides),
+    tabLabels: hydrateTabLabels(raw?.tabLabels),
   };
 }
 
 const CONFIG_STORAGE_KEY = 'app_config_v1';
+
+// Tab names shown in the sidebar are user-editable (Settings > Tab Names),
+// same "auto unless overridden" convention as OverviewOverrideKey above.
+// Keyed by every sidebar destination — the 7 TABS entries (defined further
+// below) plus the two pinned Settings/Account buttons, which aren't in TABS
+// since they're rendered separately at the bottom of the rail.
+type TabLabelKey = 'overview' | 'timeline' | 'training' | 'syllabus' | 'mocktests' | 'ashclock' | 'history' | 'settings' | 'account';
+
+const TAB_LABEL_KEYS: TabLabelKey[] = ['overview', 'timeline', 'training', 'syllabus', 'mocktests', 'ashclock', 'history', 'settings', 'account'];
+
+const DEFAULT_TAB_LABELS: Record<TabLabelKey, string> = {
+  overview: 'Dashboard Overview',
+  timeline: 'Master Timeline',
+  training: 'Training & Fuel',
+  syllabus: 'Syllabus Roadmap',
+  mocktests: 'Mock Test Tracker',
+  ashclock: 'Clock',
+  history: 'Performance Calendar',
+  settings: 'Settings',
+  account: 'Account',
+};
+
+function hydrateTabLabels(raw: any): Record<TabLabelKey, string> {
+  const out = { ...DEFAULT_TAB_LABELS };
+  if (raw && typeof raw === 'object') {
+    for (const k of TAB_LABEL_KEYS) {
+      if (typeof raw[k] === 'string' && raw[k].trim()) out[k] = raw[k];
+    }
+  }
+  return out;
+}
 
 const ConfigContext = React.createContext<{
   trackerItems: any[];
@@ -711,8 +744,9 @@ const ConfigContext = React.createContext<{
   overviewOverrides: Record<OverviewOverrideKey, string>;
   diet: DietMeal[];
   dietOverrides: Record<DietOverrideKey, string>;
+  tabLabels: Record<TabLabelKey, string>;
   updateConfig: (partial: Record<string, any>) => void;
-  resetConfigSection: (key: 'trackerItems' | 'timeline' | 'training' | 'profile' | 'subjects' | 'syllabus' | 'countdowns' | 'overviewOverrides' | 'diet' | 'dietOverrides') => void;
+  resetConfigSection: (key: 'trackerItems' | 'timeline' | 'training' | 'profile' | 'subjects' | 'syllabus' | 'countdowns' | 'overviewOverrides' | 'diet' | 'dietOverrides' | 'tabLabels') => void;
 }>({
   trackerItems: DEFAULT_TRACKER_ITEMS,
   timeline: hydrateTimeline(DEFAULT_TIMELINE_STORABLE),
@@ -724,6 +758,7 @@ const ConfigContext = React.createContext<{
   overviewOverrides: DEFAULT_OVERVIEW_OVERRIDES,
   diet: hydrateDiet(DEFAULT_DIET_STORABLE),
   dietOverrides: DEFAULT_DIET_OVERRIDES,
+  tabLabels: DEFAULT_TAB_LABELS,
   updateConfig: () => {},
   resetConfigSection: () => {},
 });
@@ -4659,7 +4694,81 @@ function SubjectsAndSyllabusEditor() {
 // "Master Timeline" doesn't require scrolling past Profile, Diet, Training,
 // etc. Only the section the user taps is ever mounted/expanded — everything
 // else stays tucked away as a single-line header.
+// Sidebar destinations in display order — mirrors TABS plus the two pinned
+// Settings/Account buttons rendered separately at the bottom of the rail.
+const TAB_LABEL_ROWS: { key: TabLabelKey; icon: any }[] = [
+  { key: 'overview', icon: LayoutGrid },
+  { key: 'timeline', icon: Clock3 },
+  { key: 'training', icon: Dumbbell },
+  { key: 'syllabus', icon: BookOpen },
+  { key: 'mocktests', icon: ClipboardList },
+  { key: 'ashclock', icon: Timer },
+  { key: 'history', icon: Calendar },
+  { key: 'settings', icon: Settings },
+  { key: 'account', icon: UserCircle2 },
+];
+
+function TabLabelsEditor() {
+  const { tabLabels, updateConfig, resetConfigSection } = React.useContext(ConfigContext);
+  const [draft, setDraft] = useState<Record<TabLabelKey, string>>(tabLabels);
+  const [dirty, setDirty] = useState(false);
+
+  useEffect(() => { setDraft(tabLabels); setDirty(false); }, [tabLabels]);
+
+  const setLabel = (key: TabLabelKey, value: string) => {
+    setDraft((prev) => ({ ...prev, [key]: value }));
+    setDirty(true);
+  };
+
+  const save = () => {
+    // Never let a tab go out with a blank label — fall back to its shipped
+    // default instead of leaving a button with no text in the sidebar.
+    const cleaned = { ...draft };
+    TAB_LABEL_ROWS.forEach(({ key }) => {
+      if (!cleaned[key] || !cleaned[key].trim()) cleaned[key] = DEFAULT_TAB_LABELS[key];
+    });
+    updateConfig({ tabLabels: cleaned });
+    setDraft(cleaned);
+    setDirty(false);
+  };
+
+  return (
+    <Card className="animate-fadeIn">
+      <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
+        <SectionHeading icon={PenLine} title="Tab Names" subtitle="Rename the labels shown in the sidebar navigation" />
+        <div className="flex items-center gap-2 shrink-0">
+          <RippleButton onClick={() => { resetConfigSection('tabLabels'); setDirty(false); }} className={btnGhost}>
+            <RefreshCcw className="h-3.5 w-3.5" /> Reset
+          </RippleButton>
+          <RippleButton onClick={save} disabled={!dirty} className={btnSave(dirty)}>
+            <Save className="h-3.5 w-3.5" /> Save
+          </RippleButton>
+        </div>
+      </div>
+      <div className="space-y-2">
+        {TAB_LABEL_ROWS.map(({ key, icon: Icon }) => (
+          <div key={key} className="flex items-center gap-2">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-neutral-800/80 border border-neutral-700/60">
+              <Icon className="h-3.5 w-3.5 text-neutral-400" strokeWidth={1.75} />
+            </div>
+            <input
+              value={draft[key] ?? ''}
+              onChange={(e) => setLabel(key, e.target.value)}
+              maxLength={40}
+              className={`flex-1 ${fieldInput}`}
+            />
+          </div>
+        ))}
+      </div>
+      <p className="mt-3 text-[11px] text-neutral-600 leading-relaxed">
+        Renaming a tab only changes its label — the icon, order, and what it opens stay the same. Clear a field and save to restore its default name.
+      </p>
+    </Card>
+  );
+}
+
 const SETTINGS_SECTIONS = [
+  { key: 'tabLabels', icon: PenLine, title: 'Tab Names', subtitle: 'Rename the sidebar navigation labels', Component: TabLabelsEditor },
   { key: 'profile', icon: GraduationCap, title: 'Profile & Goals', subtitle: 'Identity, exam/goal & priority targets', Component: ProfileEditor },
   { key: 'countdown', icon: Clock3, title: 'Countdown', subtitle: 'Personal countdowns for the Overview tab', Component: CountdownEditor },
   { key: 'overview', icon: LayoutGrid, title: 'Dashboard Overview', subtitle: "Override Today's Shape & Fuel Snapshot text", Component: OverviewSummaryEditor },
@@ -4669,6 +4778,8 @@ const SETTINGS_SECTIONS = [
   { key: 'diet', icon: Utensils, title: 'Training & Fuel — Meals', subtitle: 'Meal names, times, icons & food', Component: DietEditor },
   { key: 'subjects', icon: BookOpen, title: 'Subjects & Syllabus', subtitle: 'Subjects and the month-by-month roadmap', Component: SubjectsAndSyllabusEditor },
 ];
+
+
 
 function SettingsAccordionItem({ icon: Icon, title, subtitle, isOpen, onToggle, children }) {
   return (
@@ -4831,7 +4942,7 @@ export default function JEEDashboard() {
     setConfig((prev) => ({ ...prev, ...partial }));
   };
 
-  const resetConfigSection = (key: 'trackerItems' | 'timeline' | 'training' | 'profile' | 'subjects' | 'syllabus' | 'countdowns' | 'overviewOverrides' | 'diet' | 'dietOverrides') => {
+  const resetConfigSection = (key: 'trackerItems' | 'timeline' | 'training' | 'profile' | 'subjects' | 'syllabus' | 'countdowns' | 'overviewOverrides' | 'diet' | 'dietOverrides' | 'tabLabels') => {
     setConfig((prev) => ({
       ...prev,
       [key]: key === 'timeline'
@@ -4852,6 +4963,8 @@ export default function JEEDashboard() {
         ? hydrateDiet(DEFAULT_DIET_STORABLE)
         : key === 'dietOverrides'
         ? DEFAULT_DIET_OVERRIDES
+        : key === 'tabLabels'
+        ? DEFAULT_TAB_LABELS
         : DEFAULT_TRACKER_ITEMS,
     }));
   };
@@ -5115,6 +5228,7 @@ export default function JEEDashboard() {
         overviewOverrides: config.overviewOverrides,
         diet: config.diet,
         dietOverrides: config.dietOverrides,
+        tabLabels: config.tabLabels,
         updateConfig,
         resetConfigSection,
       }}
@@ -5162,11 +5276,12 @@ export default function JEEDashboard() {
             {TABS.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
+              const label = config.tabLabels[tab.id as TabLabelKey] || tab.label;
               return (
                 <button
                   key={tab.id}
                   onClick={() => { setActiveTab(tab.id); setSidebarOpen(false); }}
-                  title={tab.label}
+                  title={label}
                   className={`cursor-target group relative flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all duration-200 active:scale-[0.98] ${
                     !sidebarExpanded ? 'lg:w-11 lg:h-11 lg:justify-center lg:gap-0 lg:px-0 lg:py-0 lg:mx-auto' : ''
                   } ${
@@ -5176,7 +5291,7 @@ export default function JEEDashboard() {
                   }`}
                 >
                   <Icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
-                  <span className={`truncate overflow-hidden transition-all duration-200 ${sidebarExpanded ? 'lg:max-w-[160px] lg:opacity-100' : 'lg:max-w-0 lg:opacity-0'}`}>{tab.label}</span>
+                  <span className={`truncate overflow-hidden transition-all duration-200 ${sidebarExpanded ? 'lg:max-w-[160px] lg:opacity-100' : 'lg:max-w-0 lg:opacity-0'}`}>{label}</span>
                 </button>
               );
             })}
@@ -5187,7 +5302,7 @@ export default function JEEDashboard() {
         <div className="mt-auto border-t border-neutral-800/70 px-3 py-3 space-y-1">
           <button
             onClick={() => { setActiveTab('settings'); setSidebarOpen(false); }}
-            title="Settings"
+            title={config.tabLabels.settings}
             className={`cursor-target flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all duration-200 active:scale-[0.98] ${
               !sidebarExpanded ? 'lg:w-11 lg:h-11 lg:justify-center lg:gap-0 lg:px-0 lg:py-0 lg:mx-auto' : ''
             } ${
@@ -5197,11 +5312,11 @@ export default function JEEDashboard() {
             }`}
           >
             <Settings className="h-4 w-4 shrink-0" strokeWidth={1.75} />
-            <span className={`truncate overflow-hidden transition-all duration-200 ${sidebarExpanded ? 'lg:max-w-[160px] lg:opacity-100' : 'lg:max-w-0 lg:opacity-0'}`}>Settings</span>
+            <span className={`truncate overflow-hidden transition-all duration-200 ${sidebarExpanded ? 'lg:max-w-[160px] lg:opacity-100' : 'lg:max-w-0 lg:opacity-0'}`}>{config.tabLabels.settings}</span>
           </button>
           <button
             onClick={() => { setActiveTab('account'); setSidebarOpen(false); }}
-            title="Account"
+            title={config.tabLabels.account}
             className={`cursor-target flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all duration-200 active:scale-[0.98] ${
               !sidebarExpanded ? 'lg:w-11 lg:h-11 lg:justify-center lg:gap-0 lg:px-0 lg:py-0 lg:mx-auto' : ''
             } ${
@@ -5211,7 +5326,7 @@ export default function JEEDashboard() {
             }`}
           >
             <UserCircle2 className="h-4 w-4 shrink-0" strokeWidth={1.75} />
-            <span className={`truncate overflow-hidden transition-all duration-200 ${sidebarExpanded ? 'lg:max-w-[160px] lg:opacity-100' : 'lg:max-w-0 lg:opacity-0'}`}>Account</span>
+            <span className={`truncate overflow-hidden transition-all duration-200 ${sidebarExpanded ? 'lg:max-w-[160px] lg:opacity-100' : 'lg:max-w-0 lg:opacity-0'}`}>{config.tabLabels.account}</span>
           </button>
         </div>
       </aside>
