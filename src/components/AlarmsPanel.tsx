@@ -95,7 +95,7 @@ export default function AlarmsPanel() {
         {alarms.map((a) => (
           <div
             key={a.id}
-            className="flex items-center gap-2 sm:gap-3 rounded-xl border border-neutral-800 bg-neutral-950/40 px-3 sm:px-4 py-3"
+            className="flex items-center gap-3 sm:gap-4 rounded-xl border border-neutral-800 bg-neutral-950/40 px-3 sm:px-4 py-3"
           >
             <button
               onClick={() => handleToggleEnabled(a)}
@@ -109,9 +109,9 @@ export default function AlarmsPanel() {
                 }`}
               />
             </button>
-            <div className="min-w-0 flex-1">
-              <div className={`text-base sm:text-lg font-bold tabular-nums truncate ${a.enabled ? 'text-neutral-100' : 'text-neutral-600'}`}>{a.time}</div>
-              <div className="text-[10.5px] sm:text-[11px] text-neutral-500 truncate">
+            <div className="min-w-0 flex-1 pl-0.5">
+              <div className={`text-base sm:text-lg font-bold tabular-nums leading-tight truncate ${a.enabled ? 'text-neutral-100' : 'text-neutral-600'}`}>{a.time}</div>
+              <div className="text-[10.5px] sm:text-[11px] text-neutral-500 truncate mt-0.5">
                 {a.label} · {formatDays(a.days)}
               </div>
             </div>
