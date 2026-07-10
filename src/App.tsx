@@ -5505,7 +5505,7 @@ export default function JEEDashboard() {
         resetConfigSection,
       }}
     >
-    <div className="min-h-screen w-full bg-zinc-950 text-neutral-200 font-sans antialiased relative overflow-x-hidden lg:flex">
+    <div className="min-h-screen w-full bg-zinc-950 text-neutral-200 font-sans antialiased relative lg:flex">
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <div className="absolute -top-40 -left-40 h-[32rem] w-[32rem] rounded-full bg-fuchsia-500/10 blur-[120px]" />
         <div className="absolute top-1/3 -right-40 h-[28rem] w-[28rem] rounded-full bg-violet-600/10 blur-[120px]" />
