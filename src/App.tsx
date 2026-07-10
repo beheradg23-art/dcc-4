@@ -104,6 +104,10 @@ const DEFAULT_COUNTDOWN = {
   label: '',
   targetDate: '', // 'YYYY-MM-DD'
   targetTime: '00:00', // 'HH:MM', 24h — defaults to midnight of targetDate
+  // Timestamp (ms) of when this countdown was set — powers the depleting
+  // progress bar (full at startMs, empty at the target). Auto-set whenever
+  // the target date/time is (re)saved; null falls back to a generic span.
+  startMs: null as number | null,
 };
 
 const DEFAULT_TIMELINE = [
@@ -462,7 +466,7 @@ function getPreciseCountdown(targetDateStr: string, targetTimeStr: string, nowMs
   if (!targetDateStr || Number.isNaN(targetMs)) return null;
 
   if (diffMs <= 0) {
-    return { expired: true, mode: 'hms' as const, text: '00:00:00', days: 0, hours: 0, minutes: 0, seconds: 0 };
+    return { expired: true, mode: 'hms' as const, text: '00:00:00', days: 0, hours: 0, minutes: 0, seconds: 0, targetMs, diffMs: 0 };
   }
 
   const totalSeconds = Math.floor(diffMs / 1000);
@@ -472,9 +476,9 @@ function getPreciseCountdown(targetDateStr: string, targetTimeStr: string, nowMs
   const seconds = totalSeconds % 60;
 
   if (diffMs >= 24 * 60 * 60 * 1000) {
-    return { expired: false, mode: 'dhm' as const, text: `${pad2(days)}:${pad2(hours)}:${pad2(minutes)}`, days, hours, minutes, seconds };
+    return { expired: false, mode: 'dhm' as const, text: `${pad2(days)}:${pad2(hours)}:${pad2(minutes)}`, days, hours, minutes, seconds, targetMs, diffMs };
   }
-  return { expired: false, mode: 'hms' as const, text: `${pad2(hours)}:${pad2(minutes)}:${pad2(seconds)}`, days, hours, minutes, seconds };
+  return { expired: false, mode: 'hms' as const, text: `${pad2(hours)}:${pad2(minutes)}:${pad2(seconds)}`, days, hours, minutes, seconds, targetMs, diffMs };
 }
 
 // ---------- Fluid Interaction Engine ----------
@@ -968,6 +972,16 @@ function CountdownMatrix() {
 
   const unitLabels = result.mode === 'dhm' ? 'DAYS : HRS : MINS' : 'HRS : MINS : SECS';
 
+  // Depleting bar: full when the countdown was first set, empty at the
+  // target. `startMs` is stamped automatically whenever the target
+  // date/time is (re)saved in Settings > Countdown. Older/migrated
+  // countdowns without a startMs fall back to a generic 180-day span so the
+  // bar still shows something sensible.
+  const FALLBACK_SPAN_MS = 180 * 24 * 60 * 60 * 1000;
+  const startMs: number | null = typeof countdown?.startMs === 'number' ? countdown.startMs : null;
+  const totalSpanMs = startMs ? Math.max(result.targetMs - startMs, 1) : FALLBACK_SPAN_MS;
+  const remainingPct = result.expired ? 0 : Math.max(0, Math.min(100, (result.diffMs / totalSpanMs) * 100));
+
   return (
     <Card className="border border-neutral-800/80 bg-gradient-to-br from-neutral-900/90 to-neutral-950/40">
       <SectionHeading icon={Target} title="Countdown" subtitle={result.expired ? 'Target reached' : 'Time remaining toward your target'} />
@@ -982,6 +996,9 @@ function CountdownMatrix() {
           </span>
         </div>
         <div className="mt-1 text-[10px] tracking-widest text-neutral-600 font-medium">{result.expired ? 'ARRIVED' : unitLabels}</div>
+        <div className="mt-2 h-1 w-full bg-neutral-800 rounded-full overflow-hidden">
+          <div className="h-full bg-sky-500/60 rounded-full transition-[width] duration-1000 ease-linear" style={{ width: `${remainingPct}%` }} />
+        </div>
       </div>
     </Card>
   );
@@ -3494,11 +3511,20 @@ function CountdownEditor() {
     setDirty(true);
   };
   const save = () => {
-    updateConfig({ countdown: draft });
+    // Stamp a fresh start point whenever the target date/time actually
+    // changes (or there wasn't one yet) — that's what the depleting
+    // progress bar measures from. Editing only the label doesn't reset it.
+    const targetChanged = draft.targetDate !== countdown.targetDate || draft.targetTime !== countdown.targetTime;
+    const next = {
+      ...draft,
+      startMs: draft.targetDate ? (targetChanged || !draft.startMs ? Date.now() : draft.startMs) : null,
+    };
+    updateConfig({ countdown: next });
+    setDraft(next);
     setDirty(false);
   };
   const clear = () => {
-    patch({ label: '', targetDate: '', targetTime: '00:00' });
+    patch({ label: '', targetDate: '', targetTime: '00:00', startMs: null });
   };
 
   return (
