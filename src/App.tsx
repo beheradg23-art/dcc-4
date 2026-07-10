@@ -4435,7 +4435,7 @@ function ProfileEditor() {
 // care about (e.g. the actual JEE Main exam date) without it needing to be
 // one of their formal targets.
 function CountdownEditor() {
-  const { countdowns, updateConfig, resetConfigSection } = React.useContext(ConfigContext);
+  const { countdowns, tabLabels, updateConfig, resetConfigSection } = React.useContext(ConfigContext);
   const [draft, setDraft] = useState<CountdownItem[]>(countdowns);
   const [dirty, setDirty] = useState(false);
 
@@ -4475,7 +4475,7 @@ function CountdownEditor() {
   return (
     <Card className="animate-fadeIn">
       <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
-        <SectionHeading icon={Clock3} title="Countdown" subtitle="Personal countdowns for the Overview tab — independent of your Priority Targets. Add as many as you like." />
+        <SectionHeading icon={Clock3} title="Countdown" subtitle={`Personal countdowns for the ${tabLabels.overview} tab — independent of your Priority Targets. Add as many as you like.`} />
         <div className="flex items-center gap-2 shrink-0">
           <RippleButton onClick={() => { resetConfigSection('countdowns'); setDirty(false); }} className={btnGhost}>
             <RefreshCcw className="h-3.5 w-3.5" /> Reset
@@ -4487,7 +4487,7 @@ function CountdownEditor() {
       </div>
 
       <p className="text-[11.5px] text-neutral-600 mb-3">
-        Each one shows on the Overview tab as <span className="text-neutral-400 font-medium">DD:HH:MM</span> while more than a day remains, switching to a live <span className="text-neutral-400 font-medium">HH:MM:SS</span> once under 24 hours are left.
+        Each one shows on the {tabLabels.overview} tab as <span className="text-neutral-400 font-medium">DD:HH:MM</span> while more than a day remains, switching to a live <span className="text-neutral-400 font-medium">HH:MM:SS</span> once under 24 hours are left.
       </p>
 
       {draft.length === 0 && (
@@ -4560,7 +4560,7 @@ const OVERVIEW_OVERRIDE_ROWS: { key: OverviewOverrideKey; label: string; icon: a
 ];
 
 function OverviewSummaryEditor() {
-  const { timeline, overviewOverrides, diet, dietOverrides, profile, updateConfig, resetConfigSection } = React.useContext(ConfigContext);
+  const { timeline, overviewOverrides, diet, dietOverrides, profile, tabLabels, sectionLabels, updateConfig, resetConfigSection } = React.useContext(ConfigContext);
   const [draft, setDraft] = useState<Record<OverviewOverrideKey, string>>(overviewOverrides);
   const [dirty, setDirty] = useState(false);
 
@@ -4593,8 +4593,8 @@ function OverviewSummaryEditor() {
       <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
         <SectionHeading
           icon={LayoutGrid}
-          title="Dashboard Overview"
-          subtitle="Today's Shape and Fuel Snapshot fill themselves in from your Timeline & Fuel Matrix — override any row here if you want it to say something else."
+          title={tabLabels.overview}
+          subtitle={`${sectionLabels.ov_shape.label} and ${sectionLabels.ov_fuel.label} fill themselves in from your Timeline & Fuel Matrix — override any row here if you want it to say something else.`}
         />
         <div className="flex items-center gap-2 shrink-0">
           <RippleButton onClick={() => { resetConfigSection('overviewOverrides'); setDirty(false); }} className={btnGhost}>
@@ -5026,20 +5026,40 @@ function SectionLabelsEditor() {
         ))}
       </div>
       <p className="mt-4 text-[11px] text-neutral-600 leading-relaxed">
-        Covers every named panel across Dashboard Overview, Timeline, Training & Fuel, Syllabus, Mock Tests, Clock, History, and Account. Renaming or re-iconing only changes the label — what the panel shows stays the same. Clear a name and save to restore its default.
+        Covers every named panel across {SECTION_LABEL_GROUP_TAB_KEYS.map((k) => tabLabels[k] || DEFAULT_TAB_LABELS[k]).join(', ')}. Renaming or re-iconing only changes the label — what the panel shows stays the same. Clear a name and save to restore its default.
       </p>
     </Card>
   );
 }
 
+// Each row's `title`/`subtitle` can be a plain string OR a function of
+// (tabLabels, sectionLabels, tabIcons) — used for rows that describe a tab
+// (or a specific panel inside one) that's renameable in Tab Names & Icons /
+// Section Labels, so this list of section headers never drifts out of sync
+// with whatever the user has renamed things to. `tabKey` additionally lets
+// the row's icon follow that tab's icon override.
 const SETTINGS_SECTIONS = [
   { key: 'tabLabels', icon: PenLine, title: 'Tab Names & Icons', subtitle: 'Rename and re-icon the sidebar navigation', Component: TabLabelsEditor },
   { key: 'sectionLabels', icon: LayoutGrid, title: 'Section Labels', subtitle: 'Rename & re-icon panels in every tab', Component: SectionLabelsEditor },
   { key: 'profile', icon: GraduationCap, title: 'Profile & Goals', subtitle: 'Identity, exam/goal & priority targets', Component: ProfileEditor },
-  { key: 'countdown', icon: Clock3, title: 'Countdown', subtitle: 'Personal countdowns for the Overview tab', Component: CountdownEditor },
-  { key: 'overview', icon: LayoutGrid, title: 'Dashboard Overview', subtitle: "Override Today's Shape & Fuel Snapshot text", Component: OverviewSummaryEditor },
+  {
+    key: 'countdown', icon: Clock3, tabKey: 'overview', title: 'Countdown',
+    subtitle: (tabLabels) => `Personal countdowns for the ${tabLabels.overview} tab`,
+    Component: CountdownEditor,
+  },
+  {
+    key: 'overview', icon: LayoutGrid, tabKey: 'overview',
+    title: (tabLabels) => tabLabels.overview,
+    subtitle: (tabLabels, sectionLabels) => `Override ${sectionLabels.ov_shape.label} & ${sectionLabels.ov_fuel.label} text`,
+    Component: OverviewSummaryEditor,
+  },
   { key: 'checklist', icon: ClipboardList, title: 'Daily Checklist Items', subtitle: 'Objectives in the Daily Matrix sidebar', Component: TrackerItemsEditor },
-  { key: 'timeline', icon: Clock3, title: 'Master Timeline', subtitle: "The day's time-boxed schedule blocks", Component: TimelineEditor },
+  {
+    key: 'timeline', icon: Clock3, tabKey: 'timeline',
+    title: (tabLabels) => tabLabels.timeline,
+    subtitle: "The day's time-boxed schedule blocks",
+    Component: TimelineEditor,
+  },
   { key: 'training', icon: Dumbbell, title: 'Training Split', subtitle: 'Gym / calisthenics days & exercises', Component: TrainingEditor },
   { key: 'diet', icon: Utensils, title: 'Training & Fuel — Meals', subtitle: 'Meal names, times, icons & food', Component: DietEditor },
   { key: 'subjects', icon: BookOpen, title: 'Subjects & Syllabus', subtitle: 'Subjects and the month-by-month roadmap', Component: SubjectsAndSyllabusEditor },
@@ -5080,23 +5100,34 @@ function ConfigEditorTab() {
   // open before it, so there's never more than one editor on screen.
   const [openKey, setOpenKey] = useState(null);
   const toggle = (key) => setOpenKey((prev) => (prev === key ? null : key));
+  const { tabLabels, tabIcons, sectionLabels } = React.useContext(ConfigContext);
 
   return (
     <div className="space-y-5 animate-fadeIn">
       <SectionHeading icon={Settings} title="Settings" subtitle="Tap a section to open just that part — everything else stays collapsed" />
       <div className="space-y-2.5">
-        {SETTINGS_SECTIONS.map(({ key, icon, title, subtitle, Component }) => (
-          <SettingsAccordionItem
-            key={key}
-            icon={icon}
-            title={title}
-            subtitle={subtitle}
-            isOpen={openKey === key}
-            onToggle={() => toggle(key)}
-          >
-            <Component />
-          </SettingsAccordionItem>
-        ))}
+        {SETTINGS_SECTIONS.map(({ key, icon, title, subtitle, tabKey, Component }) => {
+          // Rows that mirror a live tab (title/subtitle given as functions)
+          // resolve their copy from the current tabLabels/sectionLabels so a
+          // rename in "Tab Names & Icons" is reflected here instead of
+          // showing whatever the shipped default used to be. Their icon
+          // likewise follows that tab's icon override, same as the sidebar.
+          const resolvedTitle = typeof title === 'function' ? title(tabLabels, sectionLabels) : title;
+          const resolvedSubtitle = typeof subtitle === 'function' ? subtitle(tabLabels, sectionLabels) : subtitle;
+          const resolvedIcon = (tabKey && ICON_OPTIONS[tabIcons[tabKey]]) || icon;
+          return (
+            <SettingsAccordionItem
+              key={key}
+              icon={resolvedIcon}
+              title={resolvedTitle}
+              subtitle={resolvedSubtitle}
+              isOpen={openKey === key}
+              onToggle={() => toggle(key)}
+            >
+              <Component />
+            </SettingsAccordionItem>
+          );
+        })}
       </div>
     </div>
   );
