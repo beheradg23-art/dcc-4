@@ -329,8 +329,8 @@ function computeDietAutoValues(meals: DietMeal[], profileWeightKg?: number): Rec
   const totalL = Math.round((baselineL + dietLiquidL) * 2) / 2; // nearest 0.5L
 
   return {
-    calories: hasAnyFood ? `~${calRounded} kcal · auto-estimated from your meals` : 'Add meals below to auto-estimate',
-    protein: hasAnyFood ? `~${proteinRounded}g protein · auto-estimated from your meals` : 'Add meals below to auto-estimate',
+    calories: hasAnyFood ? `~${calRounded} kcal` : 'Add meals below to auto-estimate',
+    protein: hasAnyFood ? `~${proteinRounded}g protein` : 'Add meals below to auto-estimate',
     hydration: `~${totalL.toFixed(1)}L water/day${dietLiquidL > 0.05 ? ` · incl. ~${dietLiquidL.toFixed(1)}L from meals` : ''}`,
   };
 }
@@ -2111,9 +2111,11 @@ function OverviewTab({ setModal }) {
             <StatPill icon={Target} label="Category" value={profile.category} accent="amber" />
             <StatPill icon={TrendingUp} label={profile.baselineLabel || 'Baseline'} value={`${profile.baseline}${typeof profile.baseline === 'number' && profile.baseline <= 100 ? ' %ile' : ''}`} accent="blue" />
           </div>
-          <p className="mt-3 text-[12px] text-neutral-500 leading-relaxed">
-            {profile.boards ? `Boards / prior benchmark: ${profile.boards}%. ` : ''}Edit these anytime in Settings → Profile & Goals.
-          </p>
+          {profile.boards ? (
+            <p className="mt-3 text-[12px] text-neutral-500 leading-relaxed">
+              Boards / prior benchmark: {profile.boards}%.
+            </p>
+          ) : null}
         </Card>
 
         <Card>
@@ -2160,9 +2162,6 @@ function OverviewTab({ setModal }) {
               </div>
             ))}
           </div>
-          <p className="mt-3 text-[11px] text-neutral-600 leading-relaxed">
-            Auto-built from Settings → Timeline. Override any row in Settings → Dashboard Overview.
-          </p>
         </Card>
 
         <Card>
@@ -2172,9 +2171,6 @@ function OverviewTab({ setModal }) {
             <StatPill icon={Activity} label="Protein" value={shapeValues.protein} accent="violet" />
             <StatPill icon={Droplets} label="Hydration" value={shapeValues.hydration} accent="blue" />
           </div>
-          <p className="mt-3 text-[11px] text-neutral-600 leading-relaxed">
-            Edit these in Settings → Dashboard Overview.
-          </p>
         </Card>
 
         <Card>
@@ -5113,7 +5109,7 @@ export default function JEEDashboard() {
         </div>
 
         <footer className="mt-8 pb-2 text-center">
-          <p className="text-[11px] text-neutral-600">Target Configured: IIT Bombay Aerospace. Everything else remains basic scaffolding.</p>
+          <p className="text-[11px] text-neutral-600">Built By Ash - With Love and Peace</p>
         </footer>
       </div>
 
