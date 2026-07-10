@@ -4640,6 +4640,7 @@ export default function JEEDashboard() {
   });
   const [activeTab, setActiveTab] = useState('overview');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [modal, setModal] = useState(null);
 
   // ---------- Swipe-to-switch-tabs (Instagram-style) ----------
@@ -5009,22 +5010,83 @@ export default function JEEDashboard() {
         resetConfigSection,
       }}
     >
-    <div className="min-h-screen w-full bg-zinc-950 text-neutral-200 font-sans antialiased relative overflow-x-hidden">
+    <div className="min-h-screen w-full bg-zinc-950 text-neutral-200 font-sans antialiased relative overflow-x-hidden lg:flex">
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <div className="absolute -top-40 -left-40 h-[32rem] w-[32rem] rounded-full bg-violet-600/10 blur-[120px]" />
         <div className="absolute top-1/3 -right-40 h-[28rem] w-[28rem] rounded-full bg-sky-500/10 blur-[120px]" />
         <div className="absolute bottom-0 left-1/4 h-[24rem] w-[24rem] rounded-full bg-fuchsia-600/[0.07] blur-[110px]" />
       </div>
       {!introDone && <IntroLoader onFinish={() => setIntroDone(true)} />}
-      <div className="relative z-10 mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8 py-6">
 
-        {/* Header Elements */}
-        <header className="mb-6 flex flex-row items-center justify-between gap-3">
+      {/* Sidebar backdrop — mobile/tablet drawer scrim */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm animate-fadeIn lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar Navigation — persistent rail on desktop, sliding drawer on mobile */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex w-[240px] shrink-0 flex-col border-r border-neutral-800/70 bg-neutral-950/98 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] lg:sticky lg:top-0 lg:z-20 lg:h-screen lg:translate-x-0 lg:bg-neutral-950/50 lg:backdrop-blur-xl ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <div className="flex items-center gap-2.5 px-4 pt-5 pb-4">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-sky-400 via-violet-500 to-fuchsia-500 shadow-md shadow-violet-500/20">
+            <GraduationCap className="h-4 w-4 text-neutral-950" strokeWidth={2} />
+          </div>
+          <span className="text-[13px] font-semibold tracking-tight text-neutral-200 truncate">Akyos</span>
+          <button
+            onClick={() => setSidebarOpen(false)}
+            aria-label="Close navigation"
+            className="ml-auto flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-900 hover:text-neutral-200 transition-colors lg:hidden"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <nav className="flex-1 overflow-y-auto px-3 pb-4 no-scrollbar">
+          <div className="space-y-1">
+            {TABS.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => { setActiveTab(tab.id); setSidebarOpen(false); }}
+                  className={`cursor-target group relative flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all duration-200 active:scale-[0.98] ${
+                    isActive
+                      ? 'bg-neutral-100 text-neutral-900 shadow-sm'
+                      : 'text-neutral-400 hover:bg-neutral-800/60 hover:text-neutral-200'
+                  }`}
+                >
+                  <Icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+                  <span className="truncate">{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </nav>
+      </aside>
+
+      {/* Main column */}
+      <div className="relative z-10 flex-1 min-w-0">
+
+        {/* Sticky header — brand, streak, rank, EQ, and account menu stay pinned while the page scrolls beneath */}
+        <header className="sticky top-0 z-30 flex flex-row items-center justify-between gap-3 border-b border-neutral-800/70 bg-zinc-950/85 backdrop-blur-xl px-4 sm:px-6 lg:px-8 py-3.5">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 via-violet-500 to-fuchsia-500 shadow-lg shadow-violet-500/20">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Open navigation"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-neutral-800 bg-neutral-900/60 text-neutral-300 transition-colors hover:border-violet-500/40 hover:text-violet-300 lg:hidden"
+            >
+              <MenuIcon className="h-4 w-4" />
+            </button>
+            <div className="hidden lg:flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 via-violet-500 to-fuchsia-500 shadow-lg shadow-violet-500/20">
               <GraduationCap className="h-5.5 w-5.5 text-neutral-950" strokeWidth={2} />
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 hidden sm:block">
               <h1 className="text-[17px] font-semibold tracking-tight text-neutral-50 leading-none truncate">Akyos</h1>
               <p className="text-[12.5px] text-neutral-500 mt-1 truncate">Your Answer to Chaos</p>
             </div>
@@ -5049,32 +5111,12 @@ export default function JEEDashboard() {
               aria-label="Open account menu"
               className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-800 bg-neutral-900/60 text-neutral-300 transition-colors hover:border-violet-500/40 hover:text-violet-300"
             >
-              <MenuIcon className="h-4 w-4" />
+              <UserCircle2 className="h-4 w-4" />
             </button>
           </div>
         </header>
 
-        {/* Navigation Layer */}
-        <nav className="mb-6 flex gap-1.5 overflow-x-auto rounded-xl border border-neutral-800 bg-neutral-900/40 p-1.5 no-scrollbar">
-          {TABS.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`cursor-target flex shrink-0 items-center gap-2 rounded-lg px-3.5 py-2 text-[12.5px] font-medium whitespace-nowrap transition-all duration-150 active:scale-95 ${
-                  isActive
-                    ? 'bg-neutral-100 text-neutral-900 shadow-sm'
-                    : 'text-neutral-400 hover:bg-neutral-800/60 hover:text-neutral-200'
-                }`}
-              >
-                <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
-                {tab.label}
-              </button>
-            );
-          })}
-        </nav>
+        <div className="relative z-10 mx-auto max-w-[1200px] px-4 sm:px-6 lg:px-8 py-6">
 
         {/* Dashboard Grid Workspace Layout — swipe left/right anywhere here to move between tabs */}
         <div
@@ -5111,6 +5153,7 @@ export default function JEEDashboard() {
         <footer className="mt-8 pb-2 text-center">
           <p className="text-[11px] text-neutral-600">Built By Ash - With Love and Peace</p>
         </footer>
+        </div>
       </div>
 
       {/* Global Context-Aware Modal Overlay */}
