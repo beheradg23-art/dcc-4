@@ -3,7 +3,7 @@ import {
   LayoutGrid, Clock3, Dumbbell, BookOpen, Sparkles,
   CheckCircle2, Circle, Target, GraduationCap, Ruler, Weight,
   Droplets, Sunrise, Sun, Moon, Utensils, Flame,
-  AlertTriangle, ChevronRight, Eye, Smile, Scissors, Wind,
+  AlertTriangle, ChevronRight, ChevronDown, Eye, Smile, Scissors, Wind,
   TrendingUp, Activity, Timer, Calendar, X, ArrowUpRight, FlameKindling,
   ChevronLeft, Lock, Music2, Play, Pause, SkipForward,
   Search, RotateCcw,
@@ -4655,18 +4655,72 @@ function SubjectsAndSyllabusEditor() {
   );
 }
 
+// Each settings category collapses into its own dropdown so opening, say,
+// "Master Timeline" doesn't require scrolling past Profile, Diet, Training,
+// etc. Only the section the user taps is ever mounted/expanded — everything
+// else stays tucked away as a single-line header.
+const SETTINGS_SECTIONS = [
+  { key: 'profile', icon: GraduationCap, title: 'Profile & Goals', subtitle: 'Identity, exam/goal & priority targets', Component: ProfileEditor },
+  { key: 'countdown', icon: Clock3, title: 'Countdown', subtitle: 'Personal countdowns for the Overview tab', Component: CountdownEditor },
+  { key: 'overview', icon: LayoutGrid, title: 'Dashboard Overview', subtitle: "Override Today's Shape & Fuel Snapshot text", Component: OverviewSummaryEditor },
+  { key: 'checklist', icon: ClipboardList, title: 'Daily Checklist Items', subtitle: 'Objectives in the Daily Matrix sidebar', Component: TrackerItemsEditor },
+  { key: 'timeline', icon: Clock3, title: 'Master Timeline', subtitle: "The day's time-boxed schedule blocks", Component: TimelineEditor },
+  { key: 'training', icon: Dumbbell, title: 'Training Split', subtitle: 'Gym / calisthenics days & exercises', Component: TrainingEditor },
+  { key: 'diet', icon: Utensils, title: 'Training & Fuel — Meals', subtitle: 'Meal names, times, icons & food', Component: DietEditor },
+  { key: 'subjects', icon: BookOpen, title: 'Subjects & Syllabus', subtitle: 'Subjects and the month-by-month roadmap', Component: SubjectsAndSyllabusEditor },
+];
+
+function SettingsAccordionItem({ icon: Icon, title, subtitle, isOpen, onToggle, children }) {
+  return (
+    <div>
+      <button
+        onClick={onToggle}
+        className={`cursor-target w-full flex items-center gap-3 rounded-xl border px-4 py-3.5 text-left transition-colors ${
+          isOpen
+            ? 'border-violet-500/30 bg-violet-500/[0.06]'
+            : 'border-neutral-800 bg-neutral-900/60 hover:border-neutral-700 hover:bg-neutral-900'
+        }`}
+      >
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-neutral-800/80 border border-neutral-700/60">
+          <Icon className="h-4.5 w-4.5 text-neutral-300" strokeWidth={1.75} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-[14px] font-semibold tracking-tight text-neutral-100">{title}</h3>
+          {subtitle && <p className="text-[12px] text-neutral-500 mt-0.5 truncate">{subtitle}</p>}
+        </div>
+        <ChevronDown
+          className={`h-4 w-4 shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180 text-violet-400' : 'text-neutral-500'}`}
+          strokeWidth={1.75}
+        />
+      </button>
+      {isOpen && <div className="mt-2.5 animate-fadeIn">{children}</div>}
+    </div>
+  );
+}
+
 function ConfigEditorTab() {
+  // null = everything collapsed. Opening a section closes whichever one was
+  // open before it, so there's never more than one editor on screen.
+  const [openKey, setOpenKey] = useState(null);
+  const toggle = (key) => setOpenKey((prev) => (prev === key ? null : key));
+
   return (
     <div className="space-y-5 animate-fadeIn">
-      <SectionHeading icon={Settings} title="Settings" subtitle="Every part of the app is editable here — changes apply everywhere instantly, no code required" />
-      <ProfileEditor />
-      <CountdownEditor />
-      <OverviewSummaryEditor />
-      <TrackerItemsEditor />
-      <TimelineEditor />
-      <TrainingEditor />
-      <DietEditor />
-      <SubjectsAndSyllabusEditor />
+      <SectionHeading icon={Settings} title="Settings" subtitle="Tap a section to open just that part — everything else stays collapsed" />
+      <div className="space-y-2.5">
+        {SETTINGS_SECTIONS.map(({ key, icon, title, subtitle, Component }) => (
+          <SettingsAccordionItem
+            key={key}
+            icon={icon}
+            title={title}
+            subtitle={subtitle}
+            isOpen={openKey === key}
+            onToggle={() => toggle(key)}
+          >
+            <Component />
+          </SettingsAccordionItem>
+        ))}
+      </div>
     </div>
   );
 }
