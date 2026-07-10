@@ -83,7 +83,17 @@ const EXERCISE_GUIDE = {
 const DEFAULT_PROFILE = {
   name: 'Your Name',
   goalLabel: 'Add your goal',
-  age: 18,
+  // Birthdate ('YYYY-MM-DD') replaces the old static `age` field — age is
+  // now always derived from this via calculateAge() so it keeps itself
+  // correct instead of going stale. Defaults to ~18 years ago (computed
+  // inline, not via the helper further below, since this runs at module
+  // load before that helper's dependencies are initialized) so the
+  // placeholder profile still reads as "18-year-old" like before.
+  birthdate: (() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 18);
+    return d.toISOString().split('T')[0];
+  })(),
   height: 170,
   weight: 65,
   category: '',
@@ -704,7 +714,20 @@ function deserializeConfig(raw: any) {
     trackerItems: Array.isArray(raw?.trackerItems) && raw.trackerItems.length ? raw.trackerItems : DEFAULT_TRACKER_ITEMS,
     training: Array.isArray(raw?.training) && raw.training.length ? raw.training : DEFAULT_TRAINING,
     timeline: Array.isArray(raw?.timeline) && raw.timeline.length ? hydrateTimeline(raw.timeline) : hydrateTimeline(DEFAULT_TIMELINE_STORABLE),
-    profile: raw?.profile && typeof raw.profile === 'object' ? { ...DEFAULT_PROFILE, ...raw.profile } : DEFAULT_PROFILE,
+    profile: raw?.profile && typeof raw.profile === 'object'
+      ? {
+          ...DEFAULT_PROFILE,
+          ...raw.profile,
+          // Migration: pre-birthdate saves only have a static numeric
+          // `age`. Back-calculate an approximate birthdate from it so age
+          // starts auto-updating going forward instead of staying frozen.
+          birthdate: typeof raw.profile.birthdate === 'string' && raw.profile.birthdate
+            ? raw.profile.birthdate
+            : typeof raw.profile.age === 'number'
+            ? estimateBirthdateFromLegacyAge(raw.profile.age)
+            : DEFAULT_PROFILE.birthdate,
+        }
+      : DEFAULT_PROFILE,
     subjects: hydrateSubjects(raw?.subjects, Array.isArray(raw?.syllabus) && raw.syllabus.length ? raw.syllabus : DEFAULT_SYLLABUS),
     syllabus: Array.isArray(raw?.syllabus) && raw.syllabus.length ? raw.syllabus : DEFAULT_SYLLABUS,
     countdowns: Array.isArray(raw?.countdowns)
@@ -1038,6 +1061,32 @@ const getDayName = (dateStr) => {
 };
 
 const pad2 = (n: number) => String(Math.max(0, n)).padStart(2, '0');
+
+// Derives a whole-years age from a 'YYYY-MM-DD' birthdate, as of today.
+// Returns null for anything blank/unparseable so callers can show a
+// friendly placeholder instead of "NaN-year-old".
+function calculateAge(birthdate: string | undefined | null): number | null {
+  if (!birthdate || !/^\d{4}-\d{2}-\d{2}$/.test(birthdate)) return null;
+  const birth = new Date(birthdate + 'T00:00:00');
+  if (Number.isNaN(birth.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const hasHadBirthdayThisYear =
+    today.getMonth() > birth.getMonth() ||
+    (today.getMonth() === birth.getMonth() && today.getDate() >= birth.getDate());
+  if (!hasHadBirthdayThisYear) age -= 1;
+  return age >= 0 ? age : null;
+}
+
+// One-way migration for accounts saved before `birthdate` existed: they only
+// have a static `age` number, which would otherwise never update again. We
+// back-calculate an approximate birthdate (today minus that many years) so
+// age starts auto-updating from here on, instead of staying frozen forever.
+function estimateBirthdateFromLegacyAge(age: number): string {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - age);
+  return getLocalDateString(d);
+}
 
 // Precise, ticking countdown to an exact date+time (not just a day count).
 // >= 24h remaining  -> "DD:HH:MM" (days:hours:minutes)
@@ -2350,7 +2399,7 @@ function OverviewTab({ setModal }) {
           <div className="flex flex-wrap items-center gap-x-6 gap-y-3 mb-4">
             <div>
               <div className="text-[20px] font-semibold text-neutral-100 leading-tight">{profile.name}</div>
-              <div className="text-[13px] text-neutral-500">{profile.age}-year-old · {profile.goalLabel}</div>
+              <div className="text-[13px] text-neutral-500">{calculateAge(profile.birthdate) ?? '—'}-year-old · {profile.goalLabel}</div>
             </div>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
@@ -4384,8 +4433,13 @@ function ProfileEditor() {
           <input value={draft.goalLabel} onChange={(e) => patch({ goalLabel: e.target.value })} placeholder="e.g. NEET 2027, UPSC CSE, CAT 2026" className={fieldInput} />
         </div>
         <div>
-          <label className={fieldLabel}>Age</label>
-          <input type="number" value={draft.age} onChange={(e) => patch({ age: +e.target.value })} className={fieldInput} />
+          <label className={fieldLabel}>Birthdate</label>
+          <input type="date" value={draft.birthdate || ''} onChange={(e) => patch({ birthdate: e.target.value })} className={fieldInput} />
+          {draft.birthdate ? (
+            <p className="mt-1 text-[11px] text-neutral-500">
+              {calculateAge(draft.birthdate) !== null ? `${calculateAge(draft.birthdate)} years old — updates automatically` : 'Enter a valid date'}
+            </p>
+          ) : null}
         </div>
         <div>
           <label className={fieldLabel}>Category</label>
