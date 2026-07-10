@@ -791,7 +791,7 @@ const TABS = [
 // looks the chosen color up in this fixed palette. Same 'color name' idea
 // generateProfileTargets() already uses for targets[].color.
 const SUBJECT_COLOR_PALETTE: Record<string, { text: string; bg: string; border: string; dot: string }> = {
-  sky:      { text: 'text-sky-400',      bg: 'bg-sky-500/10',      border: 'border-sky-500/30',      dot: 'bg-sky-400' },
+  sky:      { text: 'text-indigo-400',      bg: 'bg-indigo-500/10',      border: 'border-indigo-500/30',      dot: 'bg-indigo-400' },
   violet:   { text: 'text-violet-400',   bg: 'bg-violet-500/10',   border: 'border-violet-500/30',   dot: 'bg-violet-400' },
   fuchsia:  { text: 'text-fuchsia-400',  bg: 'bg-fuchsia-500/10',  border: 'border-fuchsia-500/30',  dot: 'bg-fuchsia-400' },
   amber:    { text: 'text-amber-400',    bg: 'bg-amber-500/10',    border: 'border-amber-500/30',    dot: 'bg-amber-400' },
@@ -824,7 +824,7 @@ function getSubjectHex(key: string, subjects: { key: string; color: string }[]) 
 // wider set — countdowns often sit side by side in one card, so more
 // variants means less chance two active targets look identical.
 const COUNTDOWN_COLOR_PALETTE: Record<string, { text: string; tileBg: string; tileBorder: string; barBg: string; dot: string }> = {
-  sky:      { text: 'text-sky-400',      tileBg: 'bg-sky-500/[0.03]',      tileBorder: 'border-sky-500/20',      barBg: 'bg-sky-500/60',      dot: 'bg-sky-400' },
+  sky:      { text: 'text-indigo-400',      tileBg: 'bg-indigo-500/[0.03]',      tileBorder: 'border-indigo-500/20',      barBg: 'bg-indigo-500/60',      dot: 'bg-indigo-400' },
   violet:   { text: 'text-violet-400',   tileBg: 'bg-violet-500/[0.03]',   tileBorder: 'border-violet-500/20',   barBg: 'bg-violet-500/60',   dot: 'bg-violet-400' },
   fuchsia:  { text: 'text-fuchsia-400',  tileBg: 'bg-fuchsia-500/[0.03]',  tileBorder: 'border-fuchsia-500/20',  barBg: 'bg-fuchsia-500/60',  dot: 'bg-fuchsia-400' },
   amber:    { text: 'text-amber-400',    tileBg: 'bg-amber-500/[0.03]',    tileBorder: 'border-amber-500/20',    barBg: 'bg-amber-500/60',    dot: 'bg-amber-400' },
@@ -994,7 +994,7 @@ function GlobalDetailModal({ modalData, onClose }) {
         <div className="flex items-center justify-between border-b border-neutral-800 p-4">
           <div className="flex items-center gap-2">
             <div className="p-1.5 rounded-lg bg-neutral-800 border border-neutral-700 text-neutral-300">
-              {modalData.icon ? <modalData.icon className="h-4 w-4" /> : <FlameKindling className="h-4 w-4 text-sky-400" />}
+              {modalData.icon ? <modalData.icon className="h-4 w-4" /> : <FlameKindling className="h-4 w-4 text-indigo-400" />}
             </div>
             <div>
               <h3 className="text-sm font-semibold text-neutral-100">{modalData.title}</h3>
@@ -1037,8 +1037,8 @@ function GlobalDetailModal({ modalData, onClose }) {
               <div className="text-[11px] uppercase tracking-wider text-neutral-500 font-bold mb-2">High-Yield Exam Focus Areas</div>
               <ul className="space-y-2">
                 {modalData.focusPoints.map((item, idx) => (
-                  <li key={idx} className="flex items-start gap-2 text-sm text-neutral-300 bg-sky-500/[0.03] border border-sky-500/20 px-3 py-2 rounded-lg">
-                    <ChevronRight className="h-4 w-4 text-sky-400 shrink-0 mt-0.5" />
+                  <li key={idx} className="flex items-start gap-2 text-sm text-neutral-300 bg-indigo-500/[0.03] border border-indigo-500/20 px-3 py-2 rounded-lg">
+                    <ChevronRight className="h-4 w-4 text-indigo-400 shrink-0 mt-0.5" />
                     <span>{item}</span>
                   </li>
                 ))}
@@ -1082,7 +1082,7 @@ function TypewriterText({ text }) {
   return (
     <span>
       {shown}
-      <span className="inline-block w-[2px] h-[0.95em] bg-sky-300/80 ml-0.5 align-middle animate-questCursorBlink" />
+      <span className="inline-block w-[2px] h-[0.95em] bg-indigo-300/80 ml-0.5 align-middle animate-questCursorBlink" />
     </span>
   );
 }
@@ -1123,13 +1123,13 @@ function QuestClearNotification({ data, onDismiss }) {
       }`}
     >
       <div className="relative w-full max-w-md pointer-events-auto">
-        <div className="absolute -inset-6 bg-sky-500/20 blur-3xl rounded-3xl animate-pulseGlow" />
+        <div className="absolute -inset-6 bg-indigo-500/20 blur-3xl rounded-3xl animate-pulseGlow" />
 
         <div className="absolute inset-0 overflow-hidden rounded-2xl">
           {sparkles.map((s) => (
             <span
               key={s.id}
-              className="absolute bottom-0 rounded-full bg-sky-300 animate-questSparkle"
+              className="absolute bottom-0 rounded-full bg-indigo-300 animate-questSparkle"
               style={{
                 left: `${s.left}%`,
                 width: s.size,
@@ -1141,20 +1141,20 @@ function QuestClearNotification({ data, onDismiss }) {
           ))}
         </div>
 
-        <div className="relative rounded-2xl border border-sky-400/40 bg-gradient-to-b from-[#04101f]/95 to-[#010a16]/95 backdrop-blur-xl shadow-[0_0_50px_-8px_rgba(56,189,248,0.45)] overflow-hidden">
-          <span className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-sky-300/80" />
-          <span className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-sky-300/80" />
-          <span className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-sky-300/80" />
-          <span className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-sky-300/80" />
+        <div className="relative rounded-2xl border border-indigo-400/40 bg-gradient-to-b from-[#0d0a1f]/95 to-[#08061a]/95 backdrop-blur-xl shadow-[0_0_50px_-8px_rgba(129,140,248,0.45)] overflow-hidden">
+          <span className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-indigo-300/80" />
+          <span className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-indigo-300/80" />
+          <span className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-indigo-300/80" />
+          <span className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-indigo-300/80" />
 
-          <div className="absolute inset-0 animate-questSweep bg-gradient-to-r from-transparent via-sky-300/10 to-transparent" />
+          <div className="absolute inset-0 animate-questSweep bg-gradient-to-r from-transparent via-indigo-300/10 to-transparent" />
 
           <div className="relative px-6 py-6 text-center">
-            <p className="text-[10px] tracking-[0.4em] uppercase text-sky-400/70 font-semibold mb-2">— System —</p>
-            <h3 className="text-lg font-bold text-sky-50 tracking-wide mb-1 min-h-[1.5em]">
+            <p className="text-[10px] tracking-[0.4em] uppercase text-indigo-400/70 font-semibold mb-2">— System —</p>
+            <h3 className="text-lg font-bold text-indigo-50 tracking-wide mb-1 min-h-[1.5em]">
               <TypewriterText text="Daily Quest Cleared!" />
             </h3>
-            <p className="text-[12px] text-sky-200/60 mb-4">All {trackerItems.length} objectives completed for today.</p>
+            <p className="text-[12px] text-indigo-200/60 mb-4">All {trackerItems.length} objectives completed for today.</p>
 
             {data.isNewRank && (
               <div className="mb-4 animate-fadeInUp" style={{ animationDelay: '1.3s' }}>
@@ -1165,10 +1165,10 @@ function QuestClearNotification({ data, onDismiss }) {
               </div>
             )}
 
-            <div className="flex items-center justify-center gap-2 text-[11px] text-sky-300/50">
-              <span className="h-1 w-1 rounded-full bg-sky-400 animate-dotBreathe" />
+            <div className="flex items-center justify-center gap-2 text-[11px] text-indigo-300/50">
+              <span className="h-1 w-1 rounded-full bg-indigo-400 animate-dotBreathe" />
               Return to the grind, Hunter.
-              <span className="h-1 w-1 rounded-full bg-sky-400 animate-dotBreathe" />
+              <span className="h-1 w-1 rounded-full bg-indigo-400 animate-dotBreathe" />
             </div>
           </div>
         </div>
@@ -1401,7 +1401,7 @@ function Card({ children, className = '', onClick }) {
 function StatPill({ icon: Icon, label, value, accent = 'neutral' }) {
   const accents = {
     neutral: 'text-neutral-300',
-    blue: 'text-sky-400',
+    blue: 'text-indigo-400',
     amber: 'text-amber-400',
     violet: 'text-violet-400',
     rose: 'text-rose-400'
@@ -1893,7 +1893,7 @@ function ChangePasswordCard() {
   return (
     <div className="rounded-2xl border border-neutral-800 bg-neutral-950/60 p-4 sm:p-5">
       <div className="flex items-center gap-3 mb-3.5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-sky-400 via-violet-500 to-fuchsia-500">
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-500">
           <KeyRound className="h-4.5 w-4.5 text-neutral-950" strokeWidth={2} />
         </div>
         <h3 className="text-[13.5px] font-bold text-neutral-100">Change Password</h3>
@@ -1918,7 +1918,7 @@ function ChangePasswordCard() {
         <button
           type="submit"
           disabled={busy}
-          className="w-full rounded-lg bg-gradient-to-br from-sky-400 via-violet-500 to-fuchsia-500 py-2.5 text-[12.5px] font-semibold text-neutral-950 transition-opacity disabled:opacity-50"
+          className="w-full rounded-lg bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-500 py-2.5 text-[12.5px] font-semibold text-neutral-950 transition-opacity disabled:opacity-50"
         >
           {busy ? 'Saving…' : 'Update Password'}
         </button>
@@ -1965,8 +1965,8 @@ function AccountPage({
     <div className="max-w-xl space-y-5 animate-fadeIn">
       <SectionHeading icon={UserCircle2} title="Account" subtitle="Profile, cloud sync, security & backups" />
 
-      <div className="flex items-center gap-3 rounded-2xl border border-neutral-800 bg-gradient-to-br from-violet-500/[0.08] via-neutral-950 to-sky-500/[0.05] p-4">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sky-400 via-violet-500 to-fuchsia-500 text-[15px] font-bold text-neutral-950">
+      <div className="flex items-center gap-3 rounded-2xl border border-neutral-800 bg-gradient-to-br from-violet-500/[0.08] via-neutral-950 to-indigo-500/[0.05] p-4">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-500 text-[15px] font-bold text-neutral-950">
           {email ? email[0].toUpperCase() : <UserCircle2 className="h-6 w-6 text-neutral-950" />}
         </div>
         <div className="min-w-0">
@@ -2083,7 +2083,7 @@ function PerformanceCalendar({ globalHistory, setGlobalHistory, setModal }) {
               onClick={() => dateStr && handlePastDateClick(dateStr)}
               className={`aspect-square rounded-xl border flex flex-col items-center justify-center relative text-xs transition-all duration-150 ${
                 dateStr ? 'cursor-pointer hover:scale-105' : 'opacity-0 pointer-events-none'
-              } ${getHeatmapColor(dateStr)} ${isCurrentDay ? 'ring-2 ring-sky-400 ring-offset-2 ring-offset-neutral-950' : ''}`}
+              } ${getHeatmapColor(dateStr)} ${isCurrentDay ? 'ring-2 ring-indigo-400 ring-offset-2 ring-offset-neutral-950' : ''}`}
             >
               {dateStr && (
                 <>
@@ -2141,7 +2141,7 @@ function OverviewTab({ setModal }) {
 
   const colorClass = (color: string) =>
     color === 'blue'
-      ? 'border-sky-500/25 bg-sky-500/[0.06] hover:bg-sky-500/[0.12]'
+      ? 'border-indigo-500/25 bg-indigo-500/[0.06] hover:bg-indigo-500/[0.12]'
       : color === 'emerald'
       ? 'border-emerald-500/25 bg-emerald-500/[0.06] hover:bg-emerald-500/[0.12]'
       : 'border-amber-500/25 bg-amber-500/[0.06] hover:bg-amber-500/[0.12]';
@@ -2189,7 +2189,7 @@ function OverviewTab({ setModal }) {
                 className={`rounded-xl border p-3 cursor-pointer transition-all hover:scale-[1.02] ${colorClass(t.color)}`}
               >
                 <div className="flex items-center justify-between">
-                  <span className={`text-[13px] font-semibold ${t.color === 'blue' ? 'text-sky-300' : 'text-amber-300'}`}>{t.name}</span>
+                  <span className={`text-[13px] font-semibold ${t.color === 'blue' ? 'text-indigo-300' : 'text-amber-300'}`}>{t.name}</span>
                   <ArrowUpRight className="h-3 w-3 text-neutral-500" />
                 </div>
                 <div className="text-[12px] text-neutral-400 mt-0.5">{t.course}</div>
@@ -2252,14 +2252,14 @@ function OverviewTab({ setModal }) {
 function TimelineTab({ setModal, notificationsEnabled, notificationPermission, onToggleNotifications }) {
   const { timeline, subjects } = React.useContext(ConfigContext);
   const typeStyle = {
-    study: 'border-l-sky-500',
+    study: 'border-l-indigo-500',
     gym: 'border-l-violet-500',
     meal: 'border-l-amber-500',
     prep: 'border-l-neutral-600',
     sleep: 'border-l-violet-500',
   };
   const typeBg = {
-    study: 'bg-sky-500/10 text-sky-400',
+    study: 'bg-indigo-500/10 text-indigo-400',
     gym: 'bg-violet-500/10 text-violet-400',
     meal: 'bg-amber-500/10 text-amber-400',
     prep: 'bg-neutral-800 text-neutral-400',
@@ -2577,7 +2577,7 @@ function TrainingFuelTab({ setModal, dietLog, setDietLog, currentDateStr }) {
   }, [dietLog]);
 
   const modeStyle = {
-    gym: 'bg-sky-500/10 text-sky-400 border-sky-500/25',
+    gym: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/25',
     calisthenics: 'bg-violet-500/10 text-violet-400 border-violet-500/25',
     rest: 'bg-neutral-800 text-neutral-400 border-neutral-700',
   };
@@ -2657,7 +2657,7 @@ function TrainingFuelTab({ setModal, dietLog, setDietLog, currentDateStr }) {
                 className="flex items-center justify-between rounded-lg border border-neutral-800/70 bg-neutral-950/40 px-3.5 py-2.5 cursor-pointer group hover:bg-neutral-800/40 hover:border-neutral-600 transition-all"
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-[12.5px] text-neutral-300 group-hover:text-sky-400 transition-colors">{ex.name}</span>
+                  <span className="text-[12.5px] text-neutral-300 group-hover:text-indigo-400 transition-colors">{ex.name}</span>
                   <ArrowUpRight className="h-3 w-3 text-neutral-600 group-hover:text-neutral-400 opacity-0 group-hover:opacity-100 transition-all" />
                 </div>
                 <span className="text-[12px] font-medium tabular-nums text-neutral-500">{ex.sets}</span>
@@ -2894,15 +2894,15 @@ function SyllabusTab({ setModal }) {
             onClick={() => setActivePhase(p.phase)}
             className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 text-left transition-all duration-150 ${
               activePhase === p.phase
-                ? 'border-sky-500/40 bg-sky-500/[0.08]'
+                ? 'border-indigo-500/40 bg-indigo-500/[0.08]'
                 : 'border-neutral-800 bg-neutral-900/60 hover:border-neutral-700'
             }`}
           >
-            <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-semibold ${activePhase === p.phase ? 'bg-sky-500/20 text-sky-300' : 'bg-neutral-800 text-neutral-400'}`}>
+            <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-semibold ${activePhase === p.phase ? 'bg-indigo-500/20 text-indigo-300' : 'bg-neutral-800 text-neutral-400'}`}>
               {p.phase}
             </span>
             <div>
-              <div className={`text-[12.5px] font-medium ${activePhase === p.phase ? 'text-sky-300' : 'text-neutral-300'}`}>{p.month}</div>
+              <div className={`text-[12.5px] font-medium ${activePhase === p.phase ? 'text-indigo-300' : 'text-neutral-300'}`}>{p.month}</div>
               <div className="text-[10.5px] text-neutral-500">{p.label}</div>
             </div>
           </button>
@@ -2944,7 +2944,7 @@ function SyllabusTab({ setModal }) {
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div onClick={() => handleTopicClick(topic)} className="flex items-start gap-2 cursor-pointer min-w-0">
-                        <ChevronRight className="h-3.5 w-3.5 shrink-0 mt-0.5 text-neutral-600 group-hover:text-sky-400" strokeWidth={2} />
+                        <ChevronRight className="h-3.5 w-3.5 shrink-0 mt-0.5 text-neutral-600 group-hover:text-indigo-400" strokeWidth={2} />
                         <span className="group-hover:text-neutral-100 truncate">{topic}</span>
                       </div>
                       <ArrowUpRight
@@ -3222,14 +3222,14 @@ function MockTestTab() {
                     type="number" inputMode="decimal" min={0} value={v.score}
                     onChange={(e) => setFormScore(s.key, 'score', e.target.value)}
                     placeholder="Score"
-                    className="w-full min-w-0 rounded-lg border border-neutral-800 bg-neutral-950/60 px-3 py-3 sm:py-2 text-base sm:text-[13px] font-semibold text-neutral-50 placeholder:font-normal placeholder:text-neutral-600 focus:outline-none focus:border-sky-500/60 focus:ring-1 focus:ring-sky-500/30"
+                    className="w-full min-w-0 rounded-lg border border-neutral-800 bg-neutral-950/60 px-3 py-3 sm:py-2 text-base sm:text-[13px] font-semibold text-neutral-50 placeholder:font-normal placeholder:text-neutral-600 focus:outline-none focus:border-indigo-500/60 focus:ring-1 focus:ring-indigo-500/30"
                   />
                   <span className="flex items-center text-neutral-600 text-[13px] shrink-0">/</span>
                   <input
                     type="number" inputMode="decimal" min={1} value={v.max}
                     onChange={(e) => setFormScore(s.key, 'max', e.target.value)}
                     title="Full marks for this subject in this test"
-                    className="w-20 sm:w-16 shrink-0 rounded-lg border border-neutral-800 bg-neutral-950/60 px-2 py-3 sm:py-2 text-base sm:text-[13px] font-medium text-neutral-300 text-center focus:outline-none focus:border-sky-500/60 focus:ring-1 focus:ring-sky-500/30"
+                    className="w-20 sm:w-16 shrink-0 rounded-lg border border-neutral-800 bg-neutral-950/60 px-2 py-3 sm:py-2 text-base sm:text-[13px] font-medium text-neutral-300 text-center focus:outline-none focus:border-indigo-500/60 focus:ring-1 focus:ring-indigo-500/30"
                   />
                 </div>
               </div>
@@ -3411,7 +3411,7 @@ function PasswordGate({ onUnlock }) {
       }`}
       onClick={() => inputRef.current && inputRef.current.focus()}
     >
-      <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 via-violet-500 to-fuchsia-500 shadow-lg shadow-violet-500/20">
+      <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-500 shadow-lg shadow-violet-500/20">
         <Lock className="h-5 w-5 text-neutral-950" strokeWidth={2} />
       </div>
 
@@ -3431,7 +3431,7 @@ function PasswordGate({ onUnlock }) {
                 error
                   ? 'border-rose-500/50 bg-rose-500/[0.06] text-rose-300'
                   : isCurrent
-                  ? 'border-sky-500/50 bg-neutral-900/80 text-neutral-100'
+                  ? 'border-indigo-500/50 bg-neutral-900/80 text-neutral-100'
                   : filled
                   ? 'border-neutral-700 bg-neutral-900/80 text-neutral-100'
                   : 'border-neutral-800 bg-neutral-900/40 text-neutral-700'
@@ -3534,7 +3534,7 @@ function IntroLoader({ onFinish }) {
           phase === 'loading' ? 'opacity-100 scale-100' : 'opacity-0 scale-[0.97]'
         }`}
       >
-        <div className="mb-5 flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-sky-400 via-violet-500 to-fuchsia-500 shadow-lg shadow-violet-500/20 animate-fadeInUp">
+        <div className="mb-5 flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-500 shadow-lg shadow-violet-500/20 animate-fadeInUp">
           <GraduationCap className="h-4.5 w-4.5 text-neutral-950" strokeWidth={2} />
         </div>
 
@@ -3562,7 +3562,7 @@ function IntroLoader({ onFinish }) {
 
         <div className="mt-6 h-px w-36 sm:w-52 overflow-hidden rounded-full bg-neutral-800">
           <div
-            className="h-full bg-gradient-to-r from-sky-400 via-violet-500 to-fuchsia-500 transition-[width] duration-100 ease-linear"
+            className="h-full bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-500 transition-[width] duration-100 ease-linear"
             style={{ width: `${percent}%` }}
           />
         </div>
@@ -5067,9 +5067,9 @@ export default function JEEDashboard() {
     >
     <div className="min-h-screen w-full bg-zinc-950 text-neutral-200 font-sans antialiased relative overflow-x-hidden lg:flex">
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-        <div className="absolute -top-40 -left-40 h-[32rem] w-[32rem] rounded-full bg-violet-600/10 blur-[120px]" />
-        <div className="absolute top-1/3 -right-40 h-[28rem] w-[28rem] rounded-full bg-sky-500/10 blur-[120px]" />
-        <div className="absolute bottom-0 left-1/4 h-[24rem] w-[24rem] rounded-full bg-fuchsia-600/[0.07] blur-[110px]" />
+        <div className="absolute -top-40 -left-40 h-[32rem] w-[32rem] rounded-full bg-fuchsia-500/10 blur-[120px]" />
+        <div className="absolute top-1/3 -right-40 h-[28rem] w-[28rem] rounded-full bg-violet-600/10 blur-[120px]" />
+        <div className="absolute bottom-0 left-1/4 h-[24rem] w-[24rem] rounded-full bg-indigo-600/10 blur-[110px]" />
       </div>
       {!introDone && <IntroLoader onFinish={() => setIntroDone(true)} />}
 
@@ -5090,7 +5090,7 @@ export default function JEEDashboard() {
         } ${sidebarExpanded ? 'lg:w-[240px]' : 'lg:w-[68px]'}`}
       >
         <div className={`flex items-center gap-2.5 px-4 pt-5 pb-4 ${!sidebarExpanded ? 'lg:justify-center lg:gap-0 lg:px-0' : ''}`}>
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-sky-400 via-violet-500 to-fuchsia-500 shadow-md shadow-violet-500/20">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-500 shadow-md shadow-violet-500/20">
             <GraduationCap className="h-4 w-4 text-neutral-950" strokeWidth={2} />
           </div>
           <span className={`text-[13px] font-semibold tracking-tight text-neutral-200 truncate overflow-hidden transition-all duration-200 ${sidebarExpanded ? 'lg:max-w-[140px] lg:opacity-100' : 'lg:max-w-0 lg:opacity-0'}`}>Akyos</span>
@@ -5174,7 +5174,7 @@ export default function JEEDashboard() {
             <button
               onClick={() => setSidebarOpen(true)}
               aria-label="Open navigation"
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 via-violet-500 to-fuchsia-500 shadow-lg shadow-violet-500/20 transition-transform active:scale-95 lg:pointer-events-none lg:cursor-default"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-500 shadow-lg shadow-violet-500/20 transition-transform active:scale-95 lg:pointer-events-none lg:cursor-default"
             >
               <GraduationCap className="h-5.5 w-5.5 text-neutral-950" strokeWidth={2} />
             </button>
@@ -5789,7 +5789,7 @@ function PomodoroView({ onSessionComplete }) {
         <div
           className={`h-full rounded-full transition-all duration-1000 ease-linear ${
             sessionType === 'focus'
-              ? 'bg-gradient-to-r from-purple-500 to-fuchsia-500'
+              ? 'bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-500'
               : 'bg-gradient-to-r from-fuchsia-400 to-pink-400'
           }`}
           style={{ width: `${progressPct}%` }}
@@ -5807,7 +5807,7 @@ function PomodoroView({ onSessionComplete }) {
         </RippleButton>
         <RippleButton
           onClick={handleStartPause}
-          className="cursor-target rounded-full w-14 h-14 flex items-center justify-center bg-gradient-to-br from-purple-500 to-fuchsia-600 text-neutral-950 shadow-lg shadow-purple-500/30 hover:scale-105 active:scale-95 transition-transform"
+          className="cursor-target rounded-full w-14 h-14 flex items-center justify-center bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-500 text-neutral-950 shadow-lg shadow-purple-500/30 hover:scale-105 active:scale-95 transition-transform"
           title={isRunning ? 'Pause' : 'Arise'}
         >
           {isRunning ? <Pause className="w-6 h-6" fill="currentColor" /> : <Play className="w-6 h-6 ml-0.5" fill="currentColor" />}
@@ -5982,7 +5982,7 @@ function AshClockTab() {
 
         <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-fuchsia-700 shadow-lg shadow-purple-500/20">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-600 shadow-lg shadow-purple-500/20">
               <Timer className="h-5.5 w-5.5 text-neutral-50" strokeWidth={2} />
             </div>
             <div>
