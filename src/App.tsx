@@ -137,7 +137,7 @@ const DEFAULT_TIMELINE = [
   { start: '08:30', end: '08:50', label: 'Breakfast Window', detail: 'Clean fuel block', icon: Utensils, type: 'meal', longDesc: '4 whole eggs, 3 whites, oats base. Ensure exact macronutrient absorption timing prior to the grueling Physics block.' },
   { start: '08:50', end: '11:30', label: 'Study Slot 2 — Physics', detail: 'Concepts and basic problem sets', icon: BookOpen, type: 'study', subject: 'physics', longDesc: 'Mechanics integration. Moving away from memorized shortcuts into deep vector analysis and calculus application frameworks.' },
   { start: '11:30', end: '13:00', label: 'Gym & Shower Window', detail: 'Dead-hour optimization — gym is empty', icon: Dumbbell, type: 'gym', longDesc: 'Hypertrophy or calisthenics application. Gym floor empty; maximize efficiency, execute within 65 minutes, return for rapid protein shake recovery.' },
-  { start: '13:00', end: '13:25', label: 'Post-Workout Lunch', detail: 'High-protein recovery + Omega-3 Fish Oil', icon: Utensils, type: 'meal', longDesc: '200g chicken breast cooked clean + 2 whole wheat rotis and huge fiber salad pile. Take Omega-3 pills.' },
+  { start: '13:00', end: '13:25', label: 'Lunch', detail: 'High-protein recovery + Omega-3 Fish Oil', icon: Utensils, type: 'meal', longDesc: '200g chicken breast cooked clean + 2 whole wheat rotis and huge fiber salad pile. Take Omega-3 pills.' },
   { start: '13:25', end: '16:30', label: 'Study Slot 3 — Chemistry', detail: 'Physical / Organic alternating rotation', icon: BookOpen, type: 'study', subject: 'chem', longDesc: 'GOC mechanisms tracking or Mole concept numerical testing. Prevent midday fatigue by keeping hand writing actively moving.' },
   { start: '16:30', end: '16:50', label: 'Midday Snack Window', detail: 'Micronutrient / gut health reset', icon: Utensils, type: 'meal', longDesc: '200g clean curd base for gut microbiome + 1 antioxidant fruit source (apple/guava) + 15 raw structural almonds.' },
   { start: '16:50', end: '20:00', label: 'Study Slot 4 — Inorganic Chemistry', detail: 'Memorization or lecture backlog cleanup', icon: BookOpen, type: 'study', subject: 'chem', longDesc: 'High repetition memorization layer (NCERT alignments, block configurations, trend anomalies). Bullet journal exceptions.' },
@@ -148,19 +148,204 @@ const DEFAULT_TIMELINE = [
   { start: '23:00', end: '23:00', label: 'Sleep Lock', detail: 'Hard stop.', icon: Moon, type: 'sleep', longDesc: 'Absolute system shutdown. Dark room settings optimized for rapid entry into deep REM sleep cycle.' },
 ];
 
-const DIET = {
-  target: '~2200–2300 kcal · clean body recomposition',
-  protein: '165g–175g+ protein target · fats kept minimal',
-  hydration: '4 – 4.5 L water spread evenly across the day',
-  meals: [
-    { time: '05:00 AM', name: 'Pre-Breakfast', items: ['Warm water + lemon + 1 tsp chia seeds', 'Sattu drink (2 tbsp sattu + water + black salt)'], icon: Sunrise },
-    { time: '08:30 AM', name: 'Breakfast', items: ['4 whole eggs + 3 egg whites', '60g oats in water', '1 banana'], icon: Sun },
-    { time: '01:00 PM', name: 'Post-Workout Lunch', items: ['1 scoop Whey Isolate in water', '200g grilled/boiled chicken breast', '2 rotis', '1 bowl green sabzi', 'Large mixed salad'], icon: Dumbbell },
-    { time: '04:30 PM', name: 'Midday Snack', items: ['200g curd', '1 apple or guava', '15 raw almonds'], icon: Sun },
-    { time: '08:00 PM', name: 'Dinner', items: ['150g chicken breast', 'Warm vegetable stew', 'Green salad'], icon: Moon },
-    { time: '10:00 PM', name: 'Night Snack', items: ['250ml toned milk', '30g roasted chana'], icon: Moon },
-  ],
+// ---------- Fuel Matrix: Diet (fully editable — see ConfigContext.diet) ----------
+// Used to be a hardcoded DIET constant. Now every meal — its time, name,
+// icon, and food items — lives in config and is editable in Settings >
+// Training & Fuel, capped at MAX_DIET_MEALS so the Daily Matrix's "All 6
+// Meals Hit" box stays meaningful. The old third slot was called
+// "Post-Workout Lunch"; renamed to plain "Lunch" since most people don't
+// train right before lunch specifically.
+const MAX_DIET_MEALS = 6;
+
+type DietMeal = {
+  id: string;
+  time: string;
+  name: string;
+  items: string[];
+  iconName: string;
+  icon: any;
 };
+
+// Icon-bearing source of truth (mirrors the DEFAULT_TIMELINE convention —
+// the "storable" iconName-only version is built once ICON_LIBRARY exists,
+// further below).
+const DEFAULT_DIET_MEALS_RAW = [
+  { time: '05:00 AM', name: 'Pre-Breakfast', items: ['Warm water + lemon + 1 tsp chia seeds', 'Sattu drink (2 tbsp sattu + water + black salt)'], icon: Sunrise },
+  { time: '08:30 AM', name: 'Breakfast', items: ['4 whole eggs + 3 egg whites', '60g oats in water', '1 banana'], icon: Sun },
+  { time: '01:00 PM', name: 'Lunch', items: ['1 scoop Whey Isolate in water', '200g grilled/boiled chicken breast', '2 rotis', '1 bowl green sabzi', 'Large mixed salad'], icon: Dumbbell },
+  { time: '04:30 PM', name: 'Midday Snack', items: ['200g curd', '1 apple or guava', '15 raw almonds'], icon: Sun },
+  { time: '08:00 PM', name: 'Dinner', items: ['150g chicken breast', 'Warm vegetable stew', 'Green salad'], icon: Moon },
+  { time: '10:00 PM', name: 'Night Snack', items: ['250ml toned milk', '30g roasted chana'], icon: Moon },
+];
+
+const makeDietMealId = () => `meal_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+const makeBlankDietMeal = (): Omit<DietMeal, 'icon'> => ({
+  id: makeDietMealId(),
+  time: '',
+  name: 'New Meal',
+  items: [],
+  iconName: 'Utensils',
+});
+
+// ---- Diet target overrides (Calories / Protein / Hydration) ----
+// Same "auto unless overridden" convention as OverviewOverrideKey below —
+// each defaults to '' (meaning "use the auto-estimate computed from the
+// meals above") and only holds real text once someone types a custom value.
+type DietOverrideKey = 'calories' | 'protein' | 'hydration';
+const DIET_OVERRIDE_KEYS: DietOverrideKey[] = ['calories', 'protein', 'hydration'];
+const DEFAULT_DIET_OVERRIDES: Record<DietOverrideKey, string> = { calories: '', protein: '', hydration: '' };
+
+function hydrateDietOverrides(raw: any): Record<DietOverrideKey, string> {
+  const out = { ...DEFAULT_DIET_OVERRIDES };
+  if (raw && typeof raw === 'object') {
+    for (const k of DIET_OVERRIDE_KEYS) {
+      if (typeof raw[k] === 'string') out[k] = raw[k];
+    }
+  }
+  return out;
+}
+
+// ---- Lightweight nutrition estimator ----
+// Not a real food database — just enough per-item approximations (common
+// staples plus generic fallbacks) so a new user's calorie / protein /
+// hydration targets fill themselves in reasonably from whatever meals they
+// type, instead of staying stuck on one person's old hardcoded numbers.
+// Every estimate is still fully overridable with real text in Settings.
+type NutritionBasis = 'per100g' | 'per100ml' | 'piece';
+const FOOD_NUTRITION_DB: Record<string, { basis: NutritionBasis; cal: number; protein: number; waterMl?: number }> = {
+  'egg white': { basis: 'piece', cal: 17, protein: 3.6 },
+  'egg': { basis: 'piece', cal: 78, protein: 6 },
+  'whey': { basis: 'piece', cal: 120, protein: 25 }, // per scoop
+  'oats': { basis: 'per100g', cal: 389, protein: 16.9 },
+  'banana': { basis: 'piece', cal: 105, protein: 1.3 },
+  'chicken': { basis: 'per100g', cal: 165, protein: 31 },
+  'paneer': { basis: 'per100g', cal: 265, protein: 18 },
+  'tofu': { basis: 'per100g', cal: 144, protein: 15 },
+  'fish': { basis: 'per100g', cal: 140, protein: 24 },
+  'roti': { basis: 'piece', cal: 120, protein: 3 },
+  'chapati': { basis: 'piece', cal: 120, protein: 3 },
+  'rice': { basis: 'per100g', cal: 130, protein: 2.7 },
+  'dal': { basis: 'per100g', cal: 116, protein: 9 },
+  'lentil': { basis: 'per100g', cal: 116, protein: 9 },
+  'sabzi': { basis: 'per100g', cal: 80, protein: 3 },
+  'vegetable': { basis: 'per100g', cal: 65, protein: 2.5 },
+  'salad': { basis: 'per100g', cal: 20, protein: 1 },
+  'curd': { basis: 'per100g', cal: 60, protein: 3.5, waterMl: 75 },
+  'yogurt': { basis: 'per100g', cal: 60, protein: 3.5, waterMl: 75 },
+  'almond': { basis: 'piece', cal: 7, protein: 0.26 },
+  'peanut butter': { basis: 'per100g', cal: 588, protein: 25 },
+  'peanut': { basis: 'piece', cal: 6, protein: 0.27 },
+  'cashew': { basis: 'piece', cal: 9, protein: 0.2 },
+  'apple': { basis: 'piece', cal: 95, protein: 0.5 },
+  'guava': { basis: 'piece', cal: 68, protein: 2.6 },
+  'orange': { basis: 'piece', cal: 62, protein: 1.2 },
+  'milk': { basis: 'per100ml', cal: 60, protein: 3.2, waterMl: 100 },
+  'chana': { basis: 'per100g', cal: 364, protein: 19 },
+  'chickpea': { basis: 'per100g', cal: 364, protein: 19 },
+  'sattu': { basis: 'per100g', cal: 380, protein: 20 },
+  'soy': { basis: 'per100g', cal: 336, protein: 52 },
+  'bread': { basis: 'piece', cal: 80, protein: 3 },
+  'potato': { basis: 'per100g', cal: 87, protein: 1.9 },
+  'water': { basis: 'per100ml', cal: 0, protein: 0, waterMl: 100 },
+  'lemon': { basis: 'piece', cal: 17, protein: 0.6 },
+  'chia': { basis: 'per100g', cal: 486, protein: 17 },
+};
+// Multi-word keys need to be checked before their shorter substrings (e.g.
+// "peanut butter" before "peanut"), so this list is sorted longest-first.
+const FOOD_NUTRITION_KEYS = Object.keys(FOOD_NUTRITION_DB).sort((a, b) => b.length - a.length);
+
+// Rough gram/ml equivalents for the units people actually type.
+const UNIT_TO_GRAMS: Record<string, number> = { g: 1, gram: 1, grams: 1, kg: 1000, tbsp: 15, tsp: 5, scoop: 30, cup: 240 };
+const UNIT_TO_ML: Record<string, number> = { ml: 1, l: 1000, litre: 1000, liter: 1000, tbsp: 15, tsp: 5, cup: 240, glass: 250 };
+
+// Parses one free-text food fragment (e.g. "200g grilled chicken breast")
+// into an approximate {cal, protein, waterMl} contribution. Silently
+// contributes nothing for anything unrecognised (supplements, spices,
+// "black salt", etc.) rather than guessing wildly.
+function estimateFragmentNutrition(fragmentRaw: string) {
+  const fragment = fragmentRaw.toLowerCase().trim();
+  if (!fragment) return { cal: 0, protein: 0, waterMl: 0 };
+
+  const foodKey = FOOD_NUTRITION_KEYS.find((k) => fragment.includes(k));
+  if (!foodKey) return { cal: 0, protein: 0, waterMl: 0 };
+  const food = FOOD_NUTRITION_DB[foodKey];
+
+  const qtyMatch = /(\d+(?:\.\d+)?)\s*(g|gram|grams|kg|ml|l|litre|liter|tbsp|tsp|scoop|cup|glass)?/.exec(fragment);
+  const qty = qtyMatch ? parseFloat(qtyMatch[1]) : 1;
+  const unit = qtyMatch?.[2];
+
+  let multiplier = 1;
+  if (food.basis === 'per100g') {
+    const grams = unit ? qty * (UNIT_TO_GRAMS[unit] ?? 1) : qty * 100; // bare number, no unit -> assume ~grams-scale serving
+    multiplier = grams / 100;
+  } else if (food.basis === 'per100ml') {
+    const ml = unit ? qty * (UNIT_TO_ML[unit] ?? 1) : qty * 100;
+    multiplier = ml / 100;
+  } else {
+    // 'piece' basis — a bare count of whole units (eggs, rotis, almonds…)
+    multiplier = qty;
+  }
+
+  return {
+    cal: food.cal * multiplier,
+    protein: food.protein * multiplier,
+    waterMl: (food.waterMl || 0) * multiplier,
+  };
+}
+
+// A single item string like "4 whole eggs + 3 egg whites" bundles more than
+// one food, so it's split on common separators before estimating.
+function estimateItemNutrition(item: string) {
+  const fragments = (item || '').split(/\+|,|\band\b/gi);
+  return fragments.reduce((sum, frag) => {
+    const n = estimateFragmentNutrition(frag);
+    return { cal: sum.cal + n.cal, protein: sum.protein + n.protein, waterMl: sum.waterMl + n.waterMl };
+  }, { cal: 0, protein: 0, waterMl: 0 });
+}
+
+// Sums every item across every meal into a day-level estimate, then formats
+// it the same way the old hardcoded DIET.target/protein/hydration strings
+// used to read — this is what each Fuel Matrix row shows unless overridden.
+function computeDietAutoValues(meals: DietMeal[], profileWeightKg?: number): Record<DietOverrideKey, string> {
+  const totals = (meals || []).reduce((sum, m) => {
+    const mealTotal = (m.items || []).reduce((s, it) => {
+      const n = estimateItemNutrition(it);
+      return { cal: s.cal + n.cal, protein: s.protein + n.protein, waterMl: s.waterMl + n.waterMl };
+    }, { cal: 0, protein: 0, waterMl: 0 });
+    return { cal: sum.cal + mealTotal.cal, protein: sum.protein + mealTotal.protein, waterMl: sum.waterMl + mealTotal.waterMl };
+  }, { cal: 0, protein: 0, waterMl: 0 });
+
+  const hasAnyFood = totals.cal > 0 || totals.protein > 0;
+  const calRounded = Math.round(totals.cal / 25) * 25;
+  const proteinRounded = Math.round(totals.protein);
+
+  // Hydration: a standard 35ml/kg bodyweight baseline (falls back to a 70kg
+  // reference if no profile weight is set yet) plus whatever liquid the
+  // logged meals already account for, so liquid-heavy meals ask for a touch
+  // less separate drinking water.
+  const baselineL = (profileWeightKg && profileWeightKg > 0 ? profileWeightKg : 70) * 0.035;
+  const dietLiquidL = totals.waterMl / 1000;
+  const totalL = Math.round((baselineL + dietLiquidL) * 2) / 2; // nearest 0.5L
+
+  return {
+    calories: hasAnyFood ? `~${calRounded} kcal · auto-estimated from your meals` : 'Add meals below to auto-estimate',
+    protein: hasAnyFood ? `~${proteinRounded}g protein · auto-estimated from your meals` : 'Add meals below to auto-estimate',
+    hydration: `~${totalL.toFixed(1)}L water/day${dietLiquidL > 0.05 ? ` · incl. ~${dietLiquidL.toFixed(1)}L from meals` : ''}`,
+  };
+}
+
+// Merges the auto-estimate with whatever the person has overridden — an
+// empty override string means "stay on auto" for that row, same convention
+// as resolveOverviewValues below.
+function resolveDietValues(meals: DietMeal[], overrides: Record<DietOverrideKey, string>, profileWeightKg?: number) {
+  const auto = computeDietAutoValues(meals, profileWeightKg);
+  const resolved = {} as Record<DietOverrideKey, string>;
+  for (const k of DIET_OVERRIDE_KEYS) {
+    resolved[k] = overrides?.[k] ? overrides[k] : auto[k];
+  }
+  return { auto, resolved };
+}
 
 // ---------- Dashboard Overview: "Today's Shape" / "Fuel Snapshot" ----------
 // These two Overview cards used to be permanently hardcoded strings, so
@@ -229,10 +414,14 @@ function formatClock12(hhmm: string): string {
   return `${h}:${min} ${suffix}`;
 }
 
-// Reads the live Timeline + Fuel Matrix target to build every auto value —
-// this is what each Overview row shows unless the person has typed a
-// custom override for that specific row in Settings > Dashboard Overview.
-function computeOverviewAutoValues(timeline: any[]): Record<OverviewOverrideKey, string> {
+// Reads the live Timeline + resolved Fuel Matrix values to build every auto
+// value — this is what each Overview row shows unless the person has typed
+// a custom override for that specific row in Settings > Dashboard Overview.
+// `dietResolved` is whatever the Fuel Matrix (Settings > Training & Fuel)
+// currently shows for calories/protein/hydration — auto-estimated from the
+// meals there, or that section's own custom override, whichever is active —
+// so this Overview row can still be independently overridden on top of that.
+function computeOverviewAutoValues(timeline: any[], dietResolved: Record<DietOverrideKey, string>): Record<OverviewOverrideKey, string> {
   const studySlots = (timeline || []).filter((s) => s.type === 'study');
   const gymSlots = (timeline || []).filter((s) => s.type === 'gym');
   const mealSlots = (timeline || []).filter((s) => s.type === 'meal');
@@ -248,16 +437,16 @@ function computeOverviewAutoValues(timeline: any[]): Record<OverviewOverrideKey,
     training: gymSlots.length ? `${formatMinutesDuration(gymMinutes)} window` : 'Rest day',
     meals: mealSlots.length ? `${mealSlots.length} fuel window${mealSlots.length === 1 ? '' : 's'}` : 'Not scheduled',
     sleep: sleepSlot ? `${formatClock12(sleepSlot.start)} sharp` : 'Not scheduled',
-    calories: DIET.target.split('·')[0].trim(),
-    protein: DIET.protein.split('·')[0].trim(),
-    hydration: DIET.hydration,
+    calories: dietResolved.calories,
+    protein: dietResolved.protein,
+    hydration: dietResolved.hydration,
   };
 }
 
 // Merges auto-computed values with whatever the person has overridden —
 // an empty override string means "stay on auto" for that row.
-function resolveOverviewValues(timeline: any[], overrides: Record<OverviewOverrideKey, string>) {
-  const auto = computeOverviewAutoValues(timeline);
+function resolveOverviewValues(timeline: any[], overrides: Record<OverviewOverrideKey, string>, dietResolved: Record<DietOverrideKey, string>) {
+  const auto = computeOverviewAutoValues(timeline, dietResolved);
   const resolved = {} as Record<OverviewOverrideKey, string>;
   for (const k of OVERVIEW_OVERRIDE_KEYS) {
     resolved[k] = overrides?.[k] ? overrides[k] : auto[k];
@@ -415,7 +604,35 @@ function hydrateTimeline(rawList: any[]): any[] {
   }));
 }
 
-function serializeConfig(config: { trackerItems: any[]; timeline: any[]; training: any[]; profile: any; subjects: any[]; syllabus: any[]; countdowns: any[]; overviewOverrides: Record<OverviewOverrideKey, string> }) {
+// Same "storable" convention as DEFAULT_TIMELINE_STORABLE above — this is
+// what a brand-new account's Fuel Matrix starts from, and what "Reset to
+// default" in Settings > Training & Fuel restores.
+const DEFAULT_DIET_STORABLE = DEFAULT_DIET_MEALS_RAW.map((m, i) => ({
+  id: `diet_default_${i}`,
+  time: m.time,
+  name: m.name,
+  items: m.items,
+  iconName: resolveIconName(m.icon),
+}));
+
+function hydrateDiet(rawList: any): DietMeal[] {
+  const list = Array.isArray(rawList) && rawList.length ? rawList : DEFAULT_DIET_STORABLE;
+  // Hard-capped at MAX_DIET_MEALS even on load, so old/foreign data can
+  // never sneak past the 6-meal ceiling enforced in the Settings editor.
+  return list.slice(0, MAX_DIET_MEALS).map((m: any, i: number) => {
+    const iconName = typeof m?.iconName === 'string' && ICON_LIBRARY[m.iconName] ? m.iconName : 'Utensils';
+    return {
+      id: typeof m?.id === 'string' && m.id ? m.id : makeDietMealId(),
+      time: typeof m?.time === 'string' ? m.time : '',
+      name: typeof m?.name === 'string' && m.name ? m.name : `Meal ${i + 1}`,
+      items: Array.isArray(m?.items) ? m.items.filter((it: any) => typeof it === 'string') : [],
+      iconName,
+      icon: ICON_LIBRARY[iconName] || Utensils,
+    };
+  });
+}
+
+function serializeConfig(config: { trackerItems: any[]; timeline: any[]; training: any[]; profile: any; subjects: any[]; syllabus: any[]; countdowns: any[]; overviewOverrides: Record<OverviewOverrideKey, string>; diet: DietMeal[]; dietOverrides: Record<DietOverrideKey, string> }) {
   return {
     trackerItems: config.trackerItems,
     training: config.training,
@@ -425,6 +642,8 @@ function serializeConfig(config: { trackerItems: any[]; timeline: any[]; trainin
     syllabus: config.syllabus,
     countdowns: config.countdowns,
     overviewOverrides: config.overviewOverrides,
+    diet: config.diet.map(({ icon, ...rest }) => rest),
+    dietOverrides: config.dietOverrides,
   };
 }
 
@@ -474,6 +693,8 @@ function deserializeConfig(raw: any) {
       ? raw.countdowns.map((cd: any, i: number) => hydrateCountdown(cd, i))
       : (migratedCountdowns ?? DEFAULT_COUNTDOWNS),
     overviewOverrides: hydrateOverviewOverrides(raw?.overviewOverrides),
+    diet: hydrateDiet(raw?.diet),
+    dietOverrides: hydrateDietOverrides(raw?.dietOverrides),
   };
 }
 
@@ -488,8 +709,10 @@ const ConfigContext = React.createContext<{
   syllabus: any[];
   countdowns: CountdownItem[];
   overviewOverrides: Record<OverviewOverrideKey, string>;
+  diet: DietMeal[];
+  dietOverrides: Record<DietOverrideKey, string>;
   updateConfig: (partial: Record<string, any>) => void;
-  resetConfigSection: (key: 'trackerItems' | 'timeline' | 'training' | 'profile' | 'subjects' | 'syllabus' | 'countdowns' | 'overviewOverrides') => void;
+  resetConfigSection: (key: 'trackerItems' | 'timeline' | 'training' | 'profile' | 'subjects' | 'syllabus' | 'countdowns' | 'overviewOverrides' | 'diet' | 'dietOverrides') => void;
 }>({
   trackerItems: DEFAULT_TRACKER_ITEMS,
   timeline: hydrateTimeline(DEFAULT_TIMELINE_STORABLE),
@@ -499,6 +722,8 @@ const ConfigContext = React.createContext<{
   syllabus: DEFAULT_SYLLABUS,
   countdowns: DEFAULT_COUNTDOWNS,
   overviewOverrides: DEFAULT_OVERVIEW_OVERRIDES,
+  diet: hydrateDiet(DEFAULT_DIET_STORABLE),
+  dietOverrides: DEFAULT_DIET_OVERRIDES,
   updateConfig: () => {},
   resetConfigSection: () => {},
 });
@@ -1838,7 +2063,7 @@ function PerformanceCalendar({ globalHistory, setGlobalHistory, setModal }) {
 // ---------- Tab Subcomponent: Overview ----------
 
 function OverviewTab({ setModal }) {
-  const { profile, syllabus, timeline, overviewOverrides } = React.useContext(ConfigContext);
+  const { profile, syllabus, timeline, overviewOverrides, diet, dietOverrides } = React.useContext(ConfigContext);
   const latestWeight = useMemo(() => {
     try {
       const saved = localStorage.getItem(WEIGHT_LOG_KEY);
@@ -1850,10 +2075,15 @@ function OverviewTab({ setModal }) {
     }
   }, []);
 
-  // Auto-derives from the live Timeline + Fuel Matrix target, unless the
-  // person has typed a custom override for a given row in
+  // Fuel Matrix's own resolved values (auto-estimated from its meals, or its
+  // own custom override) feed into the Overview's calories/protein/hydration
+  // rows below, which can then still be independently overridden on top.
+  const { resolved: dietValues } = useMemo(() => resolveDietValues(diet, dietOverrides, profile.weight), [diet, dietOverrides, profile.weight]);
+
+  // Auto-derives from the live Timeline + resolved Fuel Matrix values, unless
+  // the person has typed a custom override for a given row in
   // Settings > Dashboard Overview.
-  const { resolved: shapeValues } = useMemo(() => resolveOverviewValues(timeline, overviewOverrides), [timeline, overviewOverrides]);
+  const { resolved: shapeValues } = useMemo(() => resolveOverviewValues(timeline, overviewOverrides, dietValues), [timeline, overviewOverrides, dietValues]);
 
   const colorClass = (color: string) =>
     color === 'blue'
@@ -2252,7 +2482,7 @@ function WeightTrackerCard() {
 }
 
 function TrainingFuelTab({ setModal, dietLog, setDietLog, currentDateStr }) {
-  const { training } = React.useContext(ConfigContext);
+  const { training, diet, dietOverrides, profile } = React.useContext(ConfigContext);
   const [activeDay, setActiveDay] = useState(training[0].day);
   const dayData = training.find((d) => d.day === activeDay) || training[0];
 
@@ -2265,12 +2495,16 @@ function TrainingFuelTab({ setModal, dietLog, setDietLog, currentDateStr }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [training]);
 
+  // Calories / protein / hydration auto-estimate from whatever meals are
+  // configured below, unless overridden in Settings > Training & Fuel.
+  const { resolved: dietValues } = useMemo(() => resolveDietValues(diet, dietOverrides, profile.weight), [diet, dietOverrides, profile.weight]);
+
   // Per-meal diet check-ins live in the parent (JEEDashboard) so the Daily
   // Matrix's "All 6 Meals Hit" box can auto-derive from this instead of being
   // a second, independent source of truth for the same thing.
   const todayStr = currentDateStr;
   const todayLog = dietLog[todayStr] || {};
-  const mealsLoggedToday = DIET.meals.filter((m) => todayLog[m.name]).length;
+  const mealsLoggedToday = diet.filter((m) => todayLog[m.name]).length;
 
   const toggleMeal = (mealName: string) => {
     setDietLog((prev) => {
@@ -2386,29 +2620,32 @@ function TrainingFuelTab({ setModal, dietLog, setDietLog, currentDateStr }) {
       <WeightTrackerCard />
 
       <div>
-        <SectionHeading icon={Flame} title="V-Taper Fuel Matrix" subtitle={`${DIET.target} · ${DIET.protein}`} />
+        <SectionHeading icon={Flame} title="V-Taper Fuel Matrix" subtitle="Meals, targets & icons — fully editable in Settings → Training & Fuel" />
         <div className="mb-4 flex flex-wrap gap-2.5">
-          <StatPill icon={Flame} label="Calorie Target" value="~2200–2300 kcal" accent="amber" />
-          <StatPill icon={Activity} label="Protein Target" value="165g–175g+" accent="violet" />
-          <StatPill icon={Droplets} label="Hydration" value={DIET.hydration} accent="blue" />
+          <StatPill icon={Flame} label="Calorie Target" value={dietValues.calories} accent="amber" />
+          <StatPill icon={Activity} label="Protein Target" value={dietValues.protein} accent="violet" />
+          <StatPill icon={Droplets} label="Hydration" value={dietValues.hydration} accent="blue" />
         </div>
 
+        {diet.length === 0 ? (
+          <p className="text-[12.5px] text-neutral-500 mb-3">No meals configured yet — add some in Settings → Training & Fuel.</p>
+        ) : (
         <div className="mb-4 flex items-center justify-between flex-wrap gap-3 rounded-xl border border-neutral-800 bg-neutral-900/40 px-4 py-3">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className={`h-4 w-4 ${mealsLoggedToday === DIET.meals.length ? 'text-violet-400' : 'text-neutral-500'}`} />
+            <CheckCircle2 className={`h-4 w-4 ${diet.length > 0 && mealsLoggedToday === diet.length ? 'text-violet-400' : 'text-neutral-500'}`} />
             <span className="text-[12.5px] text-neutral-300">
-              <span className="font-semibold text-neutral-100 tabular-nums">{mealsLoggedToday}/{DIET.meals.length}</span> meals logged today
+              <span className="font-semibold text-neutral-100 tabular-nums">{mealsLoggedToday}/{diet.length}</span> meals logged today
               <span className="text-neutral-600"> · syncs the "All 6 Meals Hit" box on the Daily Matrix</span>
             </span>
           </div>
           <div className="flex items-center gap-1">
             {last7Days.map((d) => {
-              const pct = d.count / DIET.meals.length;
+              const pct = diet.length > 0 ? d.count / diet.length : 0;
               const isToday = d.date === todayStr;
               return (
                 <div
                   key={d.date}
-                  title={`${d.date}: ${d.count}/${DIET.meals.length} meals logged`}
+                  title={`${d.date}: ${d.count}/${diet.length} meals logged`}
                   className={`h-5 w-5 rounded-md flex items-center justify-center text-[8.5px] font-bold ${isToday ? 'ring-1 ring-neutral-500' : ''}`}
                   style={{
                     backgroundColor: pct === 0 ? 'rgba(255,255,255,0.04)' : `rgba(52,211,153,${0.15 + pct * 0.65})`,
@@ -2421,13 +2658,14 @@ function TrainingFuelTab({ setModal, dietLog, setDietLog, currentDateStr }) {
             })}
           </div>
         </div>
+        )}
 
         <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
-          {DIET.meals.map((m) => {
+          {diet.map((m) => {
             const isLogged = !!todayLog[m.name];
             return (
               <Card
-                key={m.name}
+                key={m.id}
                 onClick={() => setModal({
                   title: m.name,
                   subtitle: `Scheduled Timing Window: ${m.time}`,
@@ -2464,8 +2702,8 @@ function TrainingFuelTab({ setModal, dietLog, setDietLog, currentDateStr }) {
                   </div>
                 </div>
                 <ul className="space-y-1">
-                  {m.items.map((it) => (
-                    <li key={it} className="flex items-start gap-1.5 text-[12px] text-neutral-400 leading-snug">
+                  {m.items.map((it, itIdx) => (
+                    <li key={itIdx} className="flex items-start gap-1.5 text-[12px] text-neutral-400 leading-snug">
                       <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-neutral-600" />
                       {it}
                     </li>
@@ -3588,6 +3826,225 @@ function TrainingEditor() {
   );
 }
 
+// Rows for the Calorie/Protein/Hydration targets — same AUTO/CUSTOM
+// convention as OVERVIEW_OVERRIDE_ROWS above, just scoped to the Fuel
+// Matrix itself instead of the Dashboard Overview.
+const DIET_OVERRIDE_ROWS: { key: DietOverrideKey; label: string; icon: any; hint: string }[] = [
+  { key: 'calories', label: 'Calorie Target', icon: Flame, hint: 'Auto-estimated from the meals below' },
+  { key: 'protein', label: 'Protein Target', icon: Activity, hint: 'Auto-estimated from the meals below' },
+  { key: 'hydration', label: 'Hydration', icon: Droplets, hint: 'Auto-estimated from bodyweight + the meals below' },
+];
+
+// Fully editable Fuel Matrix: every meal (time, name, icon, food items) plus
+// the Calorie/Protein/Hydration targets those meals imply. Capped at
+// MAX_DIET_MEALS so "All 6 Meals Hit" on the Daily Matrix stays meaningful,
+// and a brand-new account already has six sensible defaults to tweak
+// instead of a blank page.
+function DietEditor() {
+  const { diet, dietOverrides, profile, updateConfig, resetConfigSection } = React.useContext(ConfigContext);
+  const [meals, setMeals] = useState<DietMeal[]>(diet);
+  const [overrideDraft, setOverrideDraft] = useState<Record<DietOverrideKey, string>>(dietOverrides);
+  const [dirty, setDirty] = useState(false);
+  const [openIdx, setOpenIdx] = useState<number | null>(null);
+
+  useEffect(() => { setMeals(diet); setOverrideDraft(dietOverrides); setDirty(false); }, [diet, dietOverrides]);
+
+  // Live preview — recalculates as the meals are edited, before Save is
+  // even pressed, so someone can see the estimate move as they type.
+  const autoPreview = useMemo(() => computeDietAutoValues(meals, profile.weight), [meals, profile.weight]);
+
+  const patchMeal = (i: number, patchObj: Partial<DietMeal>) => {
+    setMeals((prev) => prev.map((m, idx) => (idx === i ? { ...m, ...patchObj } : m)));
+    setDirty(true);
+  };
+  const removeMeal = (i: number) => {
+    setMeals((prev) => prev.filter((_, idx) => idx !== i));
+    setDirty(true);
+  };
+  const addMeal = () => {
+    if (meals.length >= MAX_DIET_MEALS) return;
+    setMeals((prev) => {
+      setOpenIdx(prev.length);
+      return [...prev, { ...makeBlankDietMeal(), icon: Utensils }];
+    });
+    setDirty(true);
+  };
+  const patchItem = (mealIdx: number, itemIdx: number, value: string) => {
+    setMeals((prev) => prev.map((m, idx) => (idx !== mealIdx ? m : { ...m, items: m.items.map((it, ii) => (ii === itemIdx ? value : it)) })));
+    setDirty(true);
+  };
+  const removeItem = (mealIdx: number, itemIdx: number) => {
+    setMeals((prev) => prev.map((m, idx) => (idx !== mealIdx ? m : { ...m, items: m.items.filter((_, ii) => ii !== itemIdx) })));
+    setDirty(true);
+  };
+  const addItem = (mealIdx: number) => {
+    setMeals((prev) => prev.map((m, idx) => (idx !== mealIdx ? m : { ...m, items: [...m.items, ''] })));
+    setDirty(true);
+  };
+
+  const setOverrideRow = (key: DietOverrideKey, value: string) => {
+    setOverrideDraft((prev) => ({ ...prev, [key]: value }));
+    setDirty(true);
+  };
+  const useAutoRow = (key: DietOverrideKey) => {
+    setOverrideDraft((prev) => ({ ...prev, [key]: '' }));
+    setDirty(true);
+  };
+  const useCustomRow = (key: DietOverrideKey) => {
+    setOverrideDraft((prev) => ({ ...prev, [key]: prev[key] || autoPreview[key] }));
+    setDirty(true);
+  };
+
+  const save = () => {
+    if (!meals.length) return;
+    updateConfig({
+      diet: meals.map((m) => ({ ...m, items: m.items.filter((it) => it.trim() !== '') })),
+      dietOverrides: overrideDraft,
+    });
+    setDirty(false);
+  };
+  const resetAll = () => {
+    resetConfigSection('diet');
+    resetConfigSection('dietOverrides');
+    setDirty(false);
+  };
+
+  return (
+    <Card className="animate-fadeIn">
+      <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
+        <SectionHeading icon={Utensils} title="Training & Fuel — Meals" subtitle={`Up to ${MAX_DIET_MEALS} meals · rename, retime, re-icon, or rewrite the food in each one`} />
+        <div className="flex items-center gap-2 shrink-0">
+          <RippleButton onClick={resetAll} className={btnGhost}>
+            <RefreshCcw className="h-3.5 w-3.5" /> Reset
+          </RippleButton>
+          <RippleButton onClick={save} disabled={!dirty} className={btnSave(dirty)}>
+            <Save className="h-3.5 w-3.5" /> Save
+          </RippleButton>
+        </div>
+      </div>
+
+      {meals.length === 0 && (
+        <p className="text-[12.5px] text-neutral-500 mb-3">No meals yet — add one below.</p>
+      )}
+
+      <div className="space-y-2">
+        {meals.map((m, i) => {
+          const isOpen = openIdx === i;
+          const Icon = ICON_LIBRARY[m.iconName] || Utensils;
+          return (
+            <div key={m.id} className="rounded-lg border border-neutral-800 bg-neutral-950/40 overflow-hidden">
+              <button onClick={() => setOpenIdx(isOpen ? null : i)} className="cursor-target w-full flex items-center gap-3 px-3.5 py-2.5 text-left">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-neutral-800 text-neutral-300">
+                  <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
+                </div>
+                <span className="text-[12.5px] font-medium text-neutral-200 flex-1 truncate">{m.name || 'Untitled meal'}</span>
+                <span className="text-[10px] uppercase tracking-wide text-neutral-600 shrink-0">{m.items.length} item{m.items.length === 1 ? '' : 's'}</span>
+                <ChevronRight className={`h-3.5 w-3.5 text-neutral-600 transition-transform shrink-0 ${isOpen ? 'rotate-90' : ''}`} />
+              </button>
+              {isOpen && (
+                <div className="px-3.5 pb-3.5 pt-1 space-y-2.5 border-t border-neutral-800/60">
+                  <div className="grid sm:grid-cols-3 gap-2.5">
+                    <div>
+                      <label className={fieldLabel}>Meal Name</label>
+                      <input value={m.name} onChange={(e) => patchMeal(i, { name: e.target.value })} placeholder="e.g. Breakfast" className={fieldInput} />
+                    </div>
+                    <div>
+                      <label className={fieldLabel}>Time</label>
+                      <input value={m.time} onChange={(e) => patchMeal(i, { time: e.target.value })} placeholder="e.g. 08:30 AM" className={fieldInput} />
+                    </div>
+                    <div>
+                      <label className={fieldLabel}>Icon</label>
+                      <select value={m.iconName} onChange={(e) => patchMeal(i, { iconName: e.target.value, icon: ICON_LIBRARY[e.target.value] || Utensils })} className={fieldInput}>
+                        {ICON_LIBRARY_KEYS.map((k) => <option key={k} value={k}>{k}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className={fieldLabel}>Food Items</label>
+                    {m.items.map((it, itIdx) => (
+                      <div key={itIdx} className="flex items-center gap-2">
+                        <input value={it} onChange={(e) => patchItem(i, itIdx, e.target.value)} className={`flex-1 ${fieldInput}`} placeholder="e.g. 200g grilled chicken breast" />
+                        <button onClick={() => removeItem(i, itIdx)} className="cursor-target shrink-0 flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-800 bg-neutral-900 text-neutral-500 hover:text-rose-400 hover:border-rose-500/30 transition-colors">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                    <button onClick={() => addItem(i)} className="cursor-target flex items-center gap-1.5 text-[11.5px] font-medium text-neutral-400 hover:text-neutral-200 transition-colors">
+                      <Plus className="h-3.5 w-3.5" /> Add food item
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-neutral-600 leading-relaxed">
+                    Quantities like <span className="text-neutral-500 font-medium">200g</span>, <span className="text-neutral-500 font-medium">2 rotis</span>, or <span className="text-neutral-500 font-medium">250ml milk</span> feed the calorie/protein/hydration auto-estimate below — anything unrecognised just won't add to it.
+                  </p>
+                  <button onClick={() => removeMeal(i)} className="cursor-target flex items-center gap-1.5 text-[11.5px] font-medium text-rose-400/80 hover:text-rose-300 transition-colors">
+                    <Trash2 className="h-3.5 w-3.5" /> Remove meal
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {meals.length >= MAX_DIET_MEALS ? (
+        <p className="mt-3 text-[11.5px] text-neutral-600">Maximum of {MAX_DIET_MEALS} meals — remove one to add another.</p>
+      ) : (
+        <RippleButton onClick={addMeal} className="cursor-target mt-3 flex items-center gap-1.5 rounded-lg border border-dashed border-neutral-700 px-3 py-2 text-[12px] font-medium text-neutral-400 hover:text-neutral-200 hover:border-neutral-500 transition-colors">
+          <Plus className="h-3.5 w-3.5" /> Add Meal ({meals.length}/{MAX_DIET_MEALS})
+        </RippleButton>
+      )}
+
+      <div className="mt-6 pt-5 border-t border-neutral-800/60">
+        <div className="mb-3">
+          <span className="text-[11px] uppercase tracking-wide text-neutral-600 font-bold">Calorie / Protein / Hydration Targets</span>
+          <p className="text-[11.5px] text-neutral-600 mt-1">Auto-estimated from the meals above using their bodyweight — override any row with your own number if you'd rather track it yourself.</p>
+        </div>
+        <div className="space-y-2.5">
+          {DIET_OVERRIDE_ROWS.map((row) => {
+            const isCustom = !!overrideDraft[row.key];
+            return (
+              <div key={row.key} className="rounded-lg border border-neutral-800 bg-neutral-950/40 p-3">
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <row.icon className="h-3.5 w-3.5 text-neutral-500 shrink-0" strokeWidth={1.75} />
+                    <span className="text-[12.5px] font-medium text-neutral-300 truncate">{row.label}</span>
+                  </div>
+                  <div className="flex items-center gap-1 rounded-full border border-neutral-800 bg-neutral-900 p-0.5 shrink-0">
+                    <button
+                      onClick={() => useAutoRow(row.key)}
+                      className={`cursor-target rounded-full px-2.5 py-1 text-[10.5px] font-bold tracking-wide transition-colors ${
+                        !isCustom ? 'bg-violet-500 text-neutral-950' : 'text-neutral-500 hover:text-neutral-300'
+                      }`}
+                    >
+                      AUTO
+                    </button>
+                    <button
+                      onClick={() => useCustomRow(row.key)}
+                      className={`cursor-target rounded-full px-2.5 py-1 text-[10.5px] font-bold tracking-wide transition-colors ${
+                        isCustom ? 'bg-violet-500 text-neutral-950' : 'text-neutral-500 hover:text-neutral-300'
+                      }`}
+                    >
+                      CUSTOM
+                    </button>
+                  </div>
+                </div>
+                {isCustom ? (
+                  <input value={overrideDraft[row.key]} onChange={(e) => setOverrideRow(row.key, e.target.value)} placeholder={autoPreview[row.key]} className={fieldInput} />
+                ) : (
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[12px] text-neutral-500 italic">{row.hint}</span>
+                    <span className="text-[12px] text-neutral-400 font-medium shrink-0">{autoPreview[row.key]}</span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 function ProfileEditor() {
   const { profile, updateConfig, resetConfigSection } = React.useContext(ConfigContext);
   const [draft, setDraft] = useState(profile);
@@ -3872,13 +4329,14 @@ const OVERVIEW_OVERRIDE_ROWS: { key: OverviewOverrideKey; label: string; icon: a
 ];
 
 function OverviewSummaryEditor() {
-  const { timeline, overviewOverrides, updateConfig, resetConfigSection } = React.useContext(ConfigContext);
+  const { timeline, overviewOverrides, diet, dietOverrides, profile, updateConfig, resetConfigSection } = React.useContext(ConfigContext);
   const [draft, setDraft] = useState<Record<OverviewOverrideKey, string>>(overviewOverrides);
   const [dirty, setDirty] = useState(false);
 
   useEffect(() => { setDraft(overviewOverrides); setDirty(false); }, [overviewOverrides]);
 
-  const auto = useMemo(() => computeOverviewAutoValues(timeline), [timeline]);
+  const { resolved: dietValues } = useMemo(() => resolveDietValues(diet, dietOverrides, profile.weight), [diet, dietOverrides, profile.weight]);
+  const auto = useMemo(() => computeOverviewAutoValues(timeline, dietValues), [timeline, dietValues]);
 
   const setRow = (key: OverviewOverrideKey, value: string) => {
     setDraft((prev) => ({ ...prev, [key]: value }));
@@ -4157,6 +4615,7 @@ function ConfigEditorTab() {
       <TrackerItemsEditor />
       <TimelineEditor />
       <TrainingEditor />
+      <DietEditor />
       <SubjectsAndSyllabusEditor />
     </div>
   );
@@ -4267,7 +4726,7 @@ export default function JEEDashboard() {
     setConfig((prev) => ({ ...prev, ...partial }));
   };
 
-  const resetConfigSection = (key: 'trackerItems' | 'timeline' | 'training' | 'profile' | 'subjects' | 'syllabus' | 'countdowns' | 'overviewOverrides') => {
+  const resetConfigSection = (key: 'trackerItems' | 'timeline' | 'training' | 'profile' | 'subjects' | 'syllabus' | 'countdowns' | 'overviewOverrides' | 'diet' | 'dietOverrides') => {
     setConfig((prev) => ({
       ...prev,
       [key]: key === 'timeline'
@@ -4284,6 +4743,10 @@ export default function JEEDashboard() {
         ? DEFAULT_COUNTDOWNS
         : key === 'overviewOverrides'
         ? DEFAULT_OVERVIEW_OVERRIDES
+        : key === 'diet'
+        ? hydrateDiet(DEFAULT_DIET_STORABLE)
+        : key === 'dietOverrides'
+        ? DEFAULT_DIET_OVERRIDES
         : DEFAULT_TRACKER_ITEMS,
     }));
   };
@@ -4339,8 +4802,8 @@ export default function JEEDashboard() {
 
   const allMealsHitToday = useMemo(() => {
     const todayMeals = dietLog[currentDateStr] || {};
-    return DIET.meals.every((m) => todayMeals[m.name]);
-  }, [dietLog, currentDateStr]);
+    return config.diet.length > 0 && config.diet.every((m) => todayMeals[m.name]);
+  }, [dietLog, currentDateStr, config.diet]);
 
   // Keep the Daily Matrix's t6 box in lockstep with the Fuel Matrix meal log,
   // rather than letting it drift as an independent manual checkbox.
@@ -4544,6 +5007,8 @@ export default function JEEDashboard() {
         syllabus: config.syllabus,
         countdowns: config.countdowns,
         overviewOverrides: config.overviewOverrides,
+        diet: config.diet,
+        dietOverrides: config.dietOverrides,
         updateConfig,
         resetConfigSection,
       }}
