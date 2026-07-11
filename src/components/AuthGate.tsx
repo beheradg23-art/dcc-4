@@ -63,7 +63,7 @@ function SignInVisualPanel() {
           and depth. Slow enough that they read as "alive" without being
           distracting next to a login form. */}
       <div className="pointer-events-none absolute -top-1/4 left-1/4 h-[55vmin] w-[55vmin] rounded-full bg-violet-600/[0.10] blur-[130px] animate-[akyos-drift-a_24s_ease-in-out_infinite_alternate]" />
-      <div className="pointer-events-none absolute bottom-[-10%] right-[-5%] h-[48vmin] w-[48vmin] rounded-full bg-sky-500/[0.09] blur-[130px] animate-[akyos-drift-b_28s_ease-in-out_infinite_alternate]" />
+      <div className="pointer-events-none absolute bottom-[-10%] right-[-5%] h-[48vmin] w-[48vmin] rounded-full bg-indigo-500/[0.09] blur-[130px] animate-[akyos-drift-b_28s_ease-in-out_infinite_alternate]" />
 
       {/* Faint grain for texture. */}
       <div
@@ -100,7 +100,7 @@ function SignInVisualPanel() {
           the app's own header, so this panel reads as unmistakably
           "this app" rather than generic decoration. */}
       <div className="relative flex flex-col items-center gap-3">
-        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 via-violet-500 to-fuchsia-500 shadow-lg shadow-violet-500/20">
+        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-500 shadow-lg shadow-violet-500/20">
           <GraduationCap className="h-5 w-5 text-neutral-950" strokeWidth={2} />
         </div>
         <div className="text-center">
@@ -399,7 +399,7 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
         <SignInVisualPanel />
 
         <div className="flex h-full w-full flex-col items-center justify-center px-6 lg:w-1/2">
-          <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 via-violet-500 to-fuchsia-500 shadow-lg shadow-violet-500/20">
+          <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-500 shadow-lg shadow-violet-500/20">
             <Mail className="h-5 w-5 text-neutral-950" strokeWidth={2} />
           </div>
 
@@ -439,7 +439,7 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
             <button
               type="submit"
               disabled={authBusy}
-              className="w-full rounded-xl bg-gradient-to-br from-sky-400 via-violet-500 to-fuchsia-500 py-3 text-[13px] font-semibold text-neutral-950 transition-opacity disabled:opacity-60"
+              className="w-full rounded-xl bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-500 py-3 text-[13px] font-semibold text-neutral-950 transition-opacity disabled:opacity-60"
             >
               {authBusy ? 'Please wait…' : authMode === 'signin' ? 'Sign In' : 'Sign Up'}
             </button>
@@ -482,7 +482,7 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
         className="fixed inset-0 z-[999] flex flex-col items-center justify-center bg-zinc-950 px-6"
         onClick={() => pcSetupInputRef.current?.focus()}
       >
-        <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 via-violet-500 to-fuchsia-500 shadow-lg shadow-violet-500/20">
+        <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-500 shadow-lg shadow-violet-500/20">
           <ShieldCheck className="h-5 w-5 text-neutral-950" strokeWidth={2} />
         </div>
 
@@ -541,7 +541,7 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
   if (stage === 'forgotPassword') {
     return (
       <div className="fixed inset-0 z-[999] flex flex-col items-center justify-center bg-zinc-950 px-6">
-        <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 via-violet-500 to-fuchsia-500 shadow-lg shadow-violet-500/20">
+        <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-500 shadow-lg shadow-violet-500/20">
           <Mail className="h-5 w-5 text-neutral-950" strokeWidth={2} />
         </div>
 
@@ -569,7 +569,7 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
             <button
               type="submit"
               disabled={resetBusy}
-              className="w-full rounded-xl bg-gradient-to-br from-sky-400 via-violet-500 to-fuchsia-500 py-3 text-[13px] font-semibold text-neutral-950 transition-opacity disabled:opacity-60"
+              className="w-full rounded-xl bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-500 py-3 text-[13px] font-semibold text-neutral-950 transition-opacity disabled:opacity-60"
             >
               {resetBusy ? 'Sending…' : 'Send Reset Link'}
             </button>
@@ -594,7 +594,7 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
   if (stage === 'resetPassword') {
     return (
       <div className="fixed inset-0 z-[999] flex flex-col items-center justify-center bg-zinc-950 px-6">
-        <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 via-violet-500 to-fuchsia-500 shadow-lg shadow-violet-500/20">
+        <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-500 shadow-lg shadow-violet-500/20">
           <ShieldCheck className="h-5 w-5 text-neutral-950" strokeWidth={2} />
         </div>
 
@@ -630,7 +630,7 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
           <button
             type="submit"
             disabled={newPasswordBusy}
-            className="w-full rounded-xl bg-gradient-to-br from-sky-400 via-violet-500 to-fuchsia-500 py-3 text-[13px] font-semibold text-neutral-950 transition-opacity disabled:opacity-60"
+            className="w-full rounded-xl bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-500 py-3 text-[13px] font-semibold text-neutral-950 transition-opacity disabled:opacity-60"
           >
             {newPasswordBusy ? 'Saving…' : 'Save New Password'}
           </button>
@@ -646,7 +646,7 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
       className="fixed inset-0 z-[999] flex flex-col items-center justify-center bg-zinc-950 px-6"
       onClick={() => pcInputRef.current?.focus()}
     >
-      <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 via-violet-500 to-fuchsia-500 shadow-lg shadow-violet-500/20">
+      <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-500 shadow-lg shadow-violet-500/20">
         <Lock className="h-5 w-5 text-neutral-950" strokeWidth={2} />
       </div>
 
