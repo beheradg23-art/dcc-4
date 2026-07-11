@@ -219,7 +219,7 @@ const ONE_PCT_KEYFRAMES = `
   @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&display=swap');
 
   @keyframes akyos-digit-flip {
-    from { opacity: 0; transform: translateY(-0.18em) scale(0.92); }
+    from { opacity: 0; transform: translateY(-0.06em) scale(0.985); }
     to   { opacity: 1; transform: translateY(0) scale(1); }
   }
 
@@ -235,7 +235,7 @@ const ONE_PCT_KEYFRAMES = `
   }
 
   @keyframes akyos-word-fade-in {
-    from { opacity: 0; transform: translateY(6px); }
+    from { opacity: 0; transform: translateY(10px); }
     to   { opacity: 1; transform: translateY(0); }
   }
 `;
@@ -252,9 +252,9 @@ const ODOMETER_DECOY_VALUES = ['7%', '4%', '9%', '2%', '6%', '3%', '8%', '5%', '
 const ODOMETER_STEP_DELAYS_MS = [65, 70, 80, 95, 115, 140, 175, 230];
 
 const ONE_PCT_SPIN_MS = 1300; // time budgeted for the odometer settling + its pause
-const ONE_PCT_WORD_STAGGER_MS = 220; // gap between each word starting its fade-in
-const ONE_PCT_WORD_FADE_MS = 500; // how long a single word takes to fade in
-const ONE_PCT_HOLD_MS = 650; // full line sits fully visible before exiting
+const ONE_PCT_WORD_STAGGER_MS = 340; // gap between each word starting its fade-in — slow and deliberate, not rapid-fire
+const ONE_PCT_WORD_FADE_MS = 850; // how long a single word takes to fade in — long and gentle rather than a quick snap
+const ONE_PCT_HOLD_MS = 600; // full line sits fully visible before exiting
 const ONE_PCT_EXIT_MS = 550; // whole line fades out
 const ONE_PCT_WORDS = ['Better', 'Every', 'Day.'];
 const ONE_PCT_TOTAL_MS =
@@ -322,7 +322,7 @@ function OnePercentIntro({ onComplete }: { onComplete: () => void }) {
             key={digitIndex}
             className={`inline-block min-w-[1.6ch] text-center ${ONE_PCT_TEXT_CLASS}`}
             style={{
-              animation: 'akyos-digit-flip 150ms cubic-bezier(0.16,1,0.3,1) both, akyos-liquid-gradient 3s ease-in-out infinite',
+              animation: 'akyos-digit-flip 260ms cubic-bezier(0.25,0.9,0.35,1) both, akyos-liquid-gradient 3s ease-in-out infinite',
               backgroundImage:
                 'linear-gradient(110deg, #a78bfa 0%, #f0abfc 25%, #818cf8 50%, #f0abfc 75%, #a78bfa 100%)',
               backgroundSize: '250% 100%',
