@@ -121,42 +121,72 @@ const INTRO_PULSE_KEYFRAMES = `
 `;
 
 // How long each phase of the intro holds, in ms. Kept in one place so the
-// timers below and the CSS transition durations stay honest with each
-// other — if you change ENTER/HOLD, the transition durations inline in
-// the JSX are what actually need to match.
-const INTRO_ENTER_MS = 550; // badge + wordmark fade/scale in
-const INTRO_HOLD_MS = 750; // sits fully visible
-const INTRO_EXIT_MS = 750; // curtain slides apart + branding fades out
+// timers below and the CSS transition/animation durations stay honest
+// with each other.
+const INTRO_ENTER_MS = 650; // badge + wordmark fade/scale in, stroke draws itself in over roughly this + hold
+const INTRO_HOLD_MS = 700; // sits fully visible
+const INTRO_EXIT_MS = 600; // whole overlay fades out
+
+// The moment (ms after mount) the intro starts handing off to the real
+// screen underneath — shared by the overlay's fade-out and the sign-in
+// boxes' cascade-in below so the two are timed to happen together.
+const INTRO_REVEAL_AT_MS = INTRO_ENTER_MS + INTRO_HOLD_MS;
+
+// A wandering, hand-drawn-looking line that traces itself across the
+// screen behind the badge as it reveals — the same beat as Strava's
+// post-run screen, where a route line draws itself in before settling
+// into the summary. Coordinates are just a fixed organic-looking
+// squiggle (not literally randomized — a fresh-random path would look
+// different, and possibly worse, on every load) across a 400x800
+// viewBox; `preserveAspectRatio="none"` stretches it to fill whatever
+// the real screen size is.
+const INTRO_STROKE_PATH =
+  'M -20 620 C 60 560, 40 460, 130 430 C 230 395, 190 300, 270 250 ' +
+  'C 350 200, 300 110, 190 100 C 100 92, 150 20, 260 40 ' +
+  'C 340 55, 400 130, 330 190 C 260 250, 340 300, 410 260 ' +
+  'C 470 226, 430 340, 340 380 C 250 420, 300 500, 400 520 ' +
+  'C 460 533, 420 620, 340 650 C 260 680, 220 760, 320 800';
+
+const INTRO_PULSE_KEYFRAMES = `
+  @keyframes akyos-intro-pulse {
+    0% { transform: scale(0.85); opacity: 0.5; }
+    70% { transform: scale(1.35); opacity: 0; }
+    100% { transform: scale(1.35); opacity: 0; }
+  }
+`;
 
 // A one-time, full-screen branded reveal shown on mount, before the real
-// AuthGate content underneath is visible to the user — think Strava's
-// post-run reveal screen: branding builds up center-stage first, holds
-// for a beat, then the whole thing splits open to hand off to the actual
-// UI, rather than just cutting straight to a bare loading spinner.
+// AuthGate content underneath is visible — a Strava-post-run-style beat:
+// a wandering line traces itself across the screen while the badge and
+// wordmark build up center-stage, holds for a moment, then the whole
+// overlay fades away to hand off to the real screen underneath (which
+// animates its own elements in — see cascadeStyle() below).
 //
 // Structurally this sits in its own fixed layer at a higher z-index than
-// every AuthGate stage screen (which are all z-[999]), so whatever stage
-// has actually resolved underneath (checking/auth/passcode/etc.) is
-// already there and ready the instant the curtain opens — no flash of
-// unstyled content, no waiting on the reveal to finish before real work
-// starts.
+// every AuthGate stage screen (all z-[999]), so whatever stage has
+// actually resolved underneath (checking/auth/passcode/etc.) is already
+// there and ready the instant the overlay clears.
 function IntroReveal({ onComplete }: { onComplete: () => void }) {
   const [visible, setVisible] = useState(false);
   const [exiting, setExiting] = useState(false);
+  const pathRef = useRef<SVGPathElement>(null);
+  const [pathLength, setPathLength] = useState<number | null>(null);
 
   useEffect(() => {
-    // Double rAF so the browser commits the initial (hidden) styles on
-    // one frame before we flip to the visible styles on the next — skip
-    // this and some browsers coalesce both states into a single paint
-    // and the "fade in" never actually animates.
+    if (pathRef.current) setPathLength(pathRef.current.getTotalLength());
+
+    // Double rAF so the browser commits the initial (hidden/undrawn)
+    // styles on one frame before flipping to the visible styles on the
+    // next — skip this and some browsers coalesce both states into a
+    // single paint and nothing actually animates.
     let raf1 = 0;
     let raf2 = 0;
     raf1 = requestAnimationFrame(() => {
       raf2 = requestAnimationFrame(() => setVisible(true));
     });
 
-    const exitTimer = setTimeout(() => setExiting(true), INTRO_ENTER_MS + INTRO_HOLD_MS);
-    const doneTimer = setTimeout(onComplete, INTRO_ENTER_MS + INTRO_HOLD_MS + INTRO_EXIT_MS);
+    const exitTimer = setTimeout(() => setExiting(true), INTRO_REVEAL_AT_MS);
+    const doneTimer = setTimeout(onComplete, INTRO_REVEAL_AT_MS + INTRO_EXIT_MS);
 
     return () => {
       cancelAnimationFrame(raf1);
@@ -169,36 +199,53 @@ function IntroReveal({ onComplete }: { onComplete: () => void }) {
 
   return (
     <div
-      className={`fixed inset-0 z-[1000] flex ${exiting ? 'pointer-events-none' : ''}`}
+      className={`fixed inset-0 z-[1000] flex items-center justify-center bg-zinc-950 transition-opacity ease-out ${exiting ? 'pointer-events-none' : ''}`}
+      style={{ transitionDuration: `${INTRO_EXIT_MS}ms`, opacity: exiting ? 0 : 1 }}
       aria-hidden="true"
     >
       <style>{INTRO_PULSE_KEYFRAMES}</style>
 
-      {/* Two-panel "curtain" — splits apart on exit to hand off to
-          whatever's underneath (fittingly, the real sign-in screen is
-          itself a two-panel layout). */}
-      <div
-        className="h-full w-1/2 bg-zinc-950 transition-transform ease-[cubic-bezier(0.65,0,0.35,1)]"
-        style={{
-          transitionDuration: `${INTRO_EXIT_MS}ms`,
-          transform: exiting ? 'translateX(-100%)' : 'translateX(0)',
-        }}
-      />
-      <div
-        className="h-full w-1/2 bg-zinc-950 transition-transform ease-[cubic-bezier(0.65,0,0.35,1)]"
-        style={{
-          transitionDuration: `${INTRO_EXIT_MS}ms`,
-          transform: exiting ? 'translateX(100%)' : 'translateX(0)',
-        }}
-      />
+      {/* The wandering stroke. Drawn via the classic dash-offset trick:
+          the dash length is set to the path's own length so it starts as
+          one long gap (invisible), then the offset animates to 0 so the
+          "gap" retreats and reveals the line as if it were being drawn
+          in real time. */}
+      <svg
+        className="pointer-events-none absolute inset-0 h-full w-full"
+        viewBox="0 0 400 800"
+        preserveAspectRatio="none"
+        fill="none"
+      >
+        <defs>
+          <linearGradient id="introStrokeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#4f46e5" />
+            <stop offset="55%" stopColor="#7c3aed" />
+            <stop offset="100%" stopColor="#d946ef" />
+          </linearGradient>
+        </defs>
+        <path
+          ref={pathRef}
+          d={INTRO_STROKE_PATH}
+          stroke="url(#introStrokeGradient)"
+          strokeWidth={2.5}
+          strokeLinecap="round"
+          vectorEffect="non-scaling-stroke"
+          style={{
+            strokeDasharray: pathLength ?? 0,
+            strokeDashoffset: pathLength === null ? 0 : visible ? 0 : pathLength,
+            transition: pathLength === null ? undefined : `stroke-dashoffset ${INTRO_ENTER_MS + INTRO_HOLD_MS * 0.4}ms cubic-bezier(0.65,0,0.35,1)`,
+            opacity: 0.55,
+          }}
+        />
+      </svg>
 
-      {/* Centered branding, layered over both curtain halves. */}
+      {/* Centered branding. */}
       <div
-        className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-4 transition-all ease-out"
+        className="pointer-events-none relative flex flex-col items-center justify-center gap-4 transition-all ease-out"
         style={{
-          transitionDuration: `${exiting ? INTRO_EXIT_MS : INTRO_ENTER_MS}ms`,
-          opacity: exiting ? 0 : visible ? 1 : 0,
-          transform: exiting ? 'scale(1.12)' : visible ? 'scale(1)' : 'scale(0.85)',
+          transitionDuration: `${INTRO_ENTER_MS}ms`,
+          opacity: visible ? 1 : 0,
+          transform: visible ? 'scale(1)' : 'scale(0.85)',
         }}
       >
         {/* Soft expanding ripple behind the badge, echoing a completed-
@@ -220,6 +267,26 @@ function IntroReveal({ onComplete }: { onComplete: () => void }) {
     </div>
   );
 }
+
+// Keyframes + helper for the sign-in screen's own reveal: each box
+// (badge, heading, inputs, button, links) slides in from the left with a
+// short delay stacked on top of the previous one — a "staircase" cascade
+// rather than everything popping in at once. Timed to start right as
+// IntroReveal's overlay begins fading (INTRO_REVEAL_AT_MS), so the two
+// handoffs read as one continuous motion instead of two separate beats.
+// Pure CSS (animation-delay), so no state needs to be threaded down from
+// IntroReveal — the delay clock starts the moment each element mounts,
+// which happens in the same initial render as the overlay itself.
+const CASCADE_KEYFRAMES = `
+  @keyframes akyos-cascade-in {
+    from { opacity: 0; transform: translateX(-28px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+`;
+const CASCADE_STEP_MS = 90;
+const cascadeStyle = (index: number): React.CSSProperties => ({
+  animation: `akyos-cascade-in 550ms cubic-bezier(0.16,1,0.3,1) ${INTRO_REVEAL_AT_MS + index * CASCADE_STEP_MS}ms both`,
+});
 
 // Once cloud data is pulled into localStorage, every piece of state in
 // JEEDashboard that reads localStorage.getItem(...) inside a useState
@@ -510,17 +577,21 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
   if (stage === 'auth') {
     return (
       <div className="fixed inset-0 z-[999] flex bg-zinc-950">
+        <style>{CASCADE_KEYFRAMES}</style>
         <SignInVisualPanel />
 
         <div className="flex h-full w-full flex-col items-center justify-center px-6 lg:w-1/2">
-          <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-500 shadow-lg shadow-violet-500/20">
+          <div
+            className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-500 shadow-lg shadow-violet-500/20"
+            style={cascadeStyle(0)}
+          >
             <Mail className="h-5 w-5 text-neutral-950" strokeWidth={2} />
           </div>
 
-          <h1 className="mb-1.5 text-[15px] font-semibold tracking-tight text-neutral-50">
+          <h1 className="mb-1.5 text-[15px] font-semibold tracking-tight text-neutral-50" style={cascadeStyle(1)}>
             {authMode === 'signin' ? 'Sign In' : 'Create Account'}
           </h1>
-          <p className="mb-8 max-w-xs text-center text-[12.5px] leading-relaxed text-neutral-500">
+          <p className="mb-8 max-w-xs text-center text-[12.5px] leading-relaxed text-neutral-500" style={cascadeStyle(2)}>
             {authMode === 'signin'
               ? 'Sign in to sync your command center across devices.'
               : "You'll pick your own passcode right after this."}
@@ -535,6 +606,7 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Email"
               className="w-full rounded-xl border border-neutral-800 bg-neutral-900/80 px-4 py-3 text-[13px] text-neutral-100 placeholder-neutral-600 outline-none transition-colors focus:border-violet-500/50"
+              style={cascadeStyle(3)}
             />
             <input
               type="password"
@@ -545,6 +617,7 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Password (min 6 characters)"
               className="w-full rounded-xl border border-neutral-800 bg-neutral-900/80 px-4 py-3 text-[13px] text-neutral-100 placeholder-neutral-600 outline-none transition-colors focus:border-violet-500/50"
+              style={cascadeStyle(4)}
             />
 
             {authError && <p className="text-[12px] text-rose-400">{authError}</p>}
@@ -554,6 +627,7 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
               type="submit"
               disabled={authBusy}
               className="w-full rounded-xl bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-500 py-3 text-[13px] font-semibold text-neutral-950 transition-opacity disabled:opacity-60"
+              style={cascadeStyle(5)}
             >
               {authBusy ? 'Please wait…' : authMode === 'signin' ? 'Sign In' : 'Sign Up'}
             </button>
@@ -568,6 +642,7 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
                 setStage('forgotPassword');
               }}
               className="mt-4 text-[12px] font-medium text-neutral-500 hover:text-neutral-300"
+              style={cascadeStyle(6)}
             >
               Forgot password?
             </button>
@@ -580,6 +655,7 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
               setSignupNotice('');
             }}
             className="mt-5 text-[12px] font-medium text-violet-400 hover:text-violet-300"
+            style={cascadeStyle(7)}
           >
             {authMode === 'signin' ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
           </button>
