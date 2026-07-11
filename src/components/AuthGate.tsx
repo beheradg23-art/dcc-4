@@ -28,6 +28,45 @@ const AMBIENT_DRIFT_KEYFRAMES = `
   @keyframes akyos-drift-b { 0% { transform: translate(0, 0); } 100% { transform: translate(3%, -4%); } }
 `;
 
+// --- shared "liquid" animated gradient fill ------------------------------
+//
+// Every icon badge and primary button used to be filled with a flat static
+// gradient (bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-500).
+// This replaces all of those with the same moving, shiny gradient treatment
+// used on the "1%" counter: the brand color stops slowly drift via an
+// animated background-position, and a soft diagonal light streak is layered
+// on top (as a second background-image, with its own background-size) so
+// it periodically sweeps across the shape for a glossy, liquid feel — all
+// on one element, no extra DOM needed.
+const LIQUID_GRADIENT_KEYFRAMES = `
+  @keyframes akyos-liquid-fill {
+    0%   { background-position: 0% 50%, 0% 50%; }
+    50%  { background-position: 100% 50%, 100% 50%; }
+    100% { background-position: 0% 50%, 0% 50%; }
+  }
+`;
+const LIQUID_ANIMATION = 'akyos-liquid-fill 5s ease-in-out infinite';
+const LIQUID_GRADIENT_FILL: React.CSSProperties = {
+  backgroundImage:
+    'linear-gradient(100deg, transparent 22%, rgba(255,255,255,0.5) 42%, rgba(255,255,255,0.12) 50%, transparent 66%), ' +
+    'linear-gradient(115deg, #4f46e5 0%, #7c3aed 22%, #d946ef 45%, #7c3aed 68%, #4f46e5 85%, #d946ef 100%)',
+  backgroundSize: '260% 260%, 300% 300%',
+  backgroundPosition: '0% 50%, 0% 50%',
+  animation: LIQUID_ANIMATION,
+};
+
+// Merges the liquid gradient fill into an element's style, safely combining
+// its infinite animation with any one-shot animation the element already
+// has (e.g. the cascade-in slide-in) instead of one overwriting the other.
+function liquidFillStyle(extra: React.CSSProperties = {}): React.CSSProperties {
+  const { animation: extraAnimation, ...rest } = extra;
+  return {
+    ...LIQUID_GRADIENT_FILL,
+    animation: extraAnimation ? `${extraAnimation}, ${LIQUID_ANIMATION}` : LIQUID_ANIMATION,
+    ...rest,
+  };
+}
+
 // The left-half visual panel for the desktop sign-in layout.
 //
 // Deliberately calm rather than busy: a near-black panel with a faint
@@ -100,7 +139,10 @@ function SignInVisualPanel() {
           the app's own header, so this panel reads as unmistakably
           "this app" rather than generic decoration. */}
       <div className="relative flex flex-col items-center gap-3">
-        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-500 shadow-lg shadow-violet-500/20">
+        <div
+          className="flex h-11 w-11 items-center justify-center rounded-xl shadow-lg shadow-violet-500/20"
+          style={liquidFillStyle()}
+        >
           <GraduationCap className="h-5 w-5 text-neutral-950" strokeWidth={2} />
         </div>
         <div className="text-center">
@@ -193,7 +235,10 @@ function IntroReveal({ onComplete }: { onComplete: () => void }) {
           <div className="absolute h-24 w-24 rounded-full bg-violet-600/25 blur-2xl animate-[akyos-intro-pulse_1.6s_ease-out_infinite]" />
         )}
 
-        <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-500 shadow-lg shadow-violet-500/30">
+        <div
+          className="relative flex h-14 w-14 items-center justify-center rounded-2xl shadow-lg shadow-violet-500/30"
+          style={liquidFillStyle()}
+        >
           <GraduationCap className="h-7 w-7 text-neutral-950" strokeWidth={2} />
         </div>
 
@@ -260,8 +305,11 @@ const ONE_PCT_TOTAL_MS =
 const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
 
 // The shared big-text styling for both "1%" and the "Better Every Day."
-// words, so they read as one continuous line at one consistent size.
-const ONE_PCT_TEXT_CLASS = 'text-[clamp(2.75rem,7vw,4.75rem)] font-extrabold leading-[1.15]';
+// words, so they read as one continuous line at one consistent size. The
+// lower end of the clamp is driven mostly by vw (rather than a large fixed
+// rem floor) so the whole phrase can shrink enough to stay on one line on
+// narrow phone widths instead of wrapping.
+const ONE_PCT_TEXT_CLASS = 'text-[clamp(1.4rem,6.8vw,4.75rem)] leading-[1.15]';
 
 function OnePercentIntro({ onComplete }: { onComplete: () => void }) {
   const [exiting, setExiting] = useState(false);
@@ -313,14 +361,14 @@ function OnePercentIntro({ onComplete }: { onComplete: () => void }) {
 
   return (
     <div
-      className={`fixed inset-0 z-[1001] flex items-center justify-center bg-zinc-950 px-6 transition-opacity ease-out ${exiting ? 'pointer-events-none' : ''}`}
+      className={`fixed inset-0 z-[1001] flex items-center justify-center bg-zinc-950 px-4 sm:px-6 transition-opacity ease-out ${exiting ? 'pointer-events-none' : ''}`}
       style={{ transitionDuration: `${ONE_PCT_EXIT_MS}ms`, opacity: exiting ? 0 : 1 }}
       aria-hidden="true"
     >
       <style>{ONE_PCT_KEYFRAMES}</style>
 
       <div
-        className="flex flex-wrap items-baseline justify-center gap-x-3 gap-y-1 text-center"
+        className="flex flex-nowrap items-baseline justify-center gap-x-1.5 sm:gap-x-3 text-center whitespace-nowrap"
         style={{ fontFamily: "'Poppins', sans-serif" }}
       >
         {/* "1%" — smooth eased count-up, rendered as a liquid, glowing
@@ -332,7 +380,7 @@ function OnePercentIntro({ onComplete }: { onComplete: () => void }) {
           style={{ animation: 'akyos-glow-pulse 2.2s ease-in-out infinite' }}
         >
           <span
-            className={`inline-block min-w-[3ch] text-center tabular-nums ${ONE_PCT_TEXT_CLASS}`}
+            className={`inline-block min-w-[3ch] text-center tabular-nums font-extrabold ${ONE_PCT_TEXT_CLASS}`}
             style={{
               animation: 'akyos-liquid-gradient 3s ease-in-out infinite',
               backgroundImage:
@@ -354,7 +402,7 @@ function OnePercentIntro({ onComplete }: { onComplete: () => void }) {
         {ONE_PCT_WORDS.slice(0, visibleWordCount).map((word) => (
           <span
             key={word}
-            className={`inline-block text-white ${ONE_PCT_TEXT_CLASS}`}
+            className={`inline-block text-white font-semibold ${ONE_PCT_TEXT_CLASS}`}
             style={{ animation: `akyos-word-fade-in ${ONE_PCT_WORD_FADE_MS}ms cubic-bezier(0.19,1,0.22,1) both` }}
           >
             {word}
@@ -684,8 +732,8 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
 
         <div className="flex h-full w-full flex-col items-center justify-center px-6 lg:w-1/2">
           <div
-            className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-500 shadow-lg shadow-violet-500/20"
-            style={cascadeStyle(0)}
+            className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl shadow-lg shadow-violet-500/20"
+            style={liquidFillStyle(cascadeStyle(0))}
           >
             <Mail className="h-5 w-5 text-neutral-950" strokeWidth={2} />
           </div>
@@ -728,8 +776,8 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
             <button
               type="submit"
               disabled={authBusy}
-              className="w-full rounded-xl bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-500 py-3 text-[13px] font-semibold text-neutral-950 transition-opacity disabled:opacity-60"
-              style={cascadeStyle(5)}
+              className="w-full rounded-xl py-3 text-[13px] font-semibold text-neutral-950 transition-opacity disabled:opacity-60"
+              style={liquidFillStyle(cascadeStyle(5))}
             >
               {authBusy ? 'Please wait…' : authMode === 'signin' ? 'Sign In' : 'Sign Up'}
             </button>
@@ -774,7 +822,7 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
         className="fixed inset-0 z-[999] flex flex-col items-center justify-center bg-zinc-950 px-6"
         onClick={() => pcSetupInputRef.current?.focus()}
       >
-        <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-500 shadow-lg shadow-violet-500/20">
+        <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl shadow-lg shadow-violet-500/20" style={liquidFillStyle()}>
           <ShieldCheck className="h-5 w-5 text-neutral-950" strokeWidth={2} />
         </div>
 
@@ -833,7 +881,7 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
   if (stage === 'forgotPassword') {
     return (
       <div className="fixed inset-0 z-[999] flex flex-col items-center justify-center bg-zinc-950 px-6">
-        <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-500 shadow-lg shadow-violet-500/20">
+        <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl shadow-lg shadow-violet-500/20" style={liquidFillStyle()}>
           <Mail className="h-5 w-5 text-neutral-950" strokeWidth={2} />
         </div>
 
@@ -861,7 +909,8 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
             <button
               type="submit"
               disabled={resetBusy}
-              className="w-full rounded-xl bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-500 py-3 text-[13px] font-semibold text-neutral-950 transition-opacity disabled:opacity-60"
+              className="w-full rounded-xl py-3 text-[13px] font-semibold text-neutral-950 transition-opacity disabled:opacity-60"
+              style={liquidFillStyle()}
             >
               {resetBusy ? 'Sending…' : 'Send Reset Link'}
             </button>
@@ -886,7 +935,7 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
   if (stage === 'resetPassword') {
     return (
       <div className="fixed inset-0 z-[999] flex flex-col items-center justify-center bg-zinc-950 px-6">
-        <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-500 shadow-lg shadow-violet-500/20">
+        <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl shadow-lg shadow-violet-500/20" style={liquidFillStyle()}>
           <ShieldCheck className="h-5 w-5 text-neutral-950" strokeWidth={2} />
         </div>
 
@@ -922,7 +971,8 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
           <button
             type="submit"
             disabled={newPasswordBusy}
-            className="w-full rounded-xl bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-500 py-3 text-[13px] font-semibold text-neutral-950 transition-opacity disabled:opacity-60"
+            className="w-full rounded-xl py-3 text-[13px] font-semibold text-neutral-950 transition-opacity disabled:opacity-60"
+            style={liquidFillStyle()}
           >
             {newPasswordBusy ? 'Saving…' : 'Save New Password'}
           </button>
@@ -938,7 +988,7 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
       className="fixed inset-0 z-[999] flex flex-col items-center justify-center bg-zinc-950 px-6"
       onClick={() => pcInputRef.current?.focus()}
     >
-      <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-500 shadow-lg shadow-violet-500/20">
+      <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl shadow-lg shadow-violet-500/20" style={liquidFillStyle()}>
         <Lock className="h-5 w-5 text-neutral-950" strokeWidth={2} />
       </div>
 
@@ -1003,6 +1053,7 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
 
   return (
     <>
+      <style>{LIQUID_GRADIENT_KEYFRAMES}</style>
       {/* Stage content (and its cascade-in) only mounts once the "1%
           Better Every Day." beat has cleared, so its cascade timers —
           and IntroReveal's — start together right after, instead of
