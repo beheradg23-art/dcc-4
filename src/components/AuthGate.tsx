@@ -45,12 +45,19 @@ const LIQUID_GRADIENT_KEYFRAMES = `
     100% { background-position: 0% 50%, 0% 50%; }
   }
 `;
-const LIQUID_ANIMATION = 'akyos-liquid-fill 5s ease-in-out infinite';
+const LIQUID_ANIMATION = 'akyos-liquid-fill 6s ease-in-out infinite';
+// The shine layer used to jump straight from transparent to a 0.5-opacity
+// peak over a short span, which read as a hard, distinct "line" sliding
+// through the gradient rather than a soft sheen. It's now built from more,
+// closer stops that ramp gradually up to a lower peak and back down again
+// (transparent -> faint -> peak -> faint -> transparent), and spread over a
+// larger background-size so the whole thing glides through slower and
+// blends into the base gradient instead of visibly seaming.
 const LIQUID_GRADIENT_FILL: React.CSSProperties = {
   backgroundImage:
-    'linear-gradient(100deg, transparent 22%, rgba(255,255,255,0.5) 42%, rgba(255,255,255,0.12) 50%, transparent 66%), ' +
+    'linear-gradient(100deg, transparent 8%, rgba(255,255,255,0.16) 28%, rgba(255,255,255,0.30) 42%, rgba(255,255,255,0.30) 50%, rgba(255,255,255,0.16) 58%, transparent 78%), ' +
     'linear-gradient(115deg, #4f46e5 0%, #7c3aed 22%, #d946ef 45%, #7c3aed 68%, #4f46e5 85%, #d946ef 100%)',
-  backgroundSize: '260% 260%, 300% 300%',
+  backgroundSize: '340% 340%, 300% 300%',
   backgroundPosition: '0% 50%, 0% 50%',
   animation: LIQUID_ANIMATION,
 };

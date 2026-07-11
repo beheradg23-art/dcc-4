@@ -26,6 +26,64 @@ import { startActiveTimer, clearActiveTimer } from './lib/activeTimers';
 // SYNC_KEYS so finishing it on one device doesn't re-trigger it on another.
 const ONBOARDING_STORAGE_KEY = 'akyos_onboarding_completed_v1';
 
+// --- shared "liquid" animated gradient fill (same treatment as AuthGate) --
+//
+// Every icon badge, primary button, avatar, and progress fill that used to
+// be a flat static gradient (bg-gradient-to-br from-indigo-600 via-violet-
+// 600 to-fuchsia-500) is filled with this instead: the brand color stops
+// slowly drift via an animated background-position, and a soft diagonal
+// light sheen is layered on top (as a second background-image) so it
+// periodically glides across the shape for a glossy, liquid feel — all on
+// one element, no extra DOM needed. The shine layer is built from several
+// close, low-contrast stops (rather than a hard jump straight to a bright
+// peak) so it reads as a gentle glow passing through, not a visible seam.
+const LIQUID_GRADIENT_KEYFRAMES = `
+  @keyframes akyos-liquid-fill {
+    0%   { background-position: 0% 50%, 0% 50%; }
+    50%  { background-position: 100% 50%, 100% 50%; }
+    100% { background-position: 0% 50%, 0% 50%; }
+  }
+`;
+const LIQUID_ANIMATION = 'akyos-liquid-fill 6s ease-in-out infinite';
+const LIQUID_GRADIENT_FILL: React.CSSProperties = {
+  backgroundImage:
+    'linear-gradient(100deg, transparent 8%, rgba(255,255,255,0.16) 28%, rgba(255,255,255,0.30) 42%, rgba(255,255,255,0.30) 50%, rgba(255,255,255,0.16) 58%, transparent 78%), ' +
+    'linear-gradient(115deg, #4f46e5 0%, #7c3aed 22%, #d946ef 45%, #7c3aed 68%, #4f46e5 85%, #d946ef 100%)',
+  backgroundSize: '340% 340%, 300% 300%',
+  backgroundPosition: '0% 50%, 0% 50%',
+  animation: LIQUID_ANIMATION,
+};
+
+// Merges the liquid gradient fill into an element's style, safely combining
+// its infinite animation with any one-shot animation the element already
+// has (e.g. a fade/slide-in) instead of one overwriting the other.
+function liquidFillStyle(extra: React.CSSProperties = {}): React.CSSProperties {
+  const { animation: extraAnimation, ...rest } = extra;
+  return {
+    ...LIQUID_GRADIENT_FILL,
+    animation: extraAnimation ? `${extraAnimation}, ${LIQUID_ANIMATION}` : LIQUID_ANIMATION,
+    ...rest,
+  };
+}
+
+// Same moving-sheen treatment as liquidFillStyle, but for the handful of
+// spots that use a different (non brand-indigo/violet/fuchsia) color pair,
+// e.g. the Pomodoro "break" state. Takes the base color stops only —
+// the shine layer, sizing, and animation stay identical everywhere so
+// every gradient in the app moves and blends the same way.
+function liquidFillStyleFor(baseGradient: string, extra: React.CSSProperties = {}): React.CSSProperties {
+  const { animation: extraAnimation, ...rest } = extra;
+  return {
+    backgroundImage:
+      'linear-gradient(100deg, transparent 8%, rgba(255,255,255,0.16) 28%, rgba(255,255,255,0.30) 42%, rgba(255,255,255,0.30) 50%, rgba(255,255,255,0.16) 58%, transparent 78%), ' +
+      baseGradient,
+    backgroundSize: '340% 340%, 300% 300%',
+    backgroundPosition: '0% 50%, 0% 50%',
+    animation: extraAnimation ? `${extraAnimation}, ${LIQUID_ANIMATION}` : LIQUID_ANIMATION,
+    ...rest,
+  };
+}
+
 
 
 
@@ -1888,8 +1946,8 @@ function DailyTracker({ currentDayStr, checked, onToggle, setActiveTab }) {
         <div className="relative h-2 w-full overflow-visible rounded-full bg-neutral-800">
           <div className="h-full w-full overflow-hidden rounded-full">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-violet-500 to-violet-400 transition-all duration-500 ease-out"
-              style={{ width: `${pct}%` }}
+              className="h-full rounded-full transition-[width] duration-500 ease-out"
+              style={liquidFillStyle({ width: `${pct}%` })}
             />
           </div>
           {pct >= 70 && pct < 100 && (
@@ -2124,7 +2182,7 @@ function ChangePasswordCard() {
   return (
     <div className="rounded-2xl border border-neutral-800 bg-neutral-950/60 p-4 sm:p-5">
       <div className="flex items-center gap-3 mb-3.5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-500">
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg" style={liquidFillStyle()}>
           <KeyRound className="h-4.5 w-4.5 text-neutral-950" strokeWidth={2} />
         </div>
         <h3 className="text-[13.5px] font-bold text-neutral-100">Change Password</h3>
@@ -2149,7 +2207,8 @@ function ChangePasswordCard() {
         <button
           type="submit"
           disabled={busy}
-          className="w-full rounded-lg bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-500 py-2.5 text-[12.5px] font-semibold text-neutral-950 transition-opacity disabled:opacity-50"
+          className="w-full rounded-lg py-2.5 text-[12.5px] font-semibold text-neutral-950 transition-opacity disabled:opacity-50"
+          style={liquidFillStyle()}
         >
           {busy ? 'Saving…' : 'Update Password'}
         </button>
@@ -2197,7 +2256,7 @@ function AccountPage({
       <EditableSectionHeading id="ac_account" defaultTitle="Account" defaultIcon={UserCircle2} subtitle="Profile, cloud sync, security & backups" />
 
       <div className="flex items-center gap-3 rounded-2xl border border-neutral-800 bg-gradient-to-br from-violet-500/[0.08] via-neutral-950 to-indigo-500/[0.05] p-4">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-500 text-[15px] font-bold text-neutral-950">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[15px] font-bold text-neutral-950" style={liquidFillStyle()}>
           {email ? email[0].toUpperCase() : <UserCircle2 className="h-6 w-6 text-neutral-950" />}
         </div>
         <div className="min-w-0">
@@ -2276,7 +2335,17 @@ function PerformanceCalendar({ globalHistory, setGlobalHistory, setModal }) {
     if (pct <= 0.3) return 'bg-rose-950/60 border-rose-800/40 text-rose-300 hover:bg-rose-900/50';
     if (pct <= 0.6) return 'bg-amber-950/60 border-amber-800/40 text-amber-300 hover:bg-amber-900/50';
     if (pct < 1) return 'bg-violet-950/40 border-violet-800/40 text-violet-300 hover:bg-violet-900/40';
-    return 'bg-gradient-to-br from-violet-500 to-fuchsia-500 text-neutral-950 border-violet-400 font-bold';
+    return 'text-neutral-950 border-violet-400 font-bold';
+  };
+
+  // Perfect (100%) days get the animated liquid gradient fill instead of a
+  // flat one; this stays separate from getHeatmapColor because that helper
+  // only returns className strings, not inline style.
+  const isPerfectHeatmapDay = (dateStr: string) => {
+    if (!dateStr || !globalHistory[dateStr]) return false;
+    const checks = globalHistory[dateStr];
+    const score = Object.values(checks).filter(Boolean).length;
+    return score / trackerItems.length >= 1;
   };
 
   return (
@@ -2315,6 +2384,7 @@ function PerformanceCalendar({ globalHistory, setGlobalHistory, setModal }) {
               className={`aspect-square rounded-xl border flex flex-col items-center justify-center relative text-xs transition-all duration-150 ${
                 dateStr ? 'cursor-pointer hover:scale-105' : 'opacity-0 pointer-events-none'
               } ${getHeatmapColor(dateStr)} ${isCurrentDay ? 'ring-2 ring-indigo-400 ring-offset-2 ring-offset-neutral-950' : ''}`}
+              style={isPerfectHeatmapDay(dateStr) ? liquidFillStyle() : undefined}
             >
               {dateStr && (
                 <>
@@ -2336,7 +2406,7 @@ function PerformanceCalendar({ globalHistory, setGlobalHistory, setModal }) {
           <div className="flex items-center gap-1"><div className="h-3 w-3 rounded bg-rose-950/60 border border-rose-800/40" /> <span>1-30%</span></div>
           <div className="flex items-center gap-1"><div className="h-3 w-3 rounded bg-amber-950/60 border border-amber-800/40" /> <span>31-60%</span></div>
           <div className="flex items-center gap-1"><div className="h-3 w-3 rounded bg-violet-950/40 border border-violet-800/40" /> <span>61-99%</span></div>
-          <div className="flex items-center gap-1"><div className="h-3 w-3 rounded bg-gradient-to-br from-violet-500 to-fuchsia-500" /> <span>100%</span></div>
+          <div className="flex items-center gap-1"><div className="h-3 w-3 rounded" style={liquidFillStyle()} /> <span>100%</span></div>
         </div>
         <p className="text-[11px] text-neutral-500">Click any historic metric square to trace detailed logs.</p>
       </div>
@@ -3657,7 +3727,7 @@ function PasswordGate({ onUnlock }) {
       }`}
       onClick={() => inputRef.current && inputRef.current.focus()}
     >
-      <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-500 shadow-lg shadow-violet-500/20">
+      <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl shadow-lg shadow-violet-500/20" style={liquidFillStyle()}>
         <Lock className="h-5 w-5 text-neutral-950" strokeWidth={2} />
       </div>
 
@@ -3780,7 +3850,7 @@ function IntroLoader({ onFinish }) {
           phase === 'loading' ? 'opacity-100 scale-100' : 'opacity-0 scale-[0.97]'
         }`}
       >
-        <div className="mb-5 flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-500 shadow-lg shadow-violet-500/20 animate-fadeInUp">
+        <div className="mb-5 flex h-9 w-9 items-center justify-center rounded-lg shadow-lg shadow-violet-500/20" style={liquidFillStyle({ animation: 'fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both' })}>
           <GraduationCap className="h-4.5 w-4.5 text-neutral-950" strokeWidth={2} />
         </div>
 
@@ -3808,8 +3878,8 @@ function IntroLoader({ onFinish }) {
 
         <div className="mt-6 h-px w-36 sm:w-52 overflow-hidden rounded-full bg-neutral-800">
           <div
-            className="h-full bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-500 transition-[width] duration-100 ease-linear"
-            style={{ width: `${percent}%` }}
+            className="h-full transition-[width] duration-100 ease-linear"
+            style={liquidFillStyle({ width: `${percent}%` })}
           />
         </div>
 
@@ -5644,7 +5714,7 @@ export default function JEEDashboard() {
         } ${sidebarExpanded ? 'lg:w-[240px]' : 'lg:w-[68px]'}`}
       >
         <div className={`flex items-center gap-2.5 px-4 pt-5 pb-4 ${!sidebarExpanded ? 'lg:justify-center lg:gap-0 lg:px-0' : ''}`}>
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-500 shadow-md shadow-violet-500/20">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg shadow-md shadow-violet-500/20" style={liquidFillStyle()}>
             <GraduationCap className="h-4 w-4 text-neutral-950" strokeWidth={2} />
           </div>
           <span className={`text-[13px] font-semibold tracking-tight text-neutral-200 truncate overflow-hidden transition-all duration-200 ${sidebarExpanded ? 'lg:max-w-[140px] lg:opacity-100' : 'lg:max-w-0 lg:opacity-0'}`}>Akyos</span>
@@ -5729,7 +5799,8 @@ export default function JEEDashboard() {
             <button
               onClick={() => setSidebarOpen(true)}
               aria-label="Open navigation"
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-500 shadow-lg shadow-violet-500/20 transition-transform active:scale-95 lg:pointer-events-none lg:cursor-default"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl shadow-lg shadow-violet-500/20 transition-transform active:scale-95 lg:pointer-events-none lg:cursor-default"
+              style={liquidFillStyle()}
             >
               <GraduationCap className="h-5.5 w-5.5 text-neutral-950" strokeWidth={2} />
             </button>
@@ -5810,6 +5881,7 @@ export default function JEEDashboard() {
       <style>{`
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        ${LIQUID_GRADIENT_KEYFRAMES}
         @keyframes fadeIn {
           from { opacity: 0; transform: scale(0.98); }
           to { opacity: 1; transform: scale(1); }
@@ -5976,8 +6048,8 @@ const DEFAULT_BREAK_MIN = 10;
 // Small ripple-enabled button, reusing the same click-ripple language as the
 // bento grid Cards elsewhere in the app (see useRipple above).
 function RippleButton({
-  children, onClick, className = '', disabled = false, title,
-}: { children: React.ReactNode; onClick?: () => void; className?: string; disabled?: boolean; title?: string }) {
+  children, onClick, className = '', disabled = false, title, style,
+}: { children: React.ReactNode; onClick?: () => void; className?: string; disabled?: boolean; title?: string; style?: React.CSSProperties }) {
   const ref = useRef<HTMLButtonElement>(null);
   const [spawnRipple, rippleNodes] = useRipple();
 
@@ -5995,6 +6067,7 @@ function RippleButton({
       disabled={disabled}
       title={title}
       className={`relative overflow-hidden ${className}`}
+      style={style}
     >
       {children}
       {rippleNodes}
@@ -6342,12 +6415,12 @@ function PomodoroView({ onSessionComplete }) {
       {/* Progress bar */}
       <div className="w-full max-w-xs h-1.5 bg-neutral-800 rounded-full overflow-hidden mt-5">
         <div
-          className={`h-full rounded-full transition-all duration-1000 ease-linear ${
+          className="h-full rounded-full transition-[width] duration-1000 ease-linear"
+          style={
             sessionType === 'focus'
-              ? 'bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-500'
-              : 'bg-gradient-to-r from-fuchsia-400 to-pink-400'
-          }`}
-          style={{ width: `${progressPct}%` }}
+              ? liquidFillStyle({ width: `${progressPct}%` })
+              : liquidFillStyleFor('linear-gradient(115deg, #f0abfc 0%, #f472b6 35%, #fb7185 65%, #f472b6 85%, #f0abfc 100%)', { width: `${progressPct}%` })
+          }
         />
       </div>
 
@@ -6362,7 +6435,8 @@ function PomodoroView({ onSessionComplete }) {
         </RippleButton>
         <RippleButton
           onClick={handleStartPause}
-          className="cursor-target rounded-full w-14 h-14 flex items-center justify-center bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-500 text-neutral-950 shadow-lg shadow-purple-500/30 hover:scale-105 active:scale-95 transition-transform"
+          className="cursor-target rounded-full w-14 h-14 flex items-center justify-center text-neutral-950 shadow-lg shadow-purple-500/30 hover:scale-105 active:scale-95 transition-transform"
+          style={liquidFillStyle()}
           title={isRunning ? 'Pause' : 'Arise'}
         >
           {isRunning ? <Pause className="w-6 h-6" fill="currentColor" /> : <Play className="w-6 h-6 ml-0.5" fill="currentColor" />}
@@ -6538,7 +6612,7 @@ function AshClockTab() {
 
         <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-600 shadow-lg shadow-purple-500/20">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl shadow-lg shadow-purple-500/20" style={liquidFillStyle()}>
               <Timer className="h-5.5 w-5.5 text-neutral-50" strokeWidth={2} />
             </div>
             <div>
