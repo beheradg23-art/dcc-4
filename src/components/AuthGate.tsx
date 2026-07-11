@@ -208,27 +208,19 @@ function IntroReveal({ onComplete }: { onComplete: () => void }) {
 
 // --- "1% Better Every Day." pre-intro ------------------------------------
 //
-// Plays first, before IntroReveal / the sign-in page itself. "1%" spins
-// through a quick slot-machine / odometer digit roll that decelerates into
-// a settled stop (the "lucky draw pause"), rendered as an animated liquid
-// gradient with a soft glow for a premium feel. "Better Every Day." then
-// fades in one word at a time, in plain white, starting from "Better".
+// Plays first, before IntroReveal / the sign-in page itself. "1%" flicks
+// through a few decoy values like a slot-machine/odometer, decelerating
+// into a settled stop (the "lucky draw pause"), rendered as an animated
+// liquid gradient with a soft glow for a premium feel. "Better Every Day."
+// then fades in one word at a time, in plain white, starting from "Better".
 // After a short hold, the whole line fades out and hands off to whatever
 // was already sitting underneath (IntroReveal, then the real stage).
 const ONE_PCT_KEYFRAMES = `
   @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&display=swap');
 
-  @keyframes akyos-odometer-roll {
-    0%   { transform: translateY(0); }
-    9%   { transform: translateY(-1.15em); }
-    18%  { transform: translateY(-2.3em); }
-    27%  { transform: translateY(-3.45em); }
-    36%  { transform: translateY(-4.6em); }
-    45%  { transform: translateY(-5.75em); }
-    54%  { transform: translateY(-6.9em); }
-    64%  { transform: translateY(-8.05em); }
-    78%  { transform: translateY(-9.2em); }
-    100% { transform: translateY(-9.2em); }
+  @keyframes akyos-digit-flip {
+    from { opacity: 0; transform: translateY(-0.18em) scale(0.92); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
   }
 
   @keyframes akyos-liquid-gradient {
@@ -238,8 +230,8 @@ const ONE_PCT_KEYFRAMES = `
   }
 
   @keyframes akyos-glow-pulse {
-    0%, 100% { filter: drop-shadow(0 0 14px rgba(167,139,250,0.55)) drop-shadow(0 0 30px rgba(129,140,248,0.35)); }
-    50%      { filter: drop-shadow(0 0 24px rgba(217,70,239,0.65)) drop-shadow(0 0 44px rgba(167,139,250,0.45)); }
+    0%, 100% { filter: drop-shadow(0 0 6px rgba(167,139,250,0.5)) drop-shadow(0 0 16px rgba(129,140,248,0.3)); }
+    50%      { filter: drop-shadow(0 0 10px rgba(217,70,239,0.55)) drop-shadow(0 0 22px rgba(167,139,250,0.35)); }
   }
 
   @keyframes akyos-word-fade-in {
@@ -249,11 +241,17 @@ const ONE_PCT_KEYFRAMES = `
 `;
 
 // Decoy values the odometer flicks through before landing on the real "1%"
-// — the last entry MUST be the true value since the roll animation ends
-// holding on the final list item.
+// — the last entry MUST be the true value, since that's where it stops.
 const ODOMETER_DECOY_VALUES = ['7%', '4%', '9%', '2%', '6%', '3%', '8%', '5%', '1%'];
 
-const ONE_PCT_SPIN_MS = 1300; // odometer roll + settle/pause, baked into the keyframes above
+// Gaps (ms) between each flip — 8 gaps for the 9 values above, getting
+// longer toward the end so it visibly decelerates into a stop rather than
+// cutting off abruptly. These sum to less than ONE_PCT_SPIN_MS, so "1%"
+// sits settled and static for a beat before the words start — the
+// "lucky draw pause".
+const ODOMETER_STEP_DELAYS_MS = [65, 70, 80, 95, 115, 140, 175, 230];
+
+const ONE_PCT_SPIN_MS = 1300; // time budgeted for the odometer settling + its pause
 const ONE_PCT_WORD_STAGGER_MS = 220; // gap between each word starting its fade-in
 const ONE_PCT_WORD_FADE_MS = 500; // how long a single word takes to fade in
 const ONE_PCT_HOLD_MS = 650; // full line sits fully visible before exiting
@@ -262,16 +260,42 @@ const ONE_PCT_WORDS = ['Better', 'Every', 'Day.'];
 const ONE_PCT_TOTAL_MS =
   ONE_PCT_SPIN_MS + (ONE_PCT_WORDS.length - 1) * ONE_PCT_WORD_STAGGER_MS + ONE_PCT_WORD_FADE_MS + ONE_PCT_HOLD_MS;
 
+// The shared big-text styling for both "1%" and the "Better Every Day."
+// words, so they read as one continuous line at one consistent size.
+const ONE_PCT_TEXT_CLASS = 'text-[clamp(2.75rem,7vw,4.75rem)] font-extrabold leading-[1.15]';
+
 function OnePercentIntro({ onComplete }: { onComplete: () => void }) {
   const [exiting, setExiting] = useState(false);
+  const [digitIndex, setDigitIndex] = useState(0);
+  // How many of ONE_PCT_WORDS are currently mounted. Words are only added
+  // to the DOM when it's their turn to appear — NOT rendered up front with
+  // opacity:0 — because invisible text still reserves its own width in the
+  // flex row. Reserving that space early was pulling the centered block's
+  // visible content (just "1%" at first) off toward the left edge of a
+  // wider-than-it-looks invisible block.
+  const [visibleWordCount, setVisibleWordCount] = useState(0);
 
   useEffect(() => {
-    const exitTimer = setTimeout(() => setExiting(true), ONE_PCT_TOTAL_MS);
-    const doneTimer = setTimeout(onComplete, ONE_PCT_TOTAL_MS + ONE_PCT_EXIT_MS);
-    return () => {
-      clearTimeout(exitTimer);
-      clearTimeout(doneTimer);
-    };
+    const timers: ReturnType<typeof setTimeout>[] = [];
+
+    // Drive the odometer flip through each decoy value in sequence.
+    let cumulative = 0;
+    ODOMETER_STEP_DELAYS_MS.forEach((delay, i) => {
+      cumulative += delay;
+      timers.push(setTimeout(() => setDigitIndex(i + 1), cumulative));
+    });
+
+    // Mount each word right as its turn comes up.
+    ONE_PCT_WORDS.forEach((_, i) => {
+      timers.push(
+        setTimeout(() => setVisibleWordCount(i + 1), ONE_PCT_SPIN_MS + i * ONE_PCT_WORD_STAGGER_MS)
+      );
+    });
+
+    timers.push(setTimeout(() => setExiting(true), ONE_PCT_TOTAL_MS));
+    timers.push(setTimeout(onComplete, ONE_PCT_TOTAL_MS + ONE_PCT_EXIT_MS));
+
+    return () => timers.forEach(clearTimeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -287,54 +311,38 @@ function OnePercentIntro({ onComplete }: { onComplete: () => void }) {
         className="flex flex-wrap items-baseline justify-center gap-x-3 gap-y-1 text-center"
         style={{ fontFamily: "'Poppins', sans-serif" }}
       >
-        {/* "1%" — odometer-style digit roll settling into a liquid,
-            glowing animated gradient. */}
+        {/* "1%" — quick decoy flips settling into a liquid, glowing
+            animated gradient. Re-keying on digitIndex remounts the span on
+            every flip so the pop-in animation replays each time. */}
         <span
-          className="relative inline-block align-baseline text-[clamp(2.75rem,7vw,4.75rem)] font-extrabold leading-[1.15]"
+          className="relative inline-block align-baseline"
           style={{ animation: 'akyos-glow-pulse 2.2s ease-in-out infinite' }}
         >
-          {/* h-[1.15em] is sized off THIS span's own font-size (set just
-              above), so it must live on an element that actually carries
-              that font-size — not an ancestor with the inherited default
-              size, or the em resolves tiny and clips the digits to a
-              sliver (which is what was causing the "1%" to flicker/vanish
-              instead of showing). */}
-          <span className="relative inline-block h-[1.15em] w-[1.6ch] overflow-hidden align-baseline">
-            <span
-              className="flex flex-col items-center"
-              style={{ animation: `akyos-odometer-roll ${ONE_PCT_SPIN_MS}ms cubic-bezier(0.15,0.85,0.2,1) both` }}
-            >
-              {ODOMETER_DECOY_VALUES.map((v, i) => (
-                <span
-                  key={i}
-                  className="block leading-[1.15]"
-                  style={{
-                    backgroundImage:
-                      'linear-gradient(110deg, #a78bfa 0%, #f0abfc 25%, #818cf8 50%, #f0abfc 75%, #a78bfa 100%)',
-                    backgroundSize: '250% 100%',
-                    WebkitBackgroundClip: 'text',
-                    backgroundClip: 'text',
-                    color: 'transparent',
-                    animation: 'akyos-liquid-gradient 3s ease-in-out infinite',
-                  }}
-                >
-                  {v}
-                </span>
-              ))}
-            </span>
+          <span
+            key={digitIndex}
+            className={`inline-block min-w-[1.6ch] text-center ${ONE_PCT_TEXT_CLASS}`}
+            style={{
+              animation: 'akyos-digit-flip 150ms cubic-bezier(0.16,1,0.3,1) both, akyos-liquid-gradient 3s ease-in-out infinite',
+              backgroundImage:
+                'linear-gradient(110deg, #a78bfa 0%, #f0abfc 25%, #818cf8 50%, #f0abfc 75%, #a78bfa 100%)',
+              backgroundSize: '250% 100%',
+              WebkitBackgroundClip: 'text',
+              backgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              color: 'transparent',
+            }}
+          >
+            {ODOMETER_DECOY_VALUES[digitIndex]}
           </span>
         </span>
 
-        {/* "Better Every Day." — each word fades in, one after another. */}
-        {ONE_PCT_WORDS.map((word, i) => (
+        {/* "Better Every Day." — each word mounts (and fades in) one at a
+            time, so words not yet due don't reserve any space. */}
+        {ONE_PCT_WORDS.slice(0, visibleWordCount).map((word) => (
           <span
             key={word}
-            className="inline-block text-[clamp(2.75rem,7vw,4.75rem)] font-extrabold leading-[1.15] text-white opacity-0"
-            style={{
-              animation: `akyos-word-fade-in ${ONE_PCT_WORD_FADE_MS}ms cubic-bezier(0.16,1,0.3,1) ${
-                ONE_PCT_SPIN_MS + i * ONE_PCT_WORD_STAGGER_MS
-              }ms both`,
-            }}
+            className={`inline-block text-white ${ONE_PCT_TEXT_CLASS}`}
+            style={{ animation: `akyos-word-fade-in ${ONE_PCT_WORD_FADE_MS}ms cubic-bezier(0.16,1,0.3,1) both` }}
           >
             {word}
           </span>
