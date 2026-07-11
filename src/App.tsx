@@ -3736,7 +3736,7 @@ function PasswordGate({ onUnlock }) {
                   : 'border-neutral-800 bg-neutral-900/40 text-neutral-700'
               }`}
             >
-              {filled ? value[i] : ''}
+              {filled ? '•' : ''}
             </div>
           );
         })}
