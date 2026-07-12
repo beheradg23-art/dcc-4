@@ -340,23 +340,70 @@ type OnePctPhase = 'intro' | 'wordsOut' | 'gradientIn' | 'zoomOut' | 'badgeRevea
 // the landing value, same shape most real counters/progress bars use.
 const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
 
-// Speed curve for the "zoom out" beat: slow at the start, a sharp spike of
-// speed through the middle, then slow again as it settles into the badge —
-// i.e. the *derivative* of this easing function is a narrow bell/spike
-// centered around the midpoint, not the broad, roughly-symmetric hump a
-// plain ease-in-out cubic-bezier gives you. A logistic (sigmoid) curve is
-// the natural fit: its derivative IS a bell curve, flat at both tails and
-// sharply peaked in the middle, and ZOOM_OUT_STEEPNESS controls how narrow/
-// tall that peak is (higher = snappier spike, lower = gentler ease-in-out).
-// Driving the size in JS frame-by-frame (rather than a CSS `transition`)
-// is what makes this possible — a single CSS cubic-bezier can't describe a
-// non-monotonic speed profile like this.
-const ZOOM_OUT_STEEPNESS = 9;
-function zoomOutEase(t: number, k = ZOOM_OUT_STEEPNESS): number {
-  const sigmoid = (x: number) => 1 / (1 + Math.exp(-k * (x - 0.5)));
-  const s0 = sigmoid(0);
-  const s1 = sigmoid(1);
-  return (sigmoid(t) - s0) / (s1 - s0); // renormalized so it lands exactly on 0 and 1
+// --- custom "hold → spike → hold" easing for the zoom-out beat ----------
+// The requested speed profile isn't a plain symmetric bell: it holds low
+// for a while, ramps UP gradually over a fairly long stretch, spikes narrow
+// and sharp, then falls back down to a low hold noticeably *faster* than
+// it climbed. That asymmetry can't come from a single cubic-bezier (or
+// even a symmetric sigmoid) — so instead we describe the *speed* directly
+// as a handful of (time, relative-speed) control points tracing that
+// exact shape, then numerically integrate them once (at module load) into
+// a lookup table for position-over-time. zoomOutEase(t) just reads that
+// table each frame. Tweak the points below to reshape the curve directly.
+const ZOOM_SPEED_CONTROL_POINTS: [number, number][] = [
+  [0.0, 0.04], // slow hold
+  [0.1, 0.05],
+  [0.22, 0.09], // gentle ramp begins
+  [0.34, 0.18],
+  [0.44, 0.4],
+  [0.52, 0.85],
+  [0.57, 1.0], // peak — sharp, narrow
+  [0.63, 0.75],
+  [0.7, 0.35], // faster fall-off than the climb up
+  [0.78, 0.14],
+  [0.88, 0.07],
+  [1.0, 0.05], // slow hold again as it settles
+];
+
+function sampleSpeed(t: number): number {
+  const pts = ZOOM_SPEED_CONTROL_POINTS;
+  if (t <= pts[0][0]) return pts[0][1];
+  if (t >= pts[pts.length - 1][0]) return pts[pts.length - 1][1];
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [t0, v0] = pts[i];
+    const [t1, v1] = pts[i + 1];
+    if (t >= t0 && t <= t1) {
+      const f = (t - t0) / (t1 - t0);
+      return v0 + (v1 - v0) * f;
+    }
+  }
+  return pts[pts.length - 1][1];
+}
+
+// Integrate the speed curve into a position lookup table exactly once
+// (module load, not per-frame/per-render) — this cumulative curve IS the
+// eased position-over-time whose derivative matches the shape above.
+const ZOOM_EASE_SAMPLES = 400;
+const ZOOM_EASE_TABLE: number[] = (() => {
+  const table: number[] = [0];
+  let cumulative = 0;
+  for (let i = 1; i <= ZOOM_EASE_SAMPLES; i++) {
+    const t = i / ZOOM_EASE_SAMPLES;
+    const prevT = (i - 1) / ZOOM_EASE_SAMPLES;
+    cumulative += ((sampleSpeed(t) + sampleSpeed(prevT)) / 2) * (1 / ZOOM_EASE_SAMPLES);
+    table.push(cumulative);
+  }
+  const total = table[table.length - 1];
+  return table.map((v) => v / total); // renormalize so it lands exactly on 0 and 1
+})();
+
+function zoomOutEase(t: number): number {
+  const clamped = Math.min(Math.max(t, 0), 1);
+  const pos = clamped * ZOOM_EASE_SAMPLES;
+  const i0 = Math.floor(pos);
+  const i1 = Math.min(i0 + 1, ZOOM_EASE_SAMPLES);
+  const frac = pos - i0;
+  return ZOOM_EASE_TABLE[i0] + (ZOOM_EASE_TABLE[i1] - ZOOM_EASE_TABLE[i0]) * frac;
 }
 
 // The shared big-text styling for both "1%" and the "Better Every Day."
@@ -415,11 +462,21 @@ function OnePercentIntro({ onComplete }: { onComplete: () => void }) {
   // zoomOutEase (slow → sharp mid-speed spike → slow) instead of a plain
   // CSS transition — see zoomOutEase / onePctBlobStyle above for why.
   const [zoomProgress, setZoomProgress] = useState(0);
-  // The JS equivalent of the old `300vmax` — recomputed once per mount so
-  // the blob still comfortably covers the screen at any aspect ratio.
-  const [fullSizePx] = useState(() =>
-    typeof window !== 'undefined' ? 3 * Math.max(window.innerWidth, window.innerHeight) : 3000
-  );
+  // The JS equivalent of the old `300vmax` — but sized to the viewport's
+  // actual corner-to-corner diagonal (plus a small safety margin) instead
+  // of a blanket 3x oversize. That old 3x figure meant the blob was still
+  // bigger than the screen for roughly the first two-thirds of the shrink,
+  // so nothing was visibly happening on screen yet — by the time it got
+  // small enough to see, most of the eased curve (including the "spike")
+  // had already played out off-screen, and what was left just looked like
+  // a plain, roughly-linear shrink. Starting right at the diagonal means
+  // the blob's edge is visible (at least at the corners) from frame one,
+  // so the full speed curve above is what actually gets seen.
+  const [fullSizePx] = useState(() => {
+    if (typeof window === 'undefined') return 1400;
+    const diagonal = Math.sqrt(window.innerWidth ** 2 + window.innerHeight ** 2);
+    return diagonal * 1.08; // small safety margin over the exact corner distance
+  });
 
   // Drives the zoom-out size frame-by-frame (rather than letting the
   // browser interpolate a CSS transition) so the *speed* of the shrink can
