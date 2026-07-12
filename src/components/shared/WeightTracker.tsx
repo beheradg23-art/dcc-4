@@ -185,6 +185,7 @@ export function WeightTrackerCard() {
                     onClick={() => handleDelete(e.id)}
                     className="cursor-target p-1.5 rounded-lg text-neutral-500 hover:bg-rose-500/10 hover:text-rose-400 transition-colors"
                     title="Delete this entry"
+                    aria-label={`Delete weight entry from ${e.date}`}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -197,4 +198,3 @@ export function WeightTrackerCard() {
     </Card>
   );
 }
-

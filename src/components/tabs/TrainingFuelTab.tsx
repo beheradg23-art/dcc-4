@@ -221,6 +221,8 @@ export function TrainingFuelTab({ setModal, dietLog, setDietLog, currentDateStr 
                     <button
                       onClick={(e) => { e.stopPropagation(); toggleMeal(m.name); }}
                       title={isLogged ? 'Logged — click to undo' : 'Mark as eaten today'}
+                      aria-pressed={isLogged}
+                      aria-label={`${m.name}: ${isLogged ? 'logged, click to undo' : 'mark as eaten today'}`}
                       className="cursor-target p-1 rounded-md hover:bg-neutral-800 transition-colors"
                     >
                       {isLogged ? (
@@ -250,4 +252,3 @@ export function TrainingFuelTab({ setModal, dietLog, setDietLog, currentDateStr 
 }
 
 // ---------- Tab Subcomponent: Syllabus ----------
-

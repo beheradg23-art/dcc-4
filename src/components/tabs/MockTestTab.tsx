@@ -379,6 +379,7 @@ export function MockTestTab() {
                       onClick={() => handleDeleteTest(t.id)}
                       className="cursor-target p-1.5 rounded-lg text-neutral-500 hover:bg-rose-500/10 hover:text-rose-400 transition-colors"
                       title="Delete this test"
+                      aria-label={`Delete mock test from ${t.date}`}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
@@ -396,4 +397,3 @@ export function MockTestTab() {
 // ---------- Opening / Intro Loader ----------
 // A single-run splash animation: a counting percentage, a thin gradient
 // progress line, then a clean upward "curtain" wipe that reveals the app.
-

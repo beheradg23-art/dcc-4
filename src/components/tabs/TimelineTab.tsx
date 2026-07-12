@@ -93,4 +93,3 @@ export function TimelineTab({ setModal, notificationsEnabled, notificationPermis
 }
 
 // ---------- Tab Subcomponent: Training & Fuel ----------
-

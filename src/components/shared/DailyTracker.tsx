@@ -33,6 +33,8 @@ export function TrackerItemButton({ item, isChecked, onToggle, isDerived }: { it
       onTouchStart={handleDown}
       onTouchEnd={handleUp}
       title={isDerived ? 'Auto-synced from the Fuel Matrix meal log — click to go log meals' : undefined}
+      aria-pressed={isChecked}
+      aria-label={`${item.label}${isDerived ? ' (auto-synced)' : ''}, ${isChecked ? 'completed' : 'not completed'}`}
       className={`cursor-target relative flex flex-col items-start justify-between overflow-hidden p-3.5 rounded-xl border text-left transition-colors duration-200 group ${
         isChecked
           ? 'bg-violet-500/[0.08] border-violet-500/30 shadow-[inset_0_0_12px_rgba(167,139,250,0.05)]'
@@ -180,4 +182,3 @@ export function DailyTracker({ currentDayStr, checked, onToggle, setActiveTab }:
 // entire history is gone for good. This gives a way out: a single JSON file
 // download that captures the Daily Matrix history plus Ash's Clock state,
 // and a matching import to restore it anywhere.
-

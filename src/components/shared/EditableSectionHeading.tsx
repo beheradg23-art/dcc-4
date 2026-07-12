@@ -12,4 +12,3 @@ export function EditableSectionHeading({ id, defaultTitle, defaultIcon, subtitle
   const title = (override && override.label) || defaultTitle;
   return <SectionHeading icon={Icon} title={title} subtitle={subtitle} />;
 }
-

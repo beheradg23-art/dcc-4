@@ -399,6 +399,7 @@ export function PomodoroView({ onSessionComplete }) {
             <RippleButton
               onClick={() => adjustMinutes('focus', -5)}
               disabled={isRunning}
+              ariaLabel="Decrease focus duration by 5 minutes"
               className="cursor-target rounded-md w-6 h-6 flex items-center justify-center bg-neutral-800 text-neutral-300 disabled:opacity-30 hover:bg-neutral-700"
             >
               −
@@ -407,6 +408,7 @@ export function PomodoroView({ onSessionComplete }) {
             <RippleButton
               onClick={() => adjustMinutes('focus', 5)}
               disabled={isRunning}
+              ariaLabel="Increase focus duration by 5 minutes"
               className="cursor-target rounded-md w-6 h-6 flex items-center justify-center bg-neutral-800 text-neutral-300 disabled:opacity-30 hover:bg-neutral-700"
             >
               +
@@ -419,6 +421,7 @@ export function PomodoroView({ onSessionComplete }) {
             <RippleButton
               onClick={() => adjustMinutes('break', -1)}
               disabled={isRunning}
+              ariaLabel="Decrease break duration by 1 minute"
               className="cursor-target rounded-md w-6 h-6 flex items-center justify-center bg-neutral-800 text-neutral-300 disabled:opacity-30 hover:bg-neutral-700"
             >
               −
@@ -427,6 +430,7 @@ export function PomodoroView({ onSessionComplete }) {
             <RippleButton
               onClick={() => adjustMinutes('break', 1)}
               disabled={isRunning}
+              ariaLabel="Increase break duration by 1 minute"
               className="cursor-target rounded-md w-6 h-6 flex items-center justify-center bg-neutral-800 text-neutral-300 disabled:opacity-30 hover:bg-neutral-700"
             >
               +

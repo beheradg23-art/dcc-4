@@ -795,6 +795,11 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
     setAuthBusy(true);
     try {
       if (authMode === 'signup') {
+        if (password.length < 8) {
+          setAuthError('Password must be at least 8 characters.');
+          setAuthBusy(false);
+          return;
+        }
         const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
         if (data.user && !data.session) {
@@ -848,8 +853,8 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
   const handleSetNewPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setNewPasswordError('');
-    if (newPassword.length < 6) {
-      setNewPasswordError('Password must be at least 6 characters.');
+    if (newPassword.length < 8) {
+      setNewPasswordError('Password must be at least 8 characters.');
       return;
     }
     if (newPassword !== newPasswordConfirm) {
@@ -930,9 +935,9 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
               value={password}
               onChange={setPassword}
               required
-              minLength={6}
+              minLength={8}
               autoComplete={authMode === 'signin' ? 'current-password' : 'new-password'}
-              placeholder="Password (min 6 characters)"
+              placeholder="Password (min 8 characters)"
               showStrength={authMode === 'signup'}
               className="w-full rounded-xl border border-neutral-800 bg-neutral-900/80 px-4 py-3 pr-11 text-[13px] text-neutral-100 placeholder-neutral-600 outline-none transition-colors focus:border-violet-500/50"
               style={cascadeStyle(4)}
@@ -1119,9 +1124,9 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
             value={newPassword}
             onChange={setNewPassword}
             required
-            minLength={6}
+            minLength={8}
             autoComplete="new-password"
-            placeholder="New password (min 6 characters)"
+            placeholder="New password (min 8 characters)"
             showStrength
             className="w-full rounded-xl border border-neutral-800 bg-neutral-900/80 px-4 py-3 pr-11 text-[13px] text-neutral-100 placeholder-neutral-600 outline-none transition-colors focus:border-violet-500/50"
           />
@@ -1129,7 +1134,7 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
             value={newPasswordConfirm}
             onChange={setNewPasswordConfirm}
             required
-            minLength={6}
+            minLength={8}
             autoComplete="new-password"
             placeholder="Confirm new password"
             className="w-full rounded-xl border border-neutral-800 bg-neutral-900/80 px-4 py-3 pr-11 text-[13px] text-neutral-100 placeholder-neutral-600 outline-none transition-colors focus:border-violet-500/50"

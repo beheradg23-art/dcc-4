@@ -147,8 +147,8 @@ export function ChangePasswordCard() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFieldError('');
-    if (newPassword.length < 6) {
-      setFieldError('Password must be at least 6 characters.');
+    if (newPassword.length < 8) {
+      setFieldError('Password must be at least 8 characters.');
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -183,8 +183,9 @@ export function ChangePasswordCard() {
         <PasswordField
           value={newPassword}
           onChange={setNewPassword}
-          placeholder="New password (min 6 characters)"
+          placeholder="New password (min 8 characters)"
           autoComplete="new-password"
+          minLength={8}
           showStrength
           className="w-full rounded-lg border border-neutral-800 bg-neutral-950/60 px-3 py-2.5 pr-11 text-[13px] text-neutral-100 placeholder:text-neutral-600 outline-none focus:border-violet-500/50"
         />
@@ -193,6 +194,7 @@ export function ChangePasswordCard() {
           onChange={setConfirmPassword}
           placeholder="Confirm new password"
           autoComplete="new-password"
+          minLength={8}
           className="w-full rounded-lg border border-neutral-800 bg-neutral-950/60 px-3 py-2.5 pr-11 text-[13px] text-neutral-100 placeholder:text-neutral-600 outline-none focus:border-violet-500/50"
         />
         {fieldError && <p className="text-[12px] text-rose-400">{fieldError}</p>}
@@ -340,6 +342,7 @@ export function PerformanceCalendar({ globalHistory, setGlobalHistory, setModal 
         <div className="flex items-center gap-2 border border-neutral-800 bg-neutral-950/80 p-1 rounded-xl">
           <button 
             onClick={() => setCurrentNavDate(new Date(year, month - 1, 1))}
+            aria-label="Previous month"
             className="p-1.5 rounded-lg text-neutral-400 hover:bg-neutral-800 transition-colors"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -347,6 +350,7 @@ export function PerformanceCalendar({ globalHistory, setGlobalHistory, setModal 
           <span className="text-xs font-semibold px-2 min-w-[100px] text-center text-neutral-200">{monthName} {year}</span>
           <button 
             onClick={() => setCurrentNavDate(new Date(year, month + 1, 1))}
+            aria-label="Next month"
             className="p-1.5 rounded-lg text-neutral-400 hover:bg-neutral-800 transition-colors"
           >
             <ArrowUpRight className="h-4 w-4 rotate-45" />
@@ -361,10 +365,13 @@ export function PerformanceCalendar({ globalHistory, setGlobalHistory, setModal 
       <div className="grid grid-cols-7 gap-1.5">
         {calendarDays.map((dateStr, idx) => {
           const isCurrentDay = dateStr === getLocalDateString();
+          const dayChecks = dateStr && globalHistory[dateStr] ? Object.values(globalHistory[dateStr]).filter(Boolean).length : 0;
+          const dayPct = dateStr && trackerItems.length ? Math.round((dayChecks / trackerItems.length) * 100) : 0;
           return (
             <div
               key={idx}
               onClick={() => dateStr && handlePastDateClick(dateStr)}
+              title={dateStr ? `${dateStr}: ${dayPct}% complete${isCurrentDay ? ' (today)' : ''}` : undefined}
               className={`aspect-square rounded-xl border flex flex-col items-center justify-center relative text-xs transition-all duration-150 ${
                 dateStr ? 'cursor-pointer hover:scale-105' : 'opacity-0 pointer-events-none'
               } ${getHeatmapColor(dateStr)} ${isCurrentDay ? 'ring-2 ring-indigo-400 ring-offset-2 ring-offset-neutral-950' : ''}`}

@@ -145,4 +145,3 @@ export function OverviewTab({ setModal }: { setModal: (data: ModalData | null) =
 }
 
 // ---------- Tab Subcomponent: Timeline ----------
-

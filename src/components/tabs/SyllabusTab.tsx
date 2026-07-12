@@ -107,7 +107,7 @@ export function SyllabusTab({ setModal }: { setModal: (data: ModalData | null) =
                 className="flex items-center justify-between gap-3 rounded-lg border border-neutral-800 bg-neutral-950/40 px-3 py-2.5 flex-wrap"
               >
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <span className={`h-2 w-2 rounded-full shrink-0 ${t.status === 'overdue' ? 'bg-rose-400' : 'bg-amber-400'}`} />
+                  <span title={t.status === 'overdue' ? 'Overdue' : 'Due for revision'} className={`h-2 w-2 rounded-full shrink-0 ${t.status === 'overdue' ? 'bg-rose-400' : 'bg-amber-400'}`} />
                   <button onClick={() => handleTopicClick(t.topic)} className="cursor-target text-[13px] text-neutral-200 hover:text-neutral-50 text-left truncate">
                     {t.topic}
                   </button>
@@ -115,7 +115,7 @@ export function SyllabusTab({ setModal }: { setModal: (data: ModalData | null) =
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${t.status === 'overdue' ? 'bg-rose-500/10 text-rose-300 border-rose-500/20' : 'bg-amber-500/10 text-amber-300 border-amber-500/20'}`}>
-                    {t.days}d ago
+                    {t.status === 'overdue' ? 'Overdue · ' : ''}{t.days}d ago
                   </span>
                   <RippleButton
                     onClick={() => markRevised(t.key)}

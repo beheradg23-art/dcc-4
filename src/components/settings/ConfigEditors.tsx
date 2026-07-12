@@ -67,7 +67,7 @@ export function TrackerItemsEditor() {
           <div key={item.id} className="flex items-center gap-2">
             <input value={item.label} onChange={(e) => updateLabel(item.id, e.target.value)} className={`flex-1 ${fieldInput}`} />
             {item.id === 't6' && <span className="shrink-0 text-[10px] uppercase tracking-wide text-neutral-600">Auto-synced</span>}
-            <button onClick={() => removeItem(item.id)} className="cursor-target shrink-0 flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-800 bg-neutral-900 text-neutral-500 hover:text-rose-400 hover:border-rose-500/30 transition-colors">
+            <button onClick={() => removeItem(item.id)} aria-label={`Remove ${item.label || 'objective'}`} className="cursor-target shrink-0 flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-800 bg-neutral-900 text-neutral-500 hover:text-rose-400 hover:border-rose-500/30 transition-colors">
               <Trash2 className="h-3.5 w-3.5" />
             </button>
           </div>
@@ -131,7 +131,7 @@ export function TimelineEditor() {
           const isOpen = openIdx === i;
           return (
             <div key={i} className="rounded-lg border border-neutral-800 bg-neutral-950/40 overflow-hidden">
-              <button onClick={() => setOpenIdx(isOpen ? null : i)} className="cursor-target w-full flex items-center gap-3 px-3.5 py-2.5 text-left">
+              <button onClick={() => setOpenIdx(isOpen ? null : i)} aria-expanded={isOpen} className="cursor-target w-full flex items-center gap-3 px-3.5 py-2.5 text-left">
                 <Icon className="h-4 w-4 text-neutral-500 shrink-0" strokeWidth={1.75} />
                 <span className="text-[11.5px] text-neutral-500 tabular-nums shrink-0 w-[92px]">{slot.start}–{slot.end}</span>
                 <span className="text-[12.5px] text-neutral-200 flex-1 truncate">{slot.label}</span>
@@ -257,7 +257,7 @@ export function TrainingEditor() {
           const isOpen = openIdx === i;
           return (
             <div key={i} className="rounded-lg border border-neutral-800 bg-neutral-950/40 overflow-hidden">
-              <button onClick={() => setOpenIdx(isOpen ? null : i)} className="cursor-target w-full flex items-center gap-3 px-3.5 py-2.5 text-left">
+              <button onClick={() => setOpenIdx(isOpen ? null : i)} aria-expanded={isOpen} className="cursor-target w-full flex items-center gap-3 px-3.5 py-2.5 text-left">
                 <span className="text-[12.5px] font-medium text-neutral-200 flex-1 truncate">{d.day} — {d.focus}</span>
                 <span className="text-[10px] uppercase tracking-wide text-neutral-600 shrink-0">{d.exercises.length} ex.</span>
                 <ChevronRight className={`h-3.5 w-3.5 text-neutral-600 transition-transform shrink-0 ${isOpen ? 'rotate-90' : ''}`} />
@@ -286,7 +286,7 @@ export function TrainingEditor() {
                       <div key={ei} className="flex items-center gap-2">
                         <input value={ex.name} onChange={(e) => patchExercise(i, ei, { name: e.target.value })} className={`flex-1 ${fieldInput}`} placeholder="Exercise name" />
                         <input value={ex.sets} onChange={(e) => patchExercise(i, ei, { sets: e.target.value })} className={`w-24 shrink-0 ${fieldInput}`} placeholder="Sets" />
-                        <button onClick={() => removeExercise(i, ei)} className="cursor-target shrink-0 flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-800 bg-neutral-900 text-neutral-500 hover:text-rose-400 hover:border-rose-500/30 transition-colors">
+                        <button onClick={() => removeExercise(i, ei)} aria-label={`Remove exercise ${ex.name || ei + 1}`} className="cursor-target shrink-0 flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-800 bg-neutral-900 text-neutral-500 hover:text-rose-400 hover:border-rose-500/30 transition-colors">
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       </div>
@@ -418,7 +418,7 @@ export function DietEditor() {
           const Icon = ICON_LIBRARY[m.iconName] || Utensils;
           return (
             <div key={m.id} className="rounded-lg border border-neutral-800 bg-neutral-950/40 overflow-hidden">
-              <button onClick={() => setOpenIdx(isOpen ? null : i)} className="cursor-target w-full flex items-center gap-3 px-3.5 py-2.5 text-left">
+              <button onClick={() => setOpenIdx(isOpen ? null : i)} aria-expanded={isOpen} className="cursor-target w-full flex items-center gap-3 px-3.5 py-2.5 text-left">
                 <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-neutral-800 text-neutral-300">
                   <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
                 </div>
@@ -449,7 +449,7 @@ export function DietEditor() {
                     {m.items.map((it, itIdx) => (
                       <div key={itIdx} className="flex items-center gap-2">
                         <input value={it} onChange={(e) => patchItem(i, itIdx, e.target.value)} className={`flex-1 ${fieldInput}`} placeholder="e.g. 200g grilled chicken breast" />
-                        <button onClick={() => removeItem(i, itIdx)} className="cursor-target shrink-0 flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-800 bg-neutral-900 text-neutral-500 hover:text-rose-400 hover:border-rose-500/30 transition-colors">
+                        <button onClick={() => removeItem(i, itIdx)} aria-label={`Remove food item ${it || itIdx + 1}`} className="cursor-target shrink-0 flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-800 bg-neutral-900 text-neutral-500 hover:text-rose-400 hover:border-rose-500/30 transition-colors">
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       </div>
@@ -674,7 +674,7 @@ export function ProfileEditor() {
                 <option value="amber">Amber</option>
                 <option value="emerald">Emerald</option>
               </select>
-              <button onClick={() => removeTarget(i)} className="cursor-target flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-800 bg-neutral-900 text-neutral-500 hover:text-rose-400 hover:border-rose-500/30 transition-colors">
+              <button onClick={() => removeTarget(i)} aria-label={`Remove target ${t.course || i + 1}`} className="cursor-target flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-800 bg-neutral-900 text-neutral-500 hover:text-rose-400 hover:border-rose-500/30 transition-colors">
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
             </div>
@@ -758,7 +758,7 @@ export function CountdownEditor() {
           <div key={cd.id} className="rounded-lg border border-neutral-800 bg-neutral-950/40 p-3 space-y-2">
             <div className="grid sm:grid-cols-[1fr_auto] gap-2 items-start">
               <input value={cd.label} onChange={(e) => patchItem(cd.id, { label: e.target.value })} placeholder="e.g. JEE Main, Boards Exam, Interview Day" className={fieldInput} />
-              <button onClick={() => removeItem(cd.id)} className="cursor-target flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-800 bg-neutral-900 text-neutral-500 hover:text-rose-400 hover:border-rose-500/30 transition-colors shrink-0">
+              <button onClick={() => removeItem(cd.id)} aria-label={`Remove countdown ${cd.label || ''}`} className="cursor-target flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-800 bg-neutral-900 text-neutral-500 hover:text-rose-400 hover:border-rose-500/30 transition-colors shrink-0">
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
             </div>
@@ -783,6 +783,8 @@ export function CountdownEditor() {
                       key={name}
                       type="button"
                       title={name}
+                      aria-label={`${name}${active ? ' (selected)' : ''}`}
+                      aria-pressed={active}
                       onClick={() => patchItem(cd.id, { color: name })}
                       className={`cursor-target h-6 w-6 rounded-full ${swatch.dot} transition-all ${
                         active ? 'ring-2 ring-offset-2 ring-offset-neutral-950 ring-neutral-200 scale-105' : 'opacity-60 hover:opacity-100'
@@ -1024,6 +1026,8 @@ export function SubjectsAndSyllabusEditor() {
                 type="button"
                 onClick={() => patchSubject(s.key, { inMockTest: !(s.inMockTest !== false) })}
                 title={s.inMockTest !== false ? 'Shows a score box in the Mock Test Tracker — click to remove' : 'Hidden from the Mock Test Tracker — click to include'}
+                aria-pressed={s.inMockTest !== false}
+                aria-label={s.inMockTest !== false ? 'Shown in Mock Test Tracker, click to hide' : 'Hidden from Mock Test Tracker, click to show'}
                 className={`cursor-target shrink-0 flex items-center gap-1.5 rounded-lg border px-2.5 h-8 text-[11px] font-medium transition-colors ${
                   s.inMockTest !== false
                     ? 'border-violet-500/30 bg-violet-500/[0.08] text-violet-300'
@@ -1035,6 +1039,7 @@ export function SubjectsAndSyllabusEditor() {
               </button>
               <button
                 onClick={() => removeSubject(s.key)}
+                aria-label={`Remove subject ${s.label || s.key}`}
                 className="cursor-target shrink-0 flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-800 bg-neutral-900 text-neutral-500 hover:text-rose-400 hover:border-rose-500/30 transition-colors"
               >
                 <Trash2 className="h-3.5 w-3.5" />
@@ -1058,7 +1063,7 @@ export function SubjectsAndSyllabusEditor() {
             const isOpen = openPhase === p.phase;
             return (
               <div key={p.phase} className="rounded-lg border border-neutral-800 bg-neutral-950/40 overflow-hidden">
-                <button onClick={() => setOpenPhase(isOpen ? null : p.phase)} className="cursor-target w-full flex items-center gap-3 px-3.5 py-2.5 text-left">
+                <button onClick={() => setOpenPhase(isOpen ? null : p.phase)} aria-expanded={isOpen} className="cursor-target w-full flex items-center gap-3 px-3.5 py-2.5 text-left">
                   <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-neutral-800 text-[11px] font-semibold text-neutral-300">{p.phase}</span>
                   <span className="text-[12.5px] text-neutral-200 flex-1 truncate">{p.month} — {p.label}</span>
                   <ChevronRight className={`h-3.5 w-3.5 text-neutral-600 transition-transform shrink-0 ${isOpen ? 'rotate-90' : ''}`} />
@@ -1134,6 +1139,9 @@ export function IconPickerButton({ value, onChange }: { value: string; onChange:
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
+        aria-haspopup="true"
+        aria-expanded={open}
+        aria-label="Change icon"
         className="cursor-target flex h-8 w-8 items-center justify-center rounded-lg bg-neutral-800/80 border border-neutral-700/60 hover:border-violet-500/50 transition-colors"
       >
         <SelectedIcon className="h-3.5 w-3.5 text-neutral-300" strokeWidth={1.75} />
@@ -1148,6 +1156,9 @@ export function IconPickerButton({ value, onChange }: { value: string; onChange:
                 type="button"
                 key={key}
                 onClick={() => { onChange(key); setOpen(false); }}
+                title={key}
+                aria-label={key}
+                aria-pressed={isSelected}
                 className={`cursor-target flex h-7 w-7 items-center justify-center rounded-md transition-colors ${
                   isSelected ? 'bg-violet-500/20 border border-violet-500/50' : 'border border-transparent hover:bg-neutral-800'
                 }`}
@@ -1344,6 +1355,7 @@ export function SettingsAccordionItem({ icon: Icon, title, subtitle, isOpen, onT
     <div>
       <button
         onClick={onToggle}
+        aria-expanded={isOpen}
         className={`cursor-target w-full flex items-center gap-3 rounded-xl border px-4 py-3.5 text-left transition-colors ${
           isOpen
             ? 'border-violet-500/30 bg-violet-500/[0.06]'
@@ -1406,4 +1418,3 @@ export function ConfigEditorTab() {
 }
 
 // ---------- Main Root Dashboard Component ----------
-

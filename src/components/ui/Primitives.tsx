@@ -47,46 +47,72 @@ export function MagneticCursor() {
   const [hovering, setHovering] = useState(false);
 
   useEffect(() => {
-    const isFine = window.matchMedia && window.matchMedia('(pointer: fine)').matches;
-    const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (!isFine || reducedMotion) return;
-    setActive(true);
+    // Everything below is wrapped in a try/catch: this cursor is a cosmetic
+    // enhancement, and the native cursor must never disappear because of a
+    // bug in it. `document.documentElement.classList.add('magnetic-cursor-active')`
+    // is the ONLY thing that hides the native cursor (see the scoped CSS
+    // rule in App.tsx) — if this effect throws or bails out before adding
+    // that class, the browser's normal cursor stays visible.
+    let cleanup = () => {};
+    try {
+      const isFine = window.matchMedia && window.matchMedia('(pointer: fine)').matches;
+      const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!isFine || reducedMotion) return;
+      setActive(true);
+      document.documentElement.classList.add('magnetic-cursor-active');
 
-    const handleMove = (e) => {
-      target.current.x = e.clientX;
-      target.current.y = e.clientY;
-    };
-    const handleOver = (e) => {
-      if (e.target.closest && e.target.closest('.cursor-target')) setHovering(true);
-    };
-    const handleOut = (e) => {
-      if (e.target.closest && e.target.closest('.cursor-target')) setHovering(false);
-    };
+      const handleMove = (e) => {
+        target.current.x = e.clientX;
+        target.current.y = e.clientY;
+      };
+      const handleOver = (e) => {
+        if (e.target.closest && e.target.closest('.cursor-target')) setHovering(true);
+      };
+      const handleOut = (e) => {
+        if (e.target.closest && e.target.closest('.cursor-target')) setHovering(false);
+      };
 
-    window.addEventListener('mousemove', handleMove, { passive: true });
-    document.addEventListener('mouseover', handleOver);
-    document.addEventListener('mouseout', handleOut);
+      window.addEventListener('mousemove', handleMove, { passive: true });
+      document.addEventListener('mouseover', handleOver);
+      document.addEventListener('mouseout', handleOut);
 
-    let raf;
-    const loop = () => {
-      pos.current.x += (target.current.x - pos.current.x) * 0.18;
-      pos.current.y += (target.current.y - pos.current.y) * 0.18;
-      if (dotRef.current) {
-        dotRef.current.style.transform = `translate3d(${target.current.x}px, ${target.current.y}px, 0) translate(-50%, -50%)`;
-      }
-      if (ringRef.current) {
-        ringRef.current.style.transform = `translate3d(${pos.current.x}px, ${pos.current.y}px, 0) translate(-50%, -50%)`;
-      }
+      let raf;
+      const loop = () => {
+        try {
+          pos.current.x += (target.current.x - pos.current.x) * 0.18;
+          pos.current.y += (target.current.y - pos.current.y) * 0.18;
+          if (dotRef.current) {
+            dotRef.current.style.transform = `translate3d(${target.current.x}px, ${target.current.y}px, 0) translate(-50%, -50%)`;
+          }
+          if (ringRef.current) {
+            ringRef.current.style.transform = `translate3d(${pos.current.x}px, ${pos.current.y}px, 0) translate(-50%, -50%)`;
+          }
+          raf = requestAnimationFrame(loop);
+        } catch (err) {
+          // A runtime error mid-animation would otherwise kill the loop
+          // silently while cursor:none stayed active. Restore the native
+          // cursor immediately rather than leaving the user pointer-less.
+          console.error('[MagneticCursor] animation loop failed, restoring native cursor', err);
+          document.documentElement.classList.remove('magnetic-cursor-active');
+          setActive(false);
+        }
+      };
       raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
 
-    return () => {
-      window.removeEventListener('mousemove', handleMove);
-      document.removeEventListener('mouseover', handleOver);
-      document.removeEventListener('mouseout', handleOut);
-      cancelAnimationFrame(raf);
-    };
+      cleanup = () => {
+        window.removeEventListener('mousemove', handleMove);
+        document.removeEventListener('mouseover', handleOver);
+        document.removeEventListener('mouseout', handleOut);
+        cancelAnimationFrame(raf);
+        document.documentElement.classList.remove('magnetic-cursor-active');
+      };
+    } catch (err) {
+      console.error('[MagneticCursor] failed to initialize, native cursor stays on', err);
+      document.documentElement.classList.remove('magnetic-cursor-active');
+      setActive(false);
+    }
+
+    return () => cleanup();
   }, []);
 
   if (!active) return null;
@@ -139,7 +165,7 @@ export function GlobalDetailModal({ modalData, onClose }: { modalData: ModalData
               <p className="text-xs text-neutral-500">{modalData.subtitle || 'System Deep-Dive Data'}</p>
             </div>
           </div>
-          <button onClick={onClose} className="cursor-target p-1.5 rounded-lg text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200 transition-all duration-150 active:scale-90">
+          <button onClick={onClose} aria-label="Close" className="cursor-target p-1.5 rounded-lg text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200 transition-all duration-150 active:scale-90">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -583,8 +609,8 @@ export function StatPill({ icon: Icon, label, value, accent = 'neutral' }: { ico
 // card, sorted so the countdown ending soonest is always first. Zero
 // configured countdowns falls back to a single prompt card.
 export function RippleButton({
-  children, onClick, className = '', disabled = false, title, style,
-}: { children: React.ReactNode; onClick?: () => void; className?: string; disabled?: boolean; title?: string; style?: React.CSSProperties }) {
+  children, onClick, className = '', disabled = false, title, style, ariaLabel,
+}: { children: React.ReactNode; onClick?: () => void; className?: string; disabled?: boolean; title?: string; style?: React.CSSProperties; ariaLabel?: string }) {
   const ref = useRef<HTMLButtonElement>(null);
   const [spawnRipple, rippleNodes] = useRipple();
 
@@ -601,6 +627,7 @@ export function RippleButton({
       onTouchStart={handleDown}
       disabled={disabled}
       title={title}
+      aria-label={ariaLabel || title}
       className={`relative overflow-hidden ${className}`}
       style={style}
     >
