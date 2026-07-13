@@ -79,18 +79,18 @@ export const SWEEP_REVEAL_KEYFRAMES = `
   @property --akyos-sweep {
     syntax: '<percentage>';
     inherits: false;
-    initial-value: -30%;
+    initial-value: 130%;
   }
   @keyframes akyos-sweep-reveal {
-    0%   { opacity: 0; --akyos-sweep: -30%; }
+    0%   { opacity: 0; --akyos-sweep: 130%; }
     25%  { opacity: 1; }
-    100% { opacity: 1; --akyos-sweep: 130%; }
+    100% { opacity: 1; --akyos-sweep: -30%; }
   }
 `;
-// Total 2s so the sweep is clearly visible rather than a flicker; `both`
+// Total 3s so the sweep is clearly visible rather than a flicker; `both`
 // fill-mode holds the fully-hidden state for the instant before playback
 // starts, then the fully-revealed state once it's done.
-export const SWEEP_REVEAL_ANIMATION = 'akyos-sweep-reveal 2s cubic-bezier(0.16, 1, 0.3, 1) both';
+export const SWEEP_REVEAL_ANIMATION = 'akyos-sweep-reveal 3s cubic-bezier(0.16, 1, 0.3, 1) both';
 
 // The mask itself — static across the whole animation (only the
 // `--akyos-sweep` custom property above changes), spread into an
