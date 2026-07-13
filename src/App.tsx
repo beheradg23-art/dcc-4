@@ -154,12 +154,25 @@ export default function JEEDashboard() {
   });
 
   useEffect(() => {
+    // Guard: without this, this effect fires on EVERY mount of JEEDashboard
+    // — including while still sitting on the AuthGate or OnboardingWizard
+    // screens, since hooks all run regardless of the early `return`s below
+    // that gate on `unlocked`/`onboardingDone`. That means a fresh account's
+    // still-default `config` got written to `app_config_v1` before
+    // onboarding ever ran, and the very next reload (there are several
+    // during sign-up) then saw that key already present and concluded
+    // "this account already has a saved config" — the backward-compat check
+    // just above — silently skipping onboarding for every new account.
+    // Only persisting once the person is actually unlocked and past
+    // onboarding means `app_config_v1` can never exist before onboarding
+    // has genuinely completed.
+    if (!unlocked || !onboardingDone) return;
     try {
       localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(serializeConfig(config)));
     } catch (e) {
       console.error('Error persisting config to localStorage', e);
     }
-  }, [config]);
+  }, [config, unlocked, onboardingDone]);
 
   // ---------- Dynamic tab system (Phase 8) ----------
   // `config.domains === null` means "unrestricted" — every account today,
