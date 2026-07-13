@@ -894,6 +894,13 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
     setPcSetupBusy(true);
     setPcSetupError('');
     try {
+      // Defensive re-check: this is the last moment before anything from
+      // this device reaches the cloud under pendingUserId. ensureAccountIsolation
+      // is a cheap no-op if this browser is already correctly bound to this
+      // account (the normal case) — it only actually wipes anything if it
+      // finds a mismatch that every earlier call in this flow should have
+      // already caught. Kept here as a backstop, not the primary fix.
+      ensureAccountIsolation(pendingUserId);
       const hash = await hashPasscode(finalPasscode, pendingUserId);
       await setPasscodeHash(pendingUserId, hash);
       localStorage.setItem(PASSCODE_HASH_KEY, hash);
@@ -902,7 +909,18 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
       // local data already sitting in this browser).
       await pushToCloud(pendingUserId).catch(() => {});
       sessionStorage.setItem(SYNCED_FLAG, 'true');
-      onUnlock();
+      // Reload rather than calling onUnlock() directly. JEEDashboard reads
+      // config/onboarding state from localStorage exactly once, at mount —
+      // if this browser tab was already sitting open (and mounted) since
+      // before this signup, flipping `unlocked` in place would leave it
+      // holding whatever was in memory from before, even though
+      // localStorage itself is now correctly wiped/scoped to this account.
+      // Reloading forces a genuinely fresh mount that re-reads the
+      // now-correct localStorage — the same reason the sign-in flow
+      // (syncThenContinue, above) already reloads. The one cost: a
+      // brand-new account has to re-enter the passcode it just set, once,
+      // right after this reload — worth it for the guarantee.
+      window.location.reload();
     } catch (e) {
       console.error('[AuthGate] failed to save passcode', e);
       setPcSetupError('Could not save your passcode — check your connection and try again.');
@@ -929,7 +947,17 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
         const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
         if (data.user && !data.session) {
-          // Email confirmation is turned on in the Supabase dashboard.
+          // Email confirmation is turned on in the Supabase dashboard, so
+          // there's no session yet — but `data.user.id` (the new account's
+          // real id) is already known. Wipe this browser's local storage
+          // for it RIGHT NOW rather than waiting for the eventual sign-in
+          // after confirming: leaving this branch without calling
+          // ensureAccountIsolation() was exactly the gap that let a
+          // previous account's leftover localStorage in this browser
+          // (config, onboarding flag, etc.) sit untouched until sign-in,
+          // and — worse — meant nothing had yet bound this browser to the
+          // NEW account either.
+          ensureAccountIsolation(data.user.id);
           setSignupNotice('Account created — check your email to confirm it, then sign in.');
           setAuthMode('signin');
           setAuthBusy(false);
