@@ -14,6 +14,7 @@ import {
 } from '../lib/cloudSync';
 import PasswordField from './PasswordField';
 import { NO_SELECT_CSS } from '../styles/noSelect';
+import { SWEEP_REVEAL_ANIMATION, SWEEP_REVEAL_STYLE } from '../lib/liquidFill';
 
 const PASSCODE_LENGTH = 6;
 
@@ -720,6 +721,10 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  // True while the email field has keyboard focus (cursor typing in it) —
+  // drives the animated gradient sweep border, same treatment
+  // PasswordField now uses for its own focus state.
+  const [emailFocused, setEmailFocused] = useState(false);
   const [authError, setAuthError] = useState('');
   const [authBusy, setAuthBusy] = useState(false);
   const [signupNotice, setSignupNotice] = useState('');
@@ -1149,17 +1154,46 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
           </div>
 
           <form onSubmit={handleAuthSubmit} className="w-full max-w-xs space-y-3">
-            <input
-              ref={emailInputRef}
-              type="email"
-              required
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email"
-              className="w-full rounded-xl border border-neutral-800 bg-neutral-900/80 px-4 py-3 text-[13px] text-neutral-100 placeholder-neutral-600 outline-none transition-colors focus:border-violet-500/50"
-              style={authCascadeStyle(4)}
-            />
+            <div className="relative">
+              <input
+                ref={emailInputRef}
+                type="email"
+                required
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onFocus={() => setEmailFocused(true)}
+                onBlur={() => setEmailFocused(false)}
+                placeholder="Email"
+                className="w-full rounded-xl border border-neutral-800 bg-neutral-900/80 px-4 py-3 text-[13px] text-neutral-100 placeholder-neutral-600 outline-none transition-colors focus:border-violet-500/50"
+                style={authCascadeStyle(4)}
+              />
+              {emailFocused && (
+                // Same animated gradient sweep border as the dashboard's
+                // <Card> bento boxes and header badges — ring-only cutout
+                // filled with the local liquidFillStyle() brand gradient,
+                // revealed via the --akyos-sweep mask, gated on focus
+                // (cursor in the field) instead of hover since this is a
+                // text input. PasswordField below gets the matching
+                // treatment internally.
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 rounded-xl"
+                  style={{ animation: SWEEP_REVEAL_ANIMATION, ...SWEEP_REVEAL_STYLE }}
+                >
+                  <div
+                    className="absolute inset-0 rounded-xl"
+                    style={{
+                      padding: '1.5px',
+                      WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                      WebkitMaskComposite: 'xor',
+                      maskComposite: 'exclude',
+                      ...liquidFillStyle(),
+                    } as React.CSSProperties}
+                  />
+                </div>
+              )}
+            </div>
             <PasswordField
               value={password}
               onChange={setPassword}
