@@ -3,7 +3,7 @@
 // as AuthGate). Split out of the old App.tsx monolith so any component
 // that wants the liquid-fill look can import it directly instead of
 // relying on a function defined 1000+ lines away in the same file.
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 // --- shared "liquid" animated gradient fill (same treatment as AuthGate) --
 //
@@ -87,10 +87,34 @@ export const SWEEP_REVEAL_KEYFRAMES = `
     100% { opacity: 1; --akyos-sweep: -30%; }
   }
 `;
-// Total 3s so the sweep is clearly visible rather than a flicker; `both`
+// Total 3.5s so the sweep is clearly visible rather than a flicker; `both`
 // fill-mode holds the fully-hidden state for the instant before playback
 // starts, then the fully-revealed state once it's done.
-export const SWEEP_REVEAL_ANIMATION = 'akyos-sweep-reveal 3s cubic-bezier(0.16, 1, 0.3, 1) both';
+const SWEEP_DURATION = '3.5s';
+const SWEEP_EASING = 'cubic-bezier(0.16, 1, 0.3, 1)';
+export const SWEEP_REVEAL_ANIMATION = `akyos-sweep-reveal ${SWEEP_DURATION} ${SWEEP_EASING} both`;
+
+// The exit counterpart: the exact same keyframes played backwards
+// (`reverse`), not a second hand-authored animation. Forwards, the reveal
+// travels bottom-left -> top-right (see the corner-to-corner note above),
+// so time-reversing it retraces that same line: content nearest the
+// bottom-left corner is the first to lose opacity, the top-right corner
+// the last — i.e. it fades out bottom-left to top-right, the mirror image
+// of the fade-in rather than an independent effect that could ever drift
+// out of sync with it. `reverse` also flips the easing curve for free
+// (browsers reverse cubic-bezier() curves automatically for a reversed
+// animation), so the deceleration on the way in becomes an acceleration
+// on the way out, which is the correct feel for a mirrored exit. `both`
+// still applies here: it holds the fully-visible frame until playback
+// starts, then holds fully-hidden once it ends.
+export const SWEEP_HIDE_ANIMATION = `akyos-sweep-reveal ${SWEEP_DURATION} ${SWEEP_EASING} reverse both`;
+
+// Gap between the fade-in finishing and the fade-out starting, for the
+// "pointer entered and left almost instantly" case below — long enough to
+// read as a deliberate beat rather than a stutter, short enough that the
+// whole in -> pause -> out sequence still feels like one continuous
+// gesture rather than two unrelated animations.
+export const SWEEP_GAP_MS = 500;
 
 // The mask itself — static across the whole animation (only the
 // `--akyos-sweep` custom property above changes), spread into an
@@ -165,5 +189,117 @@ export function liquidFillStyleFor(baseGradient: string, extra: React.CSSPropert
     backgroundPosition: '0% 50%, 0% 50%',
     animation: extraAnimation ? `${extraAnimation}, ${LIQUID_ANIMATION}` : LIQUID_ANIMATION,
     ...rest,
+  };
+}
+
+// --- sweep phase state machine --------------------------------------------
+//
+// Drives the fade-in / gap / fade-out lifecycle for the sweep reveal, given
+// nothing but the raw "is the pointer over the card right now" boolean.
+// Rules this encodes (matches how a person actually reads the hover):
+//
+// 1. Pointer enters -> fade-in always plays to completion. If the pointer
+//    leaves mid-fade-in, that does NOT cut the fade-in short — leaving is
+//    only acted on once the in-flight animation finishes.
+// 2. If the pointer is still over the card once the fade-in finishes, the
+//    sweep just stays fully visible and static — no fade-out is scheduled
+//    until an actual leave happens, however long the hover lasts.
+// 3. Once a leave is registered (immediately or after the fade-in
+//    finishes), there's a fixed SWEEP_GAP_MS pause holding the fully-
+//    visible state, then the fade-out plays to completion. So a pointer
+//    that taps the card and leaves instantly still gets the full
+//    fade-in -> gap -> fade-out sequence, uninterrupted end to end.
+// 4. Re-entering during the gap cancels the pending fade-out and snaps
+//    back to the static fully-visible state (no flash of a fade-out that
+//    never gets to play). Re-entering mid fade-out is handled the same
+//    way as a mid-fade-in leave, symmetrically: the in-flight fade-out is
+//    left to finish rather than being cut off, and only once it completes
+//    does playback pick back up (a fresh fade-in) if the pointer is still
+//    there.
+//
+// Only one component instance should drive this per card (Card, via the
+// ring overlay's onAnimationEnd) — everything else that renders a sweep
+// layer (the icon badge, the heading) just reads `active`/`animation` off
+// the same phase so all of a card's sweep layers are guaranteed to be on
+// the exact same frame, never drifting apart.
+export type SweepPhase = 'idle' | 'entering' | 'visible' | 'gap' | 'leaving';
+
+export interface SweepController {
+  phase: SweepPhase;
+  active: boolean;
+  animation: string;
+  handleFadeInEnd: () => void;
+  handleFadeOutEnd: () => void;
+}
+
+export function useSweepPhase(hovering: boolean): SweepController {
+  const [phase, setPhase] = useState<SweepPhase>('idle');
+  const phaseRef = useRef<SweepPhase>('idle');
+  phaseRef.current = phase;
+  const hoveringRef = useRef(hovering);
+  hoveringRef.current = hovering;
+  const gapTimer = useRef<number | null>(null);
+
+  const clearGapTimer = () => {
+    if (gapTimer.current !== null) {
+      window.clearTimeout(gapTimer.current);
+      gapTimer.current = null;
+    }
+  };
+
+  const scheduleLeaving = () => {
+    clearGapTimer();
+    gapTimer.current = window.setTimeout(() => {
+      gapTimer.current = null;
+      setPhase('leaving');
+    }, SWEEP_GAP_MS);
+  };
+
+  useEffect(() => {
+    if (hovering) {
+      if (phaseRef.current === 'idle') {
+        setPhase('entering');
+      } else if (phaseRef.current === 'gap') {
+        // Caught the pending fade-out before it started — cancel it and
+        // hold at fully visible instead of playing a fade-out that would
+        // immediately have to reverse itself.
+        clearGapTimer();
+        setPhase('visible');
+      }
+      // 'entering' / 'leaving': an animation is already in flight — leave
+      // it to finish; handleFadeInEnd / handleFadeOutEnd react to the
+      // latest hoveringRef value once it does.
+    } else if (phaseRef.current === 'visible') {
+      scheduleLeaving();
+    }
+    // 'entering' -> handled by handleFadeInEnd once it fires.
+    // 'gap' -> already counting down.
+    // 'leaving' -> handled by handleFadeOutEnd once it fires.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hovering]);
+
+  useEffect(() => clearGapTimer, []);
+
+  const handleFadeInEnd = () => {
+    if (phaseRef.current !== 'entering') return;
+    if (hoveringRef.current) {
+      setPhase('visible');
+    } else {
+      setPhase('gap');
+      scheduleLeaving();
+    }
+  };
+
+  const handleFadeOutEnd = () => {
+    if (phaseRef.current !== 'leaving') return;
+    setPhase(hoveringRef.current ? 'entering' : 'idle');
+  };
+
+  return {
+    phase,
+    active: phase !== 'idle',
+    animation: phase === 'leaving' ? SWEEP_HIDE_ANIMATION : SWEEP_REVEAL_ANIMATION,
+    handleFadeInEnd,
+    handleFadeOutEnd,
   };
 }

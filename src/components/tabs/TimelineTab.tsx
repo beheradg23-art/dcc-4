@@ -3,18 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { Clock3, Weight, ArrowUpRight, Bell, BellOff } from 'lucide-react';
 import { ConfigContext, getSubjectStyle } from '../../lib/appConfig';
-import { RippleButton, ModalData } from '../ui/Primitives';
+import { RippleButton, ModalData, SweepRingOverlay } from '../ui/Primitives';
 import { EditableSectionHeading } from '../shared/EditableSectionHeading';
-import { liquidFillStyle, SWEEP_REVEAL_ANIMATION, SWEEP_REVEAL_STYLE } from '../../lib/liquidFill';
+import { useSweepPhase } from '../../lib/liquidFill';
 
 export function TimelineTab({ setModal, notificationsEnabled, notificationPermission, onToggleNotifications }: { setModal: (data: ModalData | null) => void; notificationsEnabled: boolean; notificationPermission: NotificationPermission | 'unsupported'; onToggleNotifications: () => void }) {
   const { timeline, subjects } = React.useContext(ConfigContext);
-  // Which timeline block (by index) currently has the pointer over it —
-  // drives the animated gradient sweep border below, the same
-  // hover-gated overlay technique <Card> in Primitives.tsx uses for the
-  // dashboard's bento cards, just tracked per-row here instead of via
-  // CardHoverContext since these blocks are a flat list, not <Card>s.
-  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const typeStyle = {
     study: 'border-l-indigo-500',
     gym: 'border-l-violet-500',
@@ -58,11 +52,14 @@ export function TimelineTab({ setModal, notificationsEnabled, notificationPermis
       )}
       <div className="space-y-2.5">
         {timeline.map((slot, i) => {
-          const Icon = slot.icon;
           const sub = slot.subject ? getSubjectStyle(slot.subject, subjects) : null;
           return (
-            <div
+            <TimelineBlock
               key={i}
+              slot={slot}
+              sub={sub}
+              typeStyle={typeStyle}
+              typeBg={typeBg}
               onClick={() => setModal({
                 title: slot.label,
                 subtitle: `Time Block: ${slot.start} - ${slot.end}`,
@@ -71,58 +68,50 @@ export function TimelineTab({ setModal, notificationsEnabled, notificationPermis
                 arrayTitle: 'Tactical Blueprint',
                 arrayItems: slot.subject ? ['Execute active recall models', 'Avoid passive consumption modes', 'Track mistake logs inside errors catalog'] : ['Execute standard systemic recovery actions']
               })}
-              onMouseEnter={() => setHoveredIdx(i)}
-              onMouseLeave={() => setHoveredIdx((cur) => (cur === i ? null : cur))}
-              className={`relative overflow-hidden flex items-center gap-4 rounded-xl border border-neutral-800 bg-neutral-900/50 border-l-2 ${typeStyle[slot.type]} px-4 py-3.5 cursor-pointer transition-all hover:bg-neutral-900/90 hover:translate-x-1`}
-            >
-              {hoveredIdx === i && (
-                // Same animated gradient sweep border as the dashboard's
-                // <Card> bento boxes (see Primitives.tsx SectionHeading /
-                // Card comments for the full breakdown): a corner-to-corner
-                // `--akyos-sweep` mask plays once on hover-in, wrapping a
-                // ring-only cutout (padding + content-box mask-composite
-                // exclude/xor) filled with the shared moving liquidFillStyle()
-                // brand gradient — so this block picks up the exact same
-                // "live material" treatment as every other bento card.
-                <div
-                  aria-hidden
-                  className="pointer-events-none absolute inset-0 rounded-xl"
-                  style={{ animation: SWEEP_REVEAL_ANIMATION, ...SWEEP_REVEAL_STYLE }}
-                >
-                  <div
-                    className="absolute inset-0 rounded-xl"
-                    style={{
-                      padding: '1.5px',
-                      WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-                      WebkitMaskComposite: 'xor',
-                      maskComposite: 'exclude',
-                      ...liquidFillStyle(),
-                    } as React.CSSProperties}
-                  />
-                </div>
-              )}
-              <div className="w-[92px] shrink-0 tabular-nums text-[12.5px] font-medium text-neutral-400">
-                {slot.start === slot.end ? slot.start : `${slot.start}–${slot.end}`}
-              </div>
-              <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${typeBg[slot.type]}`}>
-                <Icon className="h-4 w-4" strokeWidth={1.75} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[13.5px] font-medium text-neutral-100">{slot.label}</span>
-                  {sub && (
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${sub.bg} ${sub.text}`}>
-                      {slot.subject}
-                    </span>
-                  )}
-                </div>
-                <div className="text-[12px] text-neutral-500 mt-0.5">{slot.detail}</div>
-              </div>
-              <ArrowUpRight className="h-3 w-3 text-neutral-600 shrink-0" />
-            </div>
+            />
           );
         })}
       </div>
+    </div>
+  );
+}
+
+// One row in the Master Timeline. Pulled out to its own component (rather
+// than a shared "which index is hovered" variable on the parent) so its
+// animated gradient sweep border runs off its own independent
+// useSweepPhase() — see the SweepRingOverlay comment in Primitives.tsx for
+// why a single shared hover index can't represent two rows mid-animation
+// (one fading out, another fading in) at the same time.
+function TimelineBlock({ slot, sub, typeStyle, typeBg, onClick }: { slot: any; sub: { bg: string; text: string } | null; typeStyle: Record<string, string>; typeBg: Record<string, string>; onClick: () => void }) {
+  const Icon = slot.icon;
+  const [hovering, setHovering] = useState(false);
+  const sweep = useSweepPhase(hovering);
+  return (
+    <div
+      onClick={onClick}
+      onMouseEnter={() => setHovering(true)}
+      onMouseLeave={() => setHovering(false)}
+      className={`relative overflow-hidden flex items-center gap-4 rounded-xl border border-neutral-800 bg-neutral-900/50 border-l-2 ${typeStyle[slot.type]} px-4 py-3.5 cursor-pointer transition-all hover:bg-neutral-900/90 hover:translate-x-1`}
+    >
+      <SweepRingOverlay sweep={sweep} rounded="rounded-xl" />
+      <div className="w-[92px] shrink-0 tabular-nums text-[12.5px] font-medium text-neutral-400">
+        {slot.start === slot.end ? slot.start : `${slot.start}–${slot.end}`}
+      </div>
+      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${typeBg[slot.type]}`}>
+        <Icon className="h-4 w-4" strokeWidth={1.75} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[13.5px] font-medium text-neutral-100">{slot.label}</span>
+          {sub && (
+            <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${sub.bg} ${sub.text}`}>
+              {slot.subject}
+            </span>
+          )}
+        </div>
+        <div className="text-[12px] text-neutral-500 mt-0.5">{slot.detail}</div>
+      </div>
+      <ArrowUpRight className="h-3 w-3 text-neutral-600 shrink-0" />
     </div>
   );
 }

@@ -8,11 +8,37 @@ import {
 import { ConfigContext, resolveDietValues, getLocalDateString, DailyCheckLog } from '../../lib/appConfig';
 import { isSectionVisibleForDomains, type GoalDomain } from '../../lib/questionnaire';
 import { EXERCISE_GUIDE } from '../../lib/staticContent';
-import { Card, StatPill, ModalData } from '../ui/Primitives';
+import { Card, StatPill, ModalData, SweepRingOverlay } from '../ui/Primitives';
 import { EditableSectionHeading } from '../shared/EditableSectionHeading';
 import { WeightTrackerCard } from '../shared/WeightTracker';
 import { generateExerciseGuide } from '../../lib/contentGen';
-import { liquidFillStyle, SWEEP_REVEAL_ANIMATION, SWEEP_REVEAL_STYLE } from '../../lib/liquidFill';
+import { useSweepPhase } from '../../lib/liquidFill';
+
+// One day pill in the workout-split selector. Pulled out to its own
+// component (rather than a shared "which day is hovered" variable on the
+// parent) so its animated gradient sweep border runs off its own
+// independent useSweepPhase() — see the SweepRingOverlay comment in
+// Primitives.tsx for why a single shared hover value can't represent two
+// pills mid-animation (one fading out, another fading in) at once.
+function DayPillButton({ day, active, onClick }: { day: string; active: boolean; onClick: () => void }) {
+  const [hovering, setHovering] = useState(false);
+  const sweep = useSweepPhase(hovering);
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovering(true)}
+      onMouseLeave={() => setHovering(false)}
+      className={`relative overflow-hidden rounded-full border px-3.5 py-1.5 text-[12.5px] font-medium transition-all duration-150 ${
+        active
+          ? 'border-neutral-200 bg-neutral-100 text-neutral-900'
+          : 'border-neutral-800 bg-neutral-900/60 text-neutral-400 hover:border-neutral-700 hover:text-neutral-200'
+      }`}
+    >
+      <SweepRingOverlay sweep={sweep} rounded="rounded-full" />
+      <span className="relative">{day}</span>
+    </button>
+  );
+}
 
 export function TrainingFuelTab({ setModal, dietLog, setDietLog, currentDateStr }: { setModal: (data: ModalData | null) => void; dietLog: DailyCheckLog; setDietLog: React.Dispatch<React.SetStateAction<DailyCheckLog>>; currentDateStr: string }) {
   const { training, diet, dietOverrides, profile, domains } = React.useContext(ConfigContext);
@@ -27,11 +53,6 @@ export function TrainingFuelTab({ setModal, dietLog, setDietLog, currentDateStr 
   const showFuel = isSectionVisibleForDomains('tf_fuel', domains as GoalDomain[] | null);
   const [activeDay, setActiveDay] = useState(training[0].day);
   const dayData = training.find((d) => d.day === activeDay) || training[0];
-  // Which day pill (Monday..Sunday) currently has the pointer over it —
-  // drives the animated gradient sweep border, same hover-gated overlay
-  // <Card> uses in Primitives.tsx, tracked per-pill since these are plain
-  // buttons, not <Card>s.
-  const [hoveredDay, setHoveredDay] = useState<string | null>(null);
 
   // If the routine gets edited in Settings and the previously-selected day
   // no longer exists, fall back to the first day instead of showing nothing.
@@ -123,42 +144,7 @@ export function TrainingFuelTab({ setModal, dietLog, setDietLog, currentDateStr 
         <EditableSectionHeading id="tf_workout" defaultTitle="Hybrid Vascularity Workout Split" defaultIcon={Dumbbell} subtitle="Select day to map active routines. Click any individual exercise to view strict mechanical form guides." />
         <div className="flex flex-wrap gap-2 mb-4">
           {training.map((d) => (
-            <button
-              key={d.day}
-              onClick={() => setActiveDay(d.day)}
-              onMouseEnter={() => setHoveredDay(d.day)}
-              onMouseLeave={() => setHoveredDay((cur) => (cur === d.day ? null : cur))}
-              className={`relative overflow-hidden rounded-full border px-3.5 py-1.5 text-[12.5px] font-medium transition-all duration-150 ${
-                activeDay === d.day
-                  ? 'border-neutral-200 bg-neutral-100 text-neutral-900'
-                  : 'border-neutral-800 bg-neutral-900/60 text-neutral-400 hover:border-neutral-700 hover:text-neutral-200'
-              }`}
-            >
-              {hoveredDay === d.day && (
-                // Same animated gradient sweep border as the dashboard's
-                // <Card> bento boxes / Master Timeline blocks / Syllabus
-                // Month pills: a ring-only cutout filled with the shared
-                // moving liquidFillStyle() brand gradient, revealed via the
-                // corner-to-corner --akyos-sweep mask on hover-in.
-                <div
-                  aria-hidden
-                  className="pointer-events-none absolute inset-0 rounded-full"
-                  style={{ animation: SWEEP_REVEAL_ANIMATION, ...SWEEP_REVEAL_STYLE }}
-                >
-                  <div
-                    className="absolute inset-0 rounded-full"
-                    style={{
-                      padding: '1.5px',
-                      WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-                      WebkitMaskComposite: 'xor',
-                      maskComposite: 'exclude',
-                      ...liquidFillStyle(),
-                    } as React.CSSProperties}
-                  />
-                </div>
-              )}
-              <span className="relative">{d.day}</span>
-            </button>
+            <DayPillButton key={d.day} day={d.day} active={activeDay === d.day} onClick={() => setActiveDay(d.day)} />
           ))}
         </div>
 
