@@ -10,31 +10,15 @@ import {
   Loader2, Calendar, Clock3,
 } from 'lucide-react';
 import { ConfigContext, HunterRank } from '../../lib/appConfig';
-import { liquidFillStyle, SWEEP_REVEAL_STYLE, SWEEP_REVEAL_STYLE_INVERSE, useSweepPhase, type SweepController } from '../../lib/liquidFill';
+import { liquidFillStyle, SWEEP_REVEAL_ANIMATION, SWEEP_REVEAL_STYLE, SWEEP_REVEAL_STYLE_INVERSE } from '../../lib/liquidFill';
 
 // Lets a Card tell whatever it's wrapping (SectionHeading, in practice)
 // that the pointer is currently over it, without every one of the 30+
 // call sites needing to pass a `hovering` prop down manually. Card is the
 // producer (below); SectionHeading is the only consumer today. Defaults to
-// an inactive sweep so a SectionHeading rendered outside a Card (shouldn't
-// happen, but not enforced) just never lights up instead of crashing.
-//
-// Carries the full sweep controller now, not just a hovering bool — every
-// sweep layer (icon badge, heading base/gradient, the card's own ring) has
-// to reflect the exact same phase and play the exact same animation string
-// (reveal vs. the mirrored hide) at the exact same moment, or the fade-in/
-// fade-out stops reading as one material and starts reading as several
-// unrelated things flickering independently. Card owns the one state
-// machine (see useSweepPhase in liquidFill.ts) and everything downstream
-// just reads off it.
-const INACTIVE_SWEEP: SweepController = {
-  phase: 'idle',
-  active: false,
-  animation: '',
-  handleFadeInEnd: () => {},
-  handleFadeOutEnd: () => {},
-};
-export const CardHoverContext = createContext<SweepController>(INACTIVE_SWEEP);
+// false so a SectionHeading rendered outside a Card (shouldn't happen, but
+// not enforced) just never lights up instead of crashing.
+export const CardHoverContext = createContext(false);
 
 // ---------------------------------------------------------------------------
 // DateField / TimeField
@@ -623,7 +607,7 @@ export function SectionHeading({ icon: Icon, title, subtitle }: { icon: React.Co
   // fades in on top of it — a single continuous crossfade rather than a
   // translucent gradient glyph sitting over a still-opaque white one,
   // which is what produced the pale "leaking" edge around the letters.
-  const sweep = useContext(CardHoverContext);
+  const hovering = useContext(CardHoverContext);
   return (
     <div className="flex items-center gap-3 mb-5">
       <div
@@ -631,11 +615,11 @@ export function SectionHeading({ icon: Icon, title, subtitle }: { icon: React.Co
         style={{ backgroundColor: 'rgba(38, 38, 38, 0.8)', borderColor: 'rgba(64, 64, 64, 0.6)' }}
       >
         <Icon className="h-4.5 w-4.5 text-neutral-300" strokeWidth={1.75} />
-        {sweep.active && (
+        {hovering && (
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-lg"
-            style={{ ...liquidFillStyle({ animation: sweep.animation, ...SWEEP_REVEAL_STYLE }), borderColor: 'transparent' }}
+            style={{ ...liquidFillStyle({ animation: SWEEP_REVEAL_ANIMATION, ...SWEEP_REVEAL_STYLE }), borderColor: 'transparent' }}
           >
             <Icon className="h-4.5 w-4.5 text-neutral-950" strokeWidth={1.75} />
           </div>
@@ -645,70 +629,21 @@ export function SectionHeading({ icon: Icon, title, subtitle }: { icon: React.Co
         <span
           style={{
             ...SWEEP_REVEAL_STYLE_INVERSE,
-            ...(sweep.active ? { animation: sweep.animation } : null),
+            ...(hovering ? { animation: SWEEP_REVEAL_ANIMATION } : null),
           }}
         >
           {title}
         </span>
-        {sweep.active && (
+        {hovering && (
           <span
             aria-hidden
             className="pointer-events-none absolute inset-0 bg-clip-text text-transparent"
-            style={liquidFillStyle({ animation: sweep.animation, ...SWEEP_REVEAL_STYLE })}
+            style={liquidFillStyle({ animation: SWEEP_REVEAL_ANIMATION, ...SWEEP_REVEAL_STYLE })}
           >
             {title}
           </span>
         )}
       </h2>
-    </div>
-  );
-}
-
-// The animated gradient ring: a `--akyos-sweep`-masked, ring-only cutout
-// (padding + content-box mask-composite exclude/xor) filled with the
-// shared moving liquidFillStyle() brand gradient, driven entirely by a
-// SweepController from useSweepPhase(). Originally lived inline inside
-// <Card> only; pulled out here because SyllabusTab's Month pills,
-// TimelineTab's blocks, and TrainingFuelTab's day pills all want the exact
-// same ring treatment on their own plain buttons/rows (not <Card>s) — and
-// each of those needs its own independent useSweepPhase() (its own local
-// `hovering` state), since with the fade-out gap it's entirely possible
-// for one row's ring to still be fading out while another row's is fading
-// in, which a single shared "which index is hovered" variable can't
-// represent (moving the pointer to a new row would previously just yank
-// the old ring away mid-fade instead of letting it finish). So the pattern
-// is: each hoverable element owns `const [hovering, setHovering] =
-// useState(false)` + `const sweep = useSweepPhase(hovering)` locally, then
-// hands that controller to this component to actually render.
-//
-// This is *only* the ring — it doesn't touch the real `border`/background,
-// on purpose: several call sites (the amber warning card in SyllabusTab,
-// subject-colored cards, the tinted Countdown card, etc.) pass their own
-// border/background classes that this must not fight. `rounded` should
-// match the host element's own corner radius class so the ring-cutout mask
-// lines up with the visible edge exactly.
-export function SweepRingOverlay({ sweep, rounded = 'rounded-2xl' }: { sweep: SweepController; rounded?: string }) {
-  if (!sweep.active) return null;
-  return (
-    <div
-      aria-hidden
-      className={`pointer-events-none absolute inset-0 ${rounded}`}
-      style={{ animation: sweep.animation, ...SWEEP_REVEAL_STYLE }}
-      onAnimationEnd={() => {
-        if (sweep.phase === 'entering') sweep.handleFadeInEnd();
-        else if (sweep.phase === 'leaving') sweep.handleFadeOutEnd();
-      }}
-    >
-      <div
-        className={`absolute inset-0 ${rounded}`}
-        style={{
-          padding: '1.5px',
-          WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-          WebkitMaskComposite: 'xor',
-          maskComposite: 'exclude',
-          ...liquidFillStyle(),
-        } as React.CSSProperties}
-      />
     </div>
   );
 }
@@ -721,13 +656,6 @@ export function Card({ children, className = '', onClick }: { children: React.Re
   const [hovering, setHovering] = useState(false);
   const [pressed, setPressed] = useState(false);
   const [spawnRipple, rippleNodes] = useRipple();
-  // Drives the fade-in -> (visible | gap) -> fade-out lifecycle for the
-  // sweep layers (ring, icon badge, heading) — see useSweepPhase in
-  // liquidFill.ts for the exact rules. Deliberately separate from
-  // `hovering` above: the spotlight/tilt/border-brighten effects should
-  // still snap on/off instantly with the real pointer state, only the
-  // sweep needs the slower, animation-aware state machine.
-  const sweep = useSweepPhase(hovering);
 
   const handleMove = (e) => {
     if (!fineRef.current || !ref.current) return;
@@ -776,9 +704,46 @@ export function Card({ children, className = '', onClick }: { children: React.Re
           style={{ background: `radial-gradient(420px circle at ${spot.x}% ${spot.y}%, rgba(255,255,255,0.06), transparent 65%)` }}
         />
       )}
-      <SweepRingOverlay sweep={sweep} rounded="rounded-2xl" />
+      {hovering && (
+        // The animated gradient outline. This is a separate overlay, not a
+        // real `border`, on purpose: several call sites pass their own
+        // `border ...`/background classes via `className` (the amber
+        // warning card in SyllabusTab, subject-colored cards, the tinted
+        // Countdown card, etc.) — touching the real border/background
+        // here would fight those. Instead, a `padding` on this absolutely-
+        // positioned, inset-0 layer defines a ring thickness, and a CSS
+        // mask cuts out everything except that ring (`content-box` minus
+        // the full box, via mask-composite exclude/xor) so only the edge
+        // itself is painted — the gradient never touches the card's
+        // interior — then that ring is filled with the exact same moving
+        // liquidFillStyle() gradient used for badges/buttons/avatars
+        // elsewhere, so it reads as the same "material" everywhere.
+        // The sweep is a `mask-image` again (feathering needs a real
+        // gradient, which clip-path can't do), so it can't live on this
+        // div directly — it would overwrite the ring's own content-box
+        // cutout mask just above. It goes on a wrapper instead: masking a
+        // parent restricts which pixels of the already-ring-shaped child
+        // are visible, so the two masks stack without either overwriting
+        // the other.
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 rounded-2xl"
+          style={{ animation: SWEEP_REVEAL_ANIMATION, ...SWEEP_REVEAL_STYLE }}
+        >
+          <div
+            className="absolute inset-0 rounded-2xl"
+            style={{
+              padding: '1.5px',
+              WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+              WebkitMaskComposite: 'xor',
+              maskComposite: 'exclude',
+              ...liquidFillStyle(),
+            } as React.CSSProperties}
+          />
+        </div>
+      )}
       {onClick && rippleNodes}
-      <CardHoverContext.Provider value={sweep}>
+      <CardHoverContext.Provider value={hovering}>
         <div className="relative">{children}</div>
       </CardHoverContext.Provider>
     </div>
