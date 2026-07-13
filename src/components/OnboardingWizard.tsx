@@ -271,8 +271,13 @@ function OnboardingShell({
       {/* Right column: branded header (fixed) + scrollable content + fixed footer. */}
       <div className="flex min-h-0 flex-1 flex-col">
         {/* Header segment — the app's own branding, fixed at the top and
-            never scrolls, same mark used for the main app header. */}
-        <div className="flex shrink-0 items-center gap-3 border-b border-neutral-900 px-6 py-4 sm:px-10 lg:px-12">
+            never scrolls, same mark used for the main app header. Below
+            lg, this whole row is skipped unless a mobileHeader override is
+            given (it swaps in a compact icon+title instead) — otherwise
+            it's just dead vertical space eating into the scrollable area
+            on phones/tablets, since the sidebar/step-context above it
+            already carries the branding there. */}
+        <div className={`shrink-0 items-center gap-3 border-b border-neutral-900 px-6 py-4 sm:px-10 lg:px-12 ${mobileHeader ? 'flex' : 'hidden lg:flex'}`}>
           {mobileHeader && (
             <>
               {/* Mobile/tablet compact header — swapped-in icon + single
