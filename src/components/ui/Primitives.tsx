@@ -10,7 +10,7 @@ import {
   Loader2, Calendar, Clock3,
 } from 'lucide-react';
 import { ConfigContext, HunterRank } from '../../lib/appConfig';
-import { liquidFillStyle, SWEEP_REVEAL_ANIMATION, SWEEP_REVEAL_STYLE } from '../../lib/liquidFill';
+import { liquidFillStyle, SWEEP_REVEAL_ANIMATION, SWEEP_REVEAL_STYLE, SWEEP_REVEAL_STYLE_INVERSE } from '../../lib/liquidFill';
 
 // Lets a Card tell whatever it's wrapping (SectionHeading, in practice)
 // that the pointer is currently over it, without every one of the 30+
@@ -587,17 +587,26 @@ export function SectionHeading({ icon: Icon, title, subtitle }: { icon: React.Co
   //
   // Both the badge and the title are built as two stacked layers rather
   // than one element whose style flips on hover. The base layer (neutral
-  // icon/border, solid white text) is always rendered at full opacity —
-  // it never disappears. A second, absolutely-positioned copy carrying
-  // the gradient fill sits on top of it and is the only thing the sweep
-  // animation touches; the sweep's mask only ever affects *that* copy's
-  // own opacity, revealing it progressively over the static base
-  // underneath. So instead of the text/icon vanishing wherever the sweep
-  // hasn't reached yet (which is what a single swapped-style element
-  // gives you, since the "hidden" state of a bg-clip-text element is
-  // nothing at all), the base stays put everywhere and the gradient
-  // simply overrides on top of it as it sweeps through — a premium
-  // "coating" look rather than a flicker.
+  // icon/border, solid white text) sits underneath, and a second,
+  // absolutely-positioned copy carrying the gradient fill sits on top —
+  // that copy is the only thing the sweep animation's mask ever reveals,
+  // so instead of the text/icon vanishing wherever the sweep hasn't
+  // reached yet (which is what a single swapped-style element gives you,
+  // since the "hidden" state of a bg-clip-text element is nothing at
+  // all), the gradient progressively overrides the base as it sweeps
+  // through — a premium "coating" look rather than a flicker.
+  //
+  // The icon badge's base stays fully opaque throughout (it sits behind a
+  // solid rounded-lg background, so nothing shows through it regardless).
+  // The heading's base can't rely on that — text has no backing fill — so
+  // its base copy carries SWEEP_REVEAL_STYLE_INVERSE, the exact negative
+  // of the gradient copy's own mask (same --akyos-sweep variable, same
+  // feather, transparent/white stops swapped). That keeps the two
+  // opacities summing to ~1 all the way along the sweep line, so the
+  // white base is masked off at precisely the same rate the gradient
+  // fades in on top of it — a single continuous crossfade rather than a
+  // translucent gradient glyph sitting over a still-opaque white one,
+  // which is what produced the pale "leaking" edge around the letters.
   const hovering = useContext(CardHoverContext);
   return (
     <div className="flex items-center gap-3 mb-5">
@@ -617,7 +626,14 @@ export function SectionHeading({ icon: Icon, title, subtitle }: { icon: React.Co
         )}
       </div>
       <h2 className="relative text-[15px] font-semibold tracking-tight text-neutral-100">
-        {title}
+        <span
+          style={{
+            ...SWEEP_REVEAL_STYLE_INVERSE,
+            ...(hovering ? { animation: SWEEP_REVEAL_ANIMATION } : null),
+          }}
+        >
+          {title}
+        </span>
         {hovering && (
           <span
             aria-hidden

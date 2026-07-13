@@ -104,6 +104,40 @@ export const SWEEP_REVEAL_STYLE: React.CSSProperties = {
   maskRepeat: 'no-repeat',
 } as React.CSSProperties;
 
+// The exact photographic-negative of SWEEP_REVEAL_STYLE above — same
+// `--akyos-sweep` variable, same feather width, same direction, just with
+// the transparent/white stops swapped. Used to hide the plain white base
+// heading text in lockstep with the gradient copy revealing on top of it.
+//
+// Why this exists: the gradient copy's mask has a soft (feathered) edge,
+// which is required so the sweep doesn't look like a hard clip. But a soft
+// mask means there's a band, `SWEEP_FEATHER_PCT` wide, where the gradient
+// copy sits at partial opacity — and previously the solid-white base text
+// stayed at full opacity directly underneath it for that whole band.
+// Alpha-blending a translucent colored glyph over a fully-opaque white
+// glyph doesn't read as "gradient fading in", it reads as pale, washed-out
+// white edges bleeding around every letter — worse on fine strokes, since
+// the mask's feather and the glyph's own antialiasing are two independent
+// soft edges compounding on each other. That's the "white leaking edgy
+// text" this fixes.
+// Feeding the same --akyos-sweep value into a complementary mask on the
+// base layer means at any instant the two opacities sum to ~1 across the
+// whole feather band (base goes white -> transparent exactly where the
+// overlay goes transparent -> white), so there's never a moment where a
+// translucent white glyph and a translucent gradient glyph occupy the same
+// pixels at once — it reads as one continuous crossfade along the sweep
+// line. And because both masks share the one custom property plus the
+// identical animation string, they can never drift out of sync with each
+// other, however long the hover lasts.
+export const SWEEP_REVEAL_STYLE_INVERSE: React.CSSProperties = {
+  WebkitMaskImage: `linear-gradient(to bottom left, white calc(var(--akyos-sweep) - ${SWEEP_FEATHER_PCT}%), transparent calc(var(--akyos-sweep) + ${SWEEP_FEATHER_PCT}%))`,
+  maskImage: `linear-gradient(to bottom left, white calc(var(--akyos-sweep) - ${SWEEP_FEATHER_PCT}%), transparent calc(var(--akyos-sweep) + ${SWEEP_FEATHER_PCT}%))`,
+  WebkitMaskSize: '100% 100%',
+  maskSize: '100% 100%',
+  WebkitMaskRepeat: 'no-repeat',
+  maskRepeat: 'no-repeat',
+} as React.CSSProperties;
+
 // Merges the liquid gradient fill into an element's style, safely combining
 // its infinite animation with any one-shot animation the element already
 // has (e.g. a fade/slide-in) instead of one overwriting the other.
