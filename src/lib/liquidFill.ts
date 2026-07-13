@@ -103,9 +103,6 @@ export const SWEEP_REVEAL_STYLE: React.CSSProperties = {
   WebkitMaskRepeat: 'no-repeat',
   maskRepeat: 'no-repeat',
 } as React.CSSProperties;
-// fill-mode so the element sits at 0% opacity/fully-clipped for the instant
-// before the animation engine kicks in, then stays fully revealed after.
-export const SWEEP_REVEAL_ANIMATION = 'akyos-sweep-reveal 620ms cubic-bezier(0.16, 1, 0.3, 1) both';
 
 // Merges the liquid gradient fill into an element's style, safely combining
 // its infinite animation with any one-shot animation the element already
@@ -136,4 +133,3 @@ export function liquidFillStyleFor(baseGradient: string, extra: React.CSSPropert
     ...rest,
   };
 }
-// dont show error
