@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Lock, Mail, Loader2, ShieldCheck, CheckCircle2, GraduationCap, BookOpen, Sparkles, Zap } from 'lucide-react';
+import { Lock, Mail, Loader2, ShieldCheck, CheckCircle2, GraduationCap } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import {
   pullFromCloud,
@@ -32,37 +32,6 @@ const GRAIN_DATA_URI =
 const AMBIENT_DRIFT_KEYFRAMES = `
   @keyframes akyos-drift-a { 0% { transform: translate(0, 0); } 100% { transform: translate(-4%, 3%); } }
   @keyframes akyos-drift-b { 0% { transform: translate(0, 0); } 100% { transform: translate(3%, -4%); } }
-`;
-
-// Slow up/down levitation for the metallic decorative icons in
-// SignInVisualPanel — a gentle bob, not a bounce, so it reads as "floating
-// object" rather than an active UI animation. Each icon runs this at its
-// own duration/delay (set inline) so the four never sync up and drift in
-// and out of phase with each other, the way real floating objects would.
-//
-// `--mx`/`--my` are the horizontal/vertical parallax offset driven by
-// mouse position across the whole window (see SignInVisualPanel below) —
-// registering them via `@property` makes them real animatable values
-// rather than plain strings, which is what lets the `transition: --mx,
-// --my ...` on each icon smooth out the mouse updates instead of the icon
-// snapping to each new position. The bob itself is layered on top of
-// `--my` (rather than replacing it) so the icon still floats up/down on
-// its own even while the mouse sits still.
-const METAL_FLOAT_KEYFRAMES = `
-  @property --mx {
-    syntax: '<length>';
-    inherits: true;
-    initial-value: 0px;
-  }
-  @property --my {
-    syntax: '<length>';
-    inherits: true;
-    initial-value: 0px;
-  }
-  @keyframes akyos-metal-float {
-    0%, 100% { transform: translate(var(--mx, 0px), var(--my, 0px)) rotate(var(--float-rot, 0deg)); }
-    50% { transform: translate(var(--mx, 0px), calc(var(--my, 0px) - 16px)) rotate(var(--float-rot, 0deg)); }
-  }
 `;
 
 // --- shared "liquid" animated gradient fill ------------------------------
@@ -123,128 +92,36 @@ function GoogleIcon({ className }: { className?: string }) {
   );
 }
 
-// A single decorative icon rendered in a shiny animated silver gradient
-// (both stroked AND filled, so it reads as a solid cast object rather than
-// an outline) — achieved with CSS `stroke`/`fill: url(#id)`, referencing
-// the shared <linearGradient> defined once in SignInVisualPanel — plus a
-// drop-shadow so it reads as an object resting in front of the panel
-// rather than a flat line icon. Wrapped in its own bobbing div (forwarded
-// via `wrapRef`) so each can float at a different speed/phase, and shift
-// with the rest of the group as the mouse moves across the whole page
-// (both horizontally and vertically).
-const MetallicFloatIcon = React.forwardRef<HTMLDivElement, {
-  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
-  style: React.CSSProperties; size?: number; duration?: number; delay?: number; rotate?: number;
-}>(function MetallicFloatIcon({ icon: Icon, style, size = 44, duration = 6, delay = 0, rotate = 0 }, wrapRef) {
-  return (
-    <div
-      ref={wrapRef}
-      className="pointer-events-none absolute"
-      style={{
-        ...style,
-        animation: `akyos-metal-float ${duration}s ease-in-out infinite`,
-        animationDelay: `${delay}s`,
-        transition: '--mx 150ms ease-out, --my 150ms ease-out',
-        ['--float-rot' as any]: `${rotate}deg`,
-      }}
-    >
-      <Icon
-        className="drop-shadow-[0_10px_18px_rgba(0,0,0,0.55)]"
-        style={{
-          width: size,
-          height: size,
-          stroke: 'url(#akyos-metal-shine)',
-          fill: 'url(#akyos-metal-shine)',
-          fillOpacity: 0.85,
-          strokeWidth: 1.2,
-          transform: `rotate(${rotate}deg)`,
-        } as React.CSSProperties}
-      />
-    </div>
-  );
-});
-
-// Which icon, where, how big, and how far it parallaxes relative to the
-// mouse (`reachX`/`reachY`, in px at the extreme edge of the window) —
-// kept as data so the mousemove handler in SignInVisualPanel can walk the
-// same list the JSX renders from instead of duplicating it.
-const FLOAT_ICONS = [
-  { icon: Sparkles, style: { left: '30%', top: '8%' }, size: 92, duration: 6.5, delay: 0, rotate: -8, reachX: 22, reachY: 16 },
-  { icon: BookOpen, style: { left: '6%', top: '42%' }, size: 158, duration: 7.5, delay: 0.8, rotate: -14, reachX: 34, reachY: 24 },
-  { icon: Zap, style: { left: '80%', top: '46%' }, size: 138, duration: 6, delay: 1.6, rotate: 10, reachX: 34, reachY: 24 },
-  { icon: GraduationCap, style: { left: '46%', top: '74%' }, size: 148, duration: 8, delay: 0.3, rotate: -6, reachX: 28, reachY: 20 },
-];
-
 // The left-half visual panel for the desktop sign-in layout.
 //
-// A near-black panel with a faint grain texture, two very soft, slow-
-// drifting brand-colored glows in the corners for a hint of color and
-// depth, and four slowly-levitating shiny-silver icons (book, sparkle,
-// bolt, grad cap) that bob up and down at their own pace and drift with
-// the cursor — both horizontally and vertically — as it moves across the
-// whole page, a gentle parallax rather than anything that tracks the
-// cursor precisely.
+// Deliberately calm rather than busy: a near-black panel with a faint
+// grain texture, a dim dot grid, and two very soft, slow-drifting brand-
+// colored glows in the corners for a hint of color and depth. The one
+// interactive touch is a "spotlight" — a brighter patch of the same dot
+// grid, masked to a soft circle that follows the cursor — the same
+// technique behind the hero backgrounds on sites like Linear and Vercel.
+// No animation loop is needed for the spotlight: a single CSS custom
+// property is written directly on mousemove and a CSS mask does the rest,
+// so this whole panel costs nothing when the mouse isn't moving.
 function SignInVisualPanel() {
-  const iconRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    let rafId = 0;
-    const handleMove = (e: MouseEvent) => {
-      if (rafId) return; // coalesce to at most one update per frame
-      rafId = requestAnimationFrame(() => {
-        rafId = 0;
-        // -1 at the far left/top edge of the window, +1 at the far
-        // right/bottom — each icon's own reachX/reachY just scales how
-        // far it drifts in that direction.
-        const normX = (e.clientX / window.innerWidth) * 2 - 1;
-        const normY = (e.clientY / window.innerHeight) * 2 - 1;
-        FLOAT_ICONS.forEach((cfg, i) => {
-          const el = iconRefs.current[i];
-          if (!el) return;
-          el.style.setProperty('--mx', `${normX * cfg.reachX}px`);
-          el.style.setProperty('--my', `${normY * cfg.reachY}px`);
-        });
-      });
-    };
-    window.addEventListener('mousemove', handleMove);
-    return () => {
-      window.removeEventListener('mousemove', handleMove);
-      if (rafId) cancelAnimationFrame(rafId);
-    };
-  }, []);
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const el = containerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    el.style.setProperty('--spot-x', `${e.clientX - rect.left}px`);
+    el.style.setProperty('--spot-y', `${e.clientY - rect.top}px`);
+  };
 
   return (
-    <div className="relative hidden h-full overflow-hidden bg-zinc-950 lg:flex lg:w-1/2 lg:items-center lg:justify-center">
+    <div
+      ref={containerRef}
+      onMouseMove={handleMouseMove}
+      className="relative hidden h-full overflow-hidden bg-zinc-950 lg:flex lg:w-1/2 lg:items-center lg:justify-center"
+      style={{ ['--spot-x' as any]: '50%', ['--spot-y' as any]: '50%' }}
+    >
       <style>{AMBIENT_DRIFT_KEYFRAMES}</style>
-      <style>{METAL_FLOAT_KEYFRAMES}</style>
-
-      {/* Shared shiny-silver gradient definition, referenced by every
-          MetallicFloatIcon below via `stroke`/`fill: url(#akyos-metal-
-          shine)`. Lives in a zero-size <svg> since it has nothing to
-          render on its own — it just holds the <defs> the icons point
-          at. The <animateTransform> slowly slides the gradient across
-          itself so the "shine" sweeps along the icons over time instead
-          of sitting static. */}
-      <svg width="0" height="0" className="absolute">
-        <defs>
-          <linearGradient id="akyos-metal-shine" x1="0%" y1="0%" x2="100%" y2="100%" gradientUnits="objectBoundingBox">
-            <stop offset="0%" stopColor="#cbd5e1" />
-            <stop offset="20%" stopColor="#64748b" />
-            <stop offset="40%" stopColor="#f8fafc" />
-            <stop offset="50%" stopColor="#ffffff" />
-            <stop offset="60%" stopColor="#f1f5f9" />
-            <stop offset="80%" stopColor="#94a3b8" />
-            <stop offset="100%" stopColor="#e2e8f0" />
-            <animateTransform
-              attributeName="gradientTransform"
-              type="translate"
-              values="-0.4 0; 0.4 0; -0.4 0"
-              dur="5s"
-              repeatCount="indefinite"
-            />
-          </linearGradient>
-        </defs>
-      </svg>
 
       {/* Two soft, mostly-static brand-colored glows for a touch of color
           and depth. Slow enough that they read as "alive" without being
@@ -258,23 +135,23 @@ function SignInVisualPanel() {
         style={{ backgroundImage: `url("${GRAIN_DATA_URI}")` }}
       />
 
-      {/* Four slowly-levitating liquid-gradient decorative icons, roughly
-          matching the sparkle/book/bolt/cap arrangement sketched out for
-          this panel — each floats on its own duration/delay so they never
-          bob in sync, and all drift left/right together as the mouse
-          moves across the whole page. */}
-      {FLOAT_ICONS.map((cfg, i) => (
-        <MetallicFloatIcon
-          key={i}
-          ref={(el) => (iconRefs.current[i] = el)}
-          icon={cfg.icon}
-          style={cfg.style}
-          size={cfg.size}
-          duration={cfg.duration}
-          delay={cfg.delay}
-          rotate={cfg.rotate}
-        />
-      ))}
+      {/* Dim base dot grid. */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,0.09) 1px, transparent 1px)', backgroundSize: '26px 26px' }}
+      />
+
+      {/* Brighter dot grid, masked to a soft circle that tracks the
+          cursor — the "spotlight" reveal. */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          backgroundImage: 'radial-gradient(rgba(196,181,253,0.85) 1px, transparent 1px)',
+          backgroundSize: '26px 26px',
+          WebkitMaskImage: 'radial-gradient(240px circle at var(--spot-x) var(--spot-y), black, transparent 72%)',
+          maskImage: 'radial-gradient(240px circle at var(--spot-x) var(--spot-y), black, transparent 72%)',
+        }}
+      />
 
       {/* The actual brand mark, centered — same icon badge + name used in
           the app's own header, so this panel reads as unmistakably
@@ -843,11 +720,11 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
   // --- email/password form state ---
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   // True while the email field has keyboard focus (cursor typing in it) —
   // drives the animated gradient sweep border, same treatment
-  // PasswordField now uses for its own focus state.
+  // PasswordField uses for its own focus state.
   const [emailFocused, setEmailFocused] = useState(false);
+  const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState('');
   const [authBusy, setAuthBusy] = useState(false);
   const [signupNotice, setSignupNotice] = useState('');
@@ -1277,8 +1154,8 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
               // Same hover-gated sweep border as the rest of the app —
               // ring-only cutout filled with the local liquidFillStyle()
               // brand gradient, revealed via the --akyos-sweep mask
-              // (keyframes already injected page-wide by the <style> tag
-              // at the bottom of this component).
+              // (keyframes injected page-wide by the <style> tag at the
+              // bottom of this component).
               <div
                 aria-hidden
                 className="pointer-events-none absolute inset-0 rounded-xl"
@@ -1505,9 +1382,8 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
                   // Same focus-gated sweep as the sign-in email field —
                   // ring-only cutout filled with the local
                   // liquidFillStyle() brand gradient, revealed via the
-                  // --akyos-sweep mask (keyframes already injected page-
-                  // wide by the <style> tag at the bottom of this
-                  // component).
+                  // --akyos-sweep mask (keyframes injected page-wide by
+                  // the <style> tag at the bottom of this component).
                   <div
                     aria-hidden
                     className="pointer-events-none absolute inset-0 rounded-xl"
@@ -1684,8 +1560,9 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
           @property they animate) live in lib/liquidFill.ts alongside the
           rest of the app's sweep effect, but AuthGate renders before the
           main App component ever mounts its own copy of these — so the
-          Email/Password focus sweep added here needs its own injection,
-          same as the liquid-fill keyframes just above. */}
+          Email/Password focus sweep and the Google button hover sweep
+          need their own injection, same as the liquid-fill keyframes
+          just above. */}
       <style>{SWEEP_REVEAL_KEYFRAMES}</style>
       {/* Stage content (and its cascade-in) only mounts once the "1%
           Better Every Day." beat has cleared, so its cascade timers —
