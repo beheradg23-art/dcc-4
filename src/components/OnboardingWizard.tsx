@@ -623,9 +623,10 @@ export default function OnboardingWizard({
   // ---------------- Intro ----------------
   if (stage === 'intro') {
     return (
-      <div className="fixed inset-0 z-[999] overflow-y-auto bg-zinc-950 px-6 py-10 sm:px-10 lg:px-16">
+      <div className="fixed inset-0 z-[999] overflow-y-auto bg-zinc-950">
         <style>{NO_SELECT_CSS}</style>
-        <div className="mx-auto flex w-full max-w-md flex-col gap-10 sm:max-w-lg lg:max-w-6xl lg:flex-row lg:items-start lg:gap-16">
+        <div className="min-h-full flex items-center justify-center px-6 py-10 sm:px-10 lg:px-16">
+        <div className="mx-auto flex w-full max-w-md flex-col gap-10 sm:max-w-lg lg:max-w-6xl lg:flex-row lg:items-start lg:gap-16 xl:max-w-7xl">
           {/* Left panel — branding/context. Fixed width and sticky on large
               screens instead of stacking above the form, so a wide viewport
               actually gets used for two real columns rather than one
@@ -641,7 +642,7 @@ export default function OnboardingWizard({
           </div>
 
           {/* Right panel — the actual form. */}
-          <div className="min-w-0 flex-1 lg:max-w-2xl">
+          <div className="min-w-0 flex-1 lg:max-w-2xl xl:max-w-3xl">
             <div className="space-y-5">
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <div className="lg:col-span-1">
@@ -711,6 +712,7 @@ export default function OnboardingWizard({
               </div>
             </div>
           </div>
+        </div>
         </div>
       </div>
     );
@@ -857,9 +859,10 @@ export default function OnboardingWizard({
     }
 
     return (
-      <div className="fixed inset-0 z-[999] overflow-y-auto bg-zinc-950 px-6 py-10 sm:px-10 lg:px-16">
+      <div className="fixed inset-0 z-[999] overflow-y-auto bg-zinc-950">
         <style>{NO_SELECT_CSS}</style>
-        <div className="mx-auto flex w-full max-w-md flex-col gap-10 sm:max-w-lg lg:max-w-6xl lg:flex-row lg:items-start lg:gap-16">
+        <div className="min-h-full flex items-center justify-center px-6 py-10 sm:px-10 lg:px-16">
+        <div className="mx-auto flex w-full max-w-md flex-col gap-10 sm:max-w-lg lg:max-w-6xl lg:flex-row lg:items-start lg:gap-16 xl:max-w-7xl">
           {/* Left panel — sticky progress + step context, mirrors the intro
               screen's split so the wizard reads as one consistent layout
               rather than switching shape stage to stage. */}
@@ -880,7 +883,7 @@ export default function OnboardingWizard({
           </div>
 
           {/* Right panel — this domain's questions. */}
-          <div className="min-w-0 flex-1 lg:max-w-2xl">
+          <div className="min-w-0 flex-1 lg:max-w-2xl xl:max-w-3xl">
             {fields}
 
             <div className="mt-6 flex gap-3">
@@ -898,6 +901,7 @@ export default function OnboardingWizard({
               </button>
             </div>
           </div>
+        </div>
         </div>
       </div>
     );
@@ -964,9 +968,10 @@ export default function OnboardingWizard({
   };
 
   return (
-    <div className="fixed inset-0 z-[999] flex flex-col items-center bg-zinc-950 px-6 py-10 overflow-y-auto sm:px-10 lg:px-16">
+    <div className="fixed inset-0 z-[999] overflow-y-auto bg-zinc-950">
       <style>{NO_SELECT_CSS}</style>
-      <div className="w-full max-w-lg sm:max-w-xl md:max-w-2xl lg:max-w-5xl">
+      <div className="min-h-full flex flex-col items-center justify-center px-6 py-10 sm:px-10 lg:px-16">
+      <div className="w-full max-w-lg sm:max-w-xl md:max-w-2xl lg:max-w-5xl xl:max-w-6xl">
         <h1 className="mb-1.5 text-[17px] font-semibold tracking-tight text-neutral-50 lg:text-[20px]">Here's what we built</h1>
         <p className="mb-4 max-w-2xl text-[12.5px] leading-relaxed text-neutral-500">
           Not quite right? Regenerate any section, or just continue — everything below stays fully editable in Settings afterward.
@@ -1061,6 +1066,7 @@ export default function OnboardingWizard({
             Start over
           </button>
         </div>
+      </div>
       </div>
     </div>
   );
