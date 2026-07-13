@@ -39,10 +39,21 @@ const AMBIENT_DRIFT_KEYFRAMES = `
 // object" rather than an active UI animation. Each icon runs this at its
 // own duration/delay (set inline) so the four never sync up and drift in
 // and out of phase with each other, the way real floating objects would.
+//
+// `--mx` is the horizontal parallax offset driven by mouse position across
+// the whole window (see SignInVisualPanel below) — registering it via
+// `@property` makes it a real animatable value rather than a plain string,
+// which is what lets the `transition: --mx ...` on each icon smooth out
+// the mouse updates instead of the icon snapping to each new position.
 const METAL_FLOAT_KEYFRAMES = `
+  @property --mx {
+    syntax: '<length>';
+    inherits: true;
+    initial-value: 0px;
+  }
   @keyframes akyos-metal-float {
-    0%, 100% { transform: translateY(0) rotate(var(--float-rot, 0deg)); }
-    50% { transform: translateY(-16px) rotate(var(--float-rot, 0deg)); }
+    0%, 100% { transform: translate(var(--mx, 0px), 0) rotate(var(--float-rot, 0deg)); }
+    50% { transform: translate(var(--mx, 0px), -16px) rotate(var(--float-rot, 0deg)); }
   }
 `;
 
@@ -104,73 +115,117 @@ function GoogleIcon({ className }: { className?: string }) {
   );
 }
 
-// A single decorative icon rendered in "shiny cast metal" style for the
-// sign-in visual panel: a Lucide icon whose stroke is repainted with a
-// brushed-steel gradient (via CSS `stroke: url(#id)`, referencing the
-// shared <linearGradient> defined once in SignInVisualPanel) instead of a
-// flat color, plus a drop-shadow so it reads as an embossed object resting
-// in front of the panel rather than a flat line icon. Wrapped in its own
-// bobbing div so each can float at a different speed/phase.
-function MetallicFloatIcon({
-  icon: Icon, style, size = 44, duration = 6, delay = 0, rotate = 0,
-}: { icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>; style: React.CSSProperties; size?: number; duration?: number; delay?: number; rotate?: number }) {
+// A single decorative icon rendered in the app's own "liquid" animated
+// brand gradient (the same indigo → violet → fuchsia sheen used on every
+// button/badge elsewhere via liquidFillStyle) instead of a flat color —
+// achieved with CSS `stroke: url(#id)`, referencing the shared
+// <linearGradient> defined once in SignInVisualPanel — plus a drop-shadow
+// so it reads as an object resting in front of the panel rather than a
+// flat line icon. Wrapped in its own bobbing div (forwarded via `wrapRef`)
+// so each can float at a different speed/phase, and shift left/right with
+// the rest of the group as the mouse moves across the page.
+const MetallicFloatIcon = React.forwardRef<HTMLDivElement, {
+  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
+  style: React.CSSProperties; size?: number; duration?: number; delay?: number; rotate?: number;
+}>(function MetallicFloatIcon({ icon: Icon, style, size = 44, duration = 6, delay = 0, rotate = 0 }, wrapRef) {
   return (
     <div
+      ref={wrapRef}
       className="pointer-events-none absolute"
       style={{
         ...style,
         animation: `akyos-metal-float ${duration}s ease-in-out infinite`,
         animationDelay: `${delay}s`,
+        transition: '--mx 500ms cubic-bezier(0.16, 1, 0.3, 1)',
         ['--float-rot' as any]: `${rotate}deg`,
       }}
     >
       <Icon
-        className="drop-shadow-[0_6px_10px_rgba(0,0,0,0.55)]"
+        className="drop-shadow-[0_8px_14px_rgba(0,0,0,0.55)]"
         style={{
           width: size,
           height: size,
-          stroke: 'url(#akyos-metal-shine)',
+          stroke: 'url(#akyos-liquid-shine)',
           strokeWidth: 1.4,
           transform: `rotate(${rotate}deg)`,
         } as React.CSSProperties}
       />
     </div>
   );
-}
+});
+
+// Which icon, where, how big, and how far it parallaxes horizontally
+// relative to the mouse (`reach`, in px at the extreme left/right edge of
+// the window) — kept as data so the mousemove handler in SignInVisualPanel
+// can walk the same list the JSX renders from instead of duplicating it.
+const FLOAT_ICONS = [
+  { icon: Sparkles, style: { left: '34%', top: '11%' }, size: 60, duration: 6.5, delay: 0, rotate: -8, reach: 18 },
+  { icon: BookOpen, style: { left: '10%', top: '46%' }, size: 100, duration: 7.5, delay: 0.8, rotate: -14, reach: 30 },
+  { icon: Zap, style: { left: '84%', top: '50%' }, size: 90, duration: 6, delay: 1.6, rotate: 10, reach: 30 },
+  { icon: GraduationCap, style: { left: '50%', top: '78%' }, size: 92, duration: 8, delay: 0.3, rotate: -6, reach: 24 },
+];
 
 // The left-half visual panel for the desktop sign-in layout.
 //
 // A near-black panel with a faint grain texture, two very soft, slow-
 // drifting brand-colored glows in the corners for a hint of color and
-// depth, and four slowly-levitating "cast metal" icons (book, sparkle,
-// bolt, grad cap) that bob up and down at their own pace for a bit of
-// life without competing with the form on the other side.
+// depth, and four slowly-levitating liquid-gradient icons (book, sparkle,
+// bolt, grad cap) that bob up and down at their own pace and drift
+// left/right together as the cursor moves across the whole page — a
+// gentle parallax rather than anything that tracks the cursor precisely.
 function SignInVisualPanel() {
+  const iconRefs = useRef<Array<HTMLDivElement | null>>([]);
+
+  useEffect(() => {
+    let rafId = 0;
+    const handleMove = (e: MouseEvent) => {
+      if (rafId) return; // coalesce to at most one update per frame
+      rafId = requestAnimationFrame(() => {
+        rafId = 0;
+        // -1 at the far left edge of the window, +1 at the far right —
+        // so each icon's own `reach` just scales how far it drifts.
+        const norm = (e.clientX / window.innerWidth) * 2 - 1;
+        FLOAT_ICONS.forEach((cfg, i) => {
+          iconRefs.current[i]?.style.setProperty('--mx', `${norm * cfg.reach}px`);
+        });
+      });
+    };
+    window.addEventListener('mousemove', handleMove);
+    return () => {
+      window.removeEventListener('mousemove', handleMove);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, []);
+
   return (
     <div className="relative hidden h-full overflow-hidden bg-zinc-950 lg:flex lg:w-1/2 lg:items-center lg:justify-center">
       <style>{AMBIENT_DRIFT_KEYFRAMES}</style>
       <style>{METAL_FLOAT_KEYFRAMES}</style>
 
-      {/* Shared brushed-steel gradient definition, referenced by every
-          MetallicFloatIcon below via `stroke: url(#akyos-metal-shine)`.
-          Lives in a zero-size <svg> since it has nothing to render on its
-          own — it just holds the <defs> the other icons point at. The
-          <animateTransform> slowly slides the gradient across itself so
-          the "shine" drifts along the icons over time instead of sitting
-          static. */}
+      {/* Shared liquid-gradient definition, referenced by every
+          MetallicFloatIcon below via `stroke: url(#akyos-liquid-shine)`.
+          Same indigo/violet/fuchsia stops as liquidFillStyle()'s own
+          brand gradient, just expressed as an SVG <linearGradient> since
+          `stroke` (unlike a CSS `background`) needs one. Lives in a
+          zero-size <svg> since it has nothing to render on its own — it
+          just holds the <defs> the icons point at. The <animateTransform>
+          slowly slides the gradient across itself, mirroring the same
+          "background-position drift" liquidFillStyle() does everywhere
+          else, so the icons read as the same moving material. */}
       <svg width="0" height="0" className="absolute">
         <defs>
-          <linearGradient id="akyos-metal-shine" x1="0%" y1="0%" x2="100%" y2="100%" gradientUnits="objectBoundingBox">
-            <stop offset="0%" stopColor="#e2e8f0" />
-            <stop offset="25%" stopColor="#94a3b8" />
-            <stop offset="50%" stopColor="#f8fafc" />
-            <stop offset="75%" stopColor="#7c8a9e" />
-            <stop offset="100%" stopColor="#e2e8f0" />
+          <linearGradient id="akyos-liquid-shine" x1="0%" y1="0%" x2="100%" y2="100%" gradientUnits="objectBoundingBox">
+            <stop offset="0%" stopColor="#4f46e5" />
+            <stop offset="22%" stopColor="#7c3aed" />
+            <stop offset="45%" stopColor="#d946ef" />
+            <stop offset="68%" stopColor="#7c3aed" />
+            <stop offset="85%" stopColor="#4f46e5" />
+            <stop offset="100%" stopColor="#d946ef" />
             <animateTransform
               attributeName="gradientTransform"
               type="translate"
               values="-0.4 0; 0.4 0; -0.4 0"
-              dur="7s"
+              dur="6s"
               repeatCount="indefinite"
             />
           </linearGradient>
@@ -189,14 +244,23 @@ function SignInVisualPanel() {
         style={{ backgroundImage: `url("${GRAIN_DATA_URI}")` }}
       />
 
-      {/* Four slowly-levitating cast-metal decorative icons, roughly
+      {/* Four slowly-levitating liquid-gradient decorative icons, roughly
           matching the sparkle/book/bolt/cap arrangement sketched out for
           this panel — each floats on its own duration/delay so they never
-          bob in sync. */}
-      <MetallicFloatIcon icon={Sparkles} style={{ left: '34%', top: '11%' }} size={40} duration={6.5} delay={0} rotate={-8} />
-      <MetallicFloatIcon icon={BookOpen} style={{ left: '12%', top: '48%' }} size={64} duration={7.5} delay={0.8} rotate={-14} />
-      <MetallicFloatIcon icon={Zap} style={{ left: '86%', top: '50%' }} size={58} duration={6} delay={1.6} rotate={10} />
-      <MetallicFloatIcon icon={GraduationCap} style={{ left: '50%', top: '80%' }} size={56} duration={8} delay={0.3} rotate={-6} />
+          bob in sync, and all drift left/right together as the mouse
+          moves across the whole page. */}
+      {FLOAT_ICONS.map((cfg, i) => (
+        <MetallicFloatIcon
+          key={i}
+          ref={(el) => (iconRefs.current[i] = el)}
+          icon={cfg.icon}
+          style={cfg.style}
+          size={cfg.size}
+          duration={cfg.duration}
+          delay={cfg.delay}
+          rotate={cfg.rotate}
+        />
+      ))}
 
       {/* The actual brand mark, centered — same icon badge + name used in
           the app's own header, so this panel reads as unmistakably
