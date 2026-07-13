@@ -10,7 +10,7 @@ import {
   Loader2, Calendar, Clock3,
 } from 'lucide-react';
 import { ConfigContext, HunterRank } from '../../lib/appConfig';
-import { liquidFillStyle } from '../../lib/liquidFill';
+import { liquidFillStyle, SWEEP_REVEAL_ANIMATION } from '../../lib/liquidFill';
 
 // Lets a Card tell whatever it's wrapping (SectionHeading, in practice)
 // that the pointer is currently over it, without every one of the 30+
@@ -591,7 +591,7 @@ export function SectionHeading({ icon: Icon, title, subtitle }: { icon: React.Co
         className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-colors duration-300"
         style={
           hovering
-            ? { ...liquidFillStyle(), borderColor: 'transparent' }
+            ? { ...liquidFillStyle({ animation: SWEEP_REVEAL_ANIMATION }), borderColor: 'transparent' }
             : { backgroundColor: 'rgba(38, 38, 38, 0.8)', borderColor: 'rgba(64, 64, 64, 0.6)' }
         }
       >
@@ -599,7 +599,7 @@ export function SectionHeading({ icon: Icon, title, subtitle }: { icon: React.Co
       </div>
       <h2
         className={`text-[15px] font-semibold tracking-tight transition-colors duration-300 ${hovering ? 'bg-clip-text text-transparent' : 'text-neutral-100'}`}
-        style={hovering ? liquidFillStyle() : undefined}
+        style={hovering ? liquidFillStyle({ animation: SWEEP_REVEAL_ANIMATION }) : undefined}
       >
         {title}
       </h2>
@@ -677,17 +677,29 @@ export function Card({ children, className = '', onClick }: { children: React.Re
         // interior — then that ring is filled with the exact same moving
         // liquidFillStyle() gradient used for badges/buttons/avatars
         // elsewhere, so it reads as the same "material" everywhere.
+        // The sweep-reveal animation (below) also animates `mask-image`, to
+        // move the soft diagonal edge across — which would fight the ring's
+        // own mask (used for the content-box cutout, just above). So the
+        // sweep goes on an outer wrapper instead: a parent's mask/opacity
+        // clips the already-ring-shaped child underneath it, letting both
+        // effects stack without either one overwriting the other's
+        // mask-image value.
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 rounded-2xl"
-          style={{
-            padding: '1.5px',
-            WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-            WebkitMaskComposite: 'xor',
-            maskComposite: 'exclude',
-            ...liquidFillStyle(),
-          } as React.CSSProperties}
-        />
+          style={{ animation: SWEEP_REVEAL_ANIMATION }}
+        >
+          <div
+            className="absolute inset-0 rounded-2xl"
+            style={{
+              padding: '1.5px',
+              WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+              WebkitMaskComposite: 'xor',
+              maskComposite: 'exclude',
+              ...liquidFillStyle(),
+            } as React.CSSProperties}
+          />
+        </div>
       )}
       {onClick && rippleNodes}
       <CardHoverContext.Provider value={hovering}>
