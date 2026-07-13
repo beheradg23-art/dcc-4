@@ -296,7 +296,7 @@ function OnboardingShell({
 
         {/* Content segment — the only part of the right column that scrolls. */}
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-6 sm:px-10 lg:px-12">
-          <div className="mx-auto w-full max-w-2xl">{children}</div>
+          <div className="mx-auto w-full max-w-2xl lg:max-w-3xl xl:max-w-4xl">{children}</div>
         </div>
 
         {/* Footer segment — fixed at the bottom, always visible. */}
@@ -779,7 +779,7 @@ export default function OnboardingWizard({
 
           <div>
             <label className={labelCls}>What are you working toward? Pick all that apply.</label>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <div className="grid gap-2.5 [grid-template-columns:repeat(auto-fit,minmax(240px,1fr))]">
               {GOAL_DOMAINS.map((d) => {
                 const Icon = DOMAIN_ICONS[d.key];
                 const active = answers.domains.includes(d.key);
