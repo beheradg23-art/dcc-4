@@ -78,15 +78,14 @@ function GoogleIcon({ className }: { className?: string }) {
 
 // The left-half visual panel for the desktop sign-in layout.
 //
-// Deliberately blank rather than busy: just a near-black panel with the
-// same "1% → Better Every Day. → liquid zoom → badge reveal" beat used for
-// the app's own boot intro (see PanelBrandLoop below) looping quietly in
-// the middle of it, so the panel stays animated and on-brand without a
-// static dot grid or icon sitting there doing nothing.
+// Deliberately blank rather than busy: just a near-black panel that plays
+// the "1% → Better Every Day." counter once (see PanelBrandIntro below)
+// and then sits still on that finished line, instead of a static dot grid
+// or icon.
 function SignInVisualPanel() {
   return (
-    <div className="relative hidden h-full overflow-hidden bg-zinc-950 lg:flex lg:w-1/2 lg:items-center lg:justify-center">
-      <PanelBrandLoop />
+    <div className="hidden h-full lg:flex lg:w-1/2">
+      <PanelBrandIntro />
     </div>
   );
 }
@@ -592,70 +591,34 @@ function OnePercentIntro({ onComplete }: { onComplete: () => void }) {
   );
 }
 
-// --- Looping brand-reveal animation for the sign-in visual panel ---------
+// --- One-time "1% Better Every Day." animation for the sign-in panel -----
 //
-// The exact same "1% → Better Every Day. → liquid zoom → badge reveal" beat
-// as OnePercentIntro above, just adapted to run *inside* the panel instead
-// of full-screen, and to loop forever instead of handing off once: sizes
-// itself off the panel's own bounding box (via ResizeObserver) rather than
-// the window, positions everything `absolute` within a `relative` wrapper
-// instead of `fixed` to the viewport, and — instead of calling onComplete
-// once — waits out a short blank beat after each fade-out and remounts
-// itself (via an incrementing `key`) to play again from 0%. Every timing
-// constant, the zoom easing curve, and the keyframes are shared with
-// OnePercentIntro so the loop reads as literally the same animation, not a
-// smaller lookalike.
-type PanelPhase = 'intro' | 'wordsOut' | 'gradientIn' | 'zoomOut' | 'badgeReveal' | 'finalFade';
-
-const PANEL_LOOP_GAP_MS = 550; // blank beat on the panel before the next pass starts
-const PANEL_BADGE_SIZE_PX = 44; // matches the panel's old static badge size
+// A trimmed-down version of the "1%" beat from OnePercentIntro above: the
+// counter eases up to 1%, then "Better Every Day." drifts in one word at a
+// time. Once the last word has finished writing itself in, it just stops —
+// no zoom, no badge reveal, no fade-out, no loop. The panel is left sitting
+// on that frozen final line. Shares its timing constants, easing, and
+// keyframes with OnePercentIntro so it reads as the same animation, just
+// without the handoff choreography that only made sense full-screen.
 const PANEL_TEXT_CLASS = 'text-[clamp(1rem,3.2vw,2.35rem)] leading-[1.15]';
 
-function panelBlobStyle(phase: PanelPhase, zoomProgress: number, fullSizePx: number): React.CSSProperties {
-  const visible = phase === 'gradientIn' || phase === 'zoomOut' || phase === 'badgeReveal' || phase === 'finalFade';
-  const settled = phase === 'badgeReveal' || phase === 'finalFade';
-  const t = settled ? 1 : phase === 'zoomOut' ? zoomProgress : 0;
-  const size = fullSizePx + (PANEL_BADGE_SIZE_PX - fullSizePx) * t;
-  const radius = fullSizePx / 2 + (14 - fullSizePx / 2) * t; // circle -> rounded-xl badge
-  return {
-    ...liquidFillStyle(),
-    position: 'absolute',
-    left: '50%',
-    top: '50%',
-    width: `${size}px`,
-    height: `${size}px`,
-    borderRadius: `${radius}px`,
-    transform: 'translate(-50%, -50%)',
-    opacity: visible ? 1 : 0,
-    boxShadow: settled ? '0 10px 30px -6px rgba(124,58,237,0.45)' : 'none',
-    transition: `opacity ${ONE_PCT_GRADIENT_IN_MS}ms ease-in-out, box-shadow 380ms ease-out`,
-    zIndex: 2,
-  };
-}
-
-// One pass of the animation, from a fresh 0%. Remounted by PanelBrandLoop
-// (via `key`) every time it finishes, so all of its state resets cleanly
-// instead of needing a manual rewind.
-function PanelBrandPass({ fullSizePx, onLoop }: { fullSizePx: number; onLoop: () => void }) {
-  const [phase, setPhase] = useState<PanelPhase>('intro');
+function PanelBrandIntro() {
   const [countLabel, setCountLabel] = useState('0.0%');
   const [visibleWordCount, setVisibleWordCount] = useState(0);
-  const [zoomProgress, setZoomProgress] = useState(0);
+  const [reduceMotion, setReduceMotion] = useState(false);
 
   useEffect(() => {
-    if (phase !== 'zoomOut') return;
-    let rafId = 0;
-    const start = performance.now();
-    const tick = (now: number) => {
-      const t = Math.min((now - start) / ONE_PCT_ZOOM_OUT_MS, 1);
-      setZoomProgress(zoomOutEase(t));
-      if (t < 1) rafId = requestAnimationFrame(tick);
-    };
-    rafId = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafId);
-  }, [phase]);
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setReduceMotion(mq.matches);
+  }, []);
 
   useEffect(() => {
+    if (reduceMotion) {
+      setCountLabel(`${ONE_PCT_TARGET}%`);
+      setVisibleWordCount(ONE_PCT_WORDS.length);
+      return;
+    }
+
     let rafId = 0;
     const start = performance.now();
     const tick = (now: number) => {
@@ -670,88 +633,31 @@ function PanelBrandPass({ fullSizePx, onLoop }: { fullSizePx: number; onLoop: ()
     };
     rafId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafId);
-  }, []);
+  }, [reduceMotion]);
 
   useEffect(() => {
+    if (reduceMotion) return;
     const timers: ReturnType<typeof setTimeout>[] = [];
-
     ONE_PCT_WORDS.forEach((_, i) => {
       timers.push(
         setTimeout(() => setVisibleWordCount(i + 1), ONE_PCT_WORD_START_MS + i * ONE_PCT_WORD_STAGGER_MS)
       );
     });
-
-    const wordsOutAt = ONE_PCT_TOTAL_MS;
-    const gradientInAt = wordsOutAt + ONE_PCT_WORDS_OUT_MS;
-    const zoomOutAt = gradientInAt + ONE_PCT_GRADIENT_IN_MS + ONE_PCT_GRADIENT_HOLD_MS;
-    const badgeRevealAt = zoomOutAt + ONE_PCT_ZOOM_OUT_MS;
-    const finalFadeAt = badgeRevealAt + ONE_PCT_BADGE_REVEAL_MS + ONE_PCT_BADGE_HOLD_MS;
-    const loopAt = finalFadeAt + ONE_PCT_FINAL_FADE_MS + PANEL_LOOP_GAP_MS;
-
-    timers.push(setTimeout(() => setPhase('wordsOut'), wordsOutAt));
-    timers.push(setTimeout(() => setPhase('gradientIn'), gradientInAt));
-    timers.push(setTimeout(() => setPhase('zoomOut'), zoomOutAt));
-    timers.push(setTimeout(() => setPhase('badgeReveal'), badgeRevealAt));
-    timers.push(setTimeout(() => setPhase('finalFade'), finalFadeAt));
-    timers.push(setTimeout(onLoop, loopAt));
-
     return () => timers.forEach(clearTimeout);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const wordsCollapsing = phase !== 'intro';
-  const onePctVisible = phase === 'intro' || phase === 'wordsOut';
-  const badgeContentVisible = phase === 'badgeReveal' || phase === 'finalFade';
+  }, [reduceMotion]);
 
   return (
-    <div
-      className="absolute inset-0 flex items-center justify-center px-6 transition-opacity ease-out"
-      style={{ transitionDuration: `${ONE_PCT_FINAL_FADE_MS}ms`, opacity: phase === 'finalFade' ? 0 : 1 }}
-      aria-hidden="true"
-    >
-      {/* Soft glow echoing IntroReveal's own pulse. */}
-      <div
-        className="pointer-events-none absolute left-1/2 top-1/2 h-20 w-20 -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet-600/25 blur-2xl animate-[akyos-intro-pulse_1.6s_ease-out_infinite]"
-        style={{ opacity: badgeContentVisible ? 1 : 0, transition: `opacity ${ONE_PCT_BADGE_REVEAL_MS}ms ease-out`, zIndex: 1 }}
-      />
+    <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-zinc-950 px-6">
+      <style>{ONE_PCT_KEYFRAMES}</style>
 
-      {/* The liquid blob: dissolves into view, then zooms down into the
-          badge shape — sized off the panel, not the viewport. */}
-      <div style={panelBlobStyle(phase, zoomProgress, fullSizePx)}>
-        <div
-          className="absolute inset-0 flex items-center justify-center"
-          style={{ opacity: badgeContentVisible ? 1 : 0, transition: `opacity ${ONE_PCT_BADGE_REVEAL_MS}ms ease-out` }}
-        >
-          <GraduationCap className="h-5 w-5 text-neutral-950" strokeWidth={2} />
-        </div>
-      </div>
-
-      {/* Wordmark, revealed alongside the settled badge. */}
       <div
-        className="absolute left-1/2 text-center"
-        style={{
-          top: 'calc(50% + 36px)',
-          transform: 'translateX(-50%)',
-          opacity: badgeContentVisible ? 1 : 0,
-          transition: `opacity ${ONE_PCT_BADGE_REVEAL_MS}ms ease-out 90ms`,
-          zIndex: 2,
-        }}
+        className="flex flex-nowrap items-baseline justify-center gap-x-1.5 text-center whitespace-nowrap"
+        style={{ fontFamily: "'Poppins', sans-serif" }}
       >
-        <p className="text-[13px] font-semibold tracking-tight text-neutral-200">Akyos</p>
-        <p className="text-[11.5px] text-neutral-600">Your Answer to Chaos</p>
-      </div>
-
-      <div
-        className="relative flex flex-nowrap items-baseline justify-center gap-x-1.5 text-center whitespace-nowrap"
-        style={{ fontFamily: "'Poppins', sans-serif", zIndex: 3 }}
-      >
+        {/* "1%" — smooth eased count-up, then just sits there once settled. */}
         <span
           className="relative inline-block align-baseline"
-          style={{
-            animation: 'akyos-glow-pulse 2.2s ease-in-out infinite',
-            opacity: onePctVisible ? 1 : 0,
-            transition: 'opacity 180ms ease-out',
-          }}
+          style={{ animation: 'akyos-glow-pulse 2.2s ease-in-out infinite' }}
         >
           <span
             className={`inline-block min-w-[3ch] text-center tabular-nums font-extrabold ${PANEL_TEXT_CLASS}`}
@@ -770,80 +676,24 @@ function PanelBrandPass({ fullSizePx, onLoop }: { fullSizePx: number; onLoop: ()
           </span>
         </span>
 
-        <div
-          className="flex items-baseline gap-x-1.5 overflow-hidden"
-          style={{
-            maxWidth: wordsCollapsing ? '0px' : '420px',
-            opacity: wordsCollapsing ? 0 : 1,
-            transition: `max-width ${ONE_PCT_WORDS_OUT_MS}ms cubic-bezier(0.65,0,0.35,1), opacity ${ONE_PCT_WORDS_OUT_MS}ms ease-in`,
-          }}
-        >
+        {/* "Better Every Day." — each word mounts and drifts in, one at a
+            time. Nothing collapses or exits once the line is complete. */}
+        <div className="flex items-baseline gap-x-1.5">
           {ONE_PCT_WORDS.slice(0, visibleWordCount).map((word) => (
             <span
               key={word}
               className={`inline-block text-white font-semibold ${PANEL_TEXT_CLASS}`}
-              style={{ animation: `akyos-word-fade-in ${ONE_PCT_WORD_FADE_MS}ms cubic-bezier(0.19,1,0.22,1) both` }}
+              style={{
+                animation: reduceMotion
+                  ? undefined
+                  : `akyos-word-fade-in ${ONE_PCT_WORD_FADE_MS}ms cubic-bezier(0.19,1,0.22,1) both`,
+              }}
             >
               {word}
             </span>
           ))}
         </div>
       </div>
-    </div>
-  );
-}
-
-// Wrapper that measures the panel, respects reduced-motion, and keeps
-// PanelBrandPass looping by bumping a `key` every time one pass finishes.
-function PanelBrandLoop() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [loopKey, setLoopKey] = useState(0);
-  const [fullSizePx, setFullSizePx] = useState(600);
-  const [reduceMotion, setReduceMotion] = useState(false);
-
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setReduceMotion(mq.matches);
-  }, []);
-
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const measure = (width: number, height: number) => {
-      // Same idea as OnePercentIntro's `fullSizePx`: the blob should start
-      // at least as big as the panel's own diagonal so its edge is visible
-      // from frame one instead of shrinking invisibly off-panel first.
-      setFullSizePx(Math.sqrt(width ** 2 + height ** 2) * 1.08);
-    };
-    measure(el.clientWidth, el.clientHeight);
-    const ro = new ResizeObserver(([entry]) => {
-      const { width, height } = entry.contentRect;
-      measure(width, height);
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
-  return (
-    <div ref={containerRef} className="relative h-full w-full overflow-hidden">
-      <style>{ONE_PCT_KEYFRAMES}</style>
-      <style>{INTRO_PULSE_KEYFRAMES}</style>
-      {reduceMotion ? (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-          <div
-            className="flex h-11 w-11 items-center justify-center rounded-xl shadow-lg shadow-violet-500/20"
-            style={liquidFillStyle()}
-          >
-            <GraduationCap className="h-5 w-5 text-neutral-950" strokeWidth={2} />
-          </div>
-          <div className="text-center">
-            <p className="text-[13px] font-semibold tracking-tight text-neutral-200">Akyos</p>
-            <p className="text-[11.5px] text-neutral-600">Your Answer to Chaos</p>
-          </div>
-        </div>
-      ) : (
-        <PanelBrandPass key={loopKey} fullSizePx={fullSizePx} onLoop={() => setLoopKey((k) => k + 1)} />
-      )}
     </div>
   );
 }
