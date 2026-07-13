@@ -740,18 +740,21 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
   const [newPasswordError, setNewPasswordError] = useState('');
 
   // The staggered cascade-in (cascadeStyle) is only meant to play once, on
-  // the initial page load, timed against the intro loader finishing. This
-  // timer starts the moment the component mounts and fires once the full
-  // cascade sequence would have finished playing; after that, the sign-in
-  // screen always renders instantly, e.g. when returning to it from
-  // "Forgot password?", instead of replaying the staggered entrance.
+  // the initial page load. Stage state can flip to 'auth' while the "1%
+  // Better Every Day" intro is still covering the screen, so this timer is
+  // keyed off the sign-in screen's actual first mount (once that intro has
+  // cleared) rather than off this component's own mount — otherwise the
+  // "cascade already played" flag could flip before the cascade was ever
+  // visible, and it would render as a flat fade instead of a stagger.
+  const authCascadeStartedRef = useRef(false);
   const [authCascadeDone, setAuthCascadeDone] = useState(false);
   useEffect(() => {
+    if (showOnePercentIntro || stage !== 'auth' || authCascadeStartedRef.current) return;
+    authCascadeStartedRef.current = true;
     const totalMs = INTRO_REVEAL_AT_MS + 8 * CASCADE_STEP_MS + 750;
     const t = setTimeout(() => setAuthCascadeDone(true), totalMs);
     return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [stage, showOnePercentIntro]);
   const authCascadeStyle = (index: number): React.CSSProperties =>
     authCascadeDone ? {} : cascadeStyle(index);
 
