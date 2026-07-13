@@ -732,6 +732,9 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
 
   // --- Google OAuth state ---
   const [googleBusy, setGoogleBusy] = useState(false);
+  // Hover flag for "Continue with Google" — drives the sweep overlay
+  // below, same as the other hover-gated pills elsewhere in the app.
+  const [googleHovered, setGoogleHovered] = useState(false);
   const [googleError, setGoogleError] = useState('');
 
   // --- "choose your passcode" (signup) state ---
@@ -1141,10 +1144,35 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
           <button
             type="button"
             onClick={handleGoogleSignIn}
+            onMouseEnter={() => setGoogleHovered(true)}
+            onMouseLeave={() => setGoogleHovered(false)}
             disabled={googleBusy}
-            className="mb-4 flex w-full max-w-xs items-center justify-center gap-2.5 rounded-xl border border-neutral-800 bg-neutral-900/80 py-3 text-[13px] font-semibold text-neutral-100 transition-colors hover:bg-neutral-900 disabled:opacity-60"
+            className="relative overflow-hidden mb-4 flex w-full max-w-xs items-center justify-center gap-2.5 rounded-xl border border-neutral-800 bg-neutral-900/80 py-3 text-[13px] font-semibold text-neutral-100 transition-colors hover:bg-neutral-900 disabled:opacity-60"
             style={authCascadeStyle(2)}
           >
+            {googleHovered && !googleBusy && (
+              // Same hover-gated sweep border as the rest of the app —
+              // ring-only cutout filled with the local liquidFillStyle()
+              // brand gradient, revealed via the --akyos-sweep mask
+              // (keyframes already injected page-wide by the <style> tag
+              // at the bottom of this component).
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-0 rounded-xl"
+                style={{ animation: SWEEP_REVEAL_ANIMATION, ...SWEEP_REVEAL_STYLE }}
+              >
+                <div
+                  className="absolute inset-0 rounded-xl"
+                  style={{
+                    padding: '1.5px',
+                    WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                    WebkitMaskComposite: 'xor',
+                    maskComposite: 'exclude',
+                    ...liquidFillStyle(),
+                  } as React.CSSProperties}
+                />
+              </div>
+            )}
             <GoogleIcon className="h-4 w-4" />
             {googleBusy ? 'Connecting…' : 'Continue with Google'}
           </button>
