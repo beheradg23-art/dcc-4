@@ -5,9 +5,16 @@ import { Clock3, Weight, ArrowUpRight, Bell, BellOff } from 'lucide-react';
 import { ConfigContext, getSubjectStyle } from '../../lib/appConfig';
 import { RippleButton, ModalData } from '../ui/Primitives';
 import { EditableSectionHeading } from '../shared/EditableSectionHeading';
+import { liquidFillStyle, SWEEP_REVEAL_ANIMATION, SWEEP_REVEAL_STYLE } from '../../lib/liquidFill';
 
 export function TimelineTab({ setModal, notificationsEnabled, notificationPermission, onToggleNotifications }: { setModal: (data: ModalData | null) => void; notificationsEnabled: boolean; notificationPermission: NotificationPermission | 'unsupported'; onToggleNotifications: () => void }) {
   const { timeline, subjects } = React.useContext(ConfigContext);
+  // Which timeline block (by index) currently has the pointer over it —
+  // drives the animated gradient sweep border below, the same
+  // hover-gated overlay technique <Card> in Primitives.tsx uses for the
+  // dashboard's bento cards, just tracked per-row here instead of via
+  // CardHoverContext since these blocks are a flat list, not <Card>s.
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const typeStyle = {
     study: 'border-l-indigo-500',
     gym: 'border-l-violet-500',
@@ -64,8 +71,36 @@ export function TimelineTab({ setModal, notificationsEnabled, notificationPermis
                 arrayTitle: 'Tactical Blueprint',
                 arrayItems: slot.subject ? ['Execute active recall models', 'Avoid passive consumption modes', 'Track mistake logs inside errors catalog'] : ['Execute standard systemic recovery actions']
               })}
-              className={`flex items-center gap-4 rounded-xl border border-neutral-800 bg-neutral-900/50 border-l-2 ${typeStyle[slot.type]} px-4 py-3.5 cursor-pointer transition-all hover:bg-neutral-900/90 hover:translate-x-1`}
+              onMouseEnter={() => setHoveredIdx(i)}
+              onMouseLeave={() => setHoveredIdx((cur) => (cur === i ? null : cur))}
+              className={`relative overflow-hidden flex items-center gap-4 rounded-xl border border-neutral-800 bg-neutral-900/50 border-l-2 ${typeStyle[slot.type]} px-4 py-3.5 cursor-pointer transition-all hover:bg-neutral-900/90 hover:translate-x-1`}
             >
+              {hoveredIdx === i && (
+                // Same animated gradient sweep border as the dashboard's
+                // <Card> bento boxes (see Primitives.tsx SectionHeading /
+                // Card comments for the full breakdown): a corner-to-corner
+                // `--akyos-sweep` mask plays once on hover-in, wrapping a
+                // ring-only cutout (padding + content-box mask-composite
+                // exclude/xor) filled with the shared moving liquidFillStyle()
+                // brand gradient — so this block picks up the exact same
+                // "live material" treatment as every other bento card.
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 rounded-xl"
+                  style={{ animation: SWEEP_REVEAL_ANIMATION, ...SWEEP_REVEAL_STYLE }}
+                >
+                  <div
+                    className="absolute inset-0 rounded-xl"
+                    style={{
+                      padding: '1.5px',
+                      WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                      WebkitMaskComposite: 'xor',
+                      maskComposite: 'exclude',
+                      ...liquidFillStyle(),
+                    } as React.CSSProperties}
+                  />
+                </div>
+              )}
               <div className="w-[92px] shrink-0 tabular-nums text-[12.5px] font-medium text-neutral-400">
                 {slot.start === slot.end ? slot.start : `${slot.start}–${slot.end}`}
               </div>
