@@ -1345,7 +1345,7 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
             return (
               <div
                 key={i}
-                className={`flex h-12 w-10 items-center justify-center rounded-xl border text-lg font-semibold tabular-nums transition-colors duration-150 ${
+                className={`relative flex h-12 w-10 items-center justify-center rounded-xl border text-lg font-semibold tabular-nums transition-colors duration-150 ${
                   pcSetupError
                     ? 'border-rose-500/50 bg-rose-500/[0.06] text-rose-300'
                     : isCurrent
@@ -1356,6 +1356,29 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
                 }`}
               >
                 {filled ? '•' : ''}
+                {isCurrent && !pcSetupError && (
+                  // Same focus-gated sweep as the email/password fields —
+                  // ring-only cutout filled with the animated brand
+                  // gradient, but here it tracks whichever box the typing
+                  // cursor is actually sitting in rather than a single
+                  // fixed input.
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0 rounded-xl"
+                    style={{ animation: SWEEP_REVEAL_ANIMATION, ...SWEEP_REVEAL_STYLE }}
+                  >
+                    <div
+                      className="absolute inset-0 rounded-xl"
+                      style={{
+                        padding: '1.5px',
+                        WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                        WebkitMaskComposite: 'xor',
+                        maskComposite: 'exclude',
+                        ...liquidFillStyle(),
+                      } as React.CSSProperties}
+                    />
+                  </div>
+                )}
               </div>
             );
           })}
@@ -1537,7 +1560,7 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
           return (
             <div
               key={i}
-              className={`flex h-12 w-10 items-center justify-center rounded-xl border text-lg font-semibold tabular-nums transition-colors duration-150 ${
+              className={`relative flex h-12 w-10 items-center justify-center rounded-xl border text-lg font-semibold tabular-nums transition-colors duration-150 ${
                 pcError
                   ? 'border-rose-500/50 bg-rose-500/[0.06] text-rose-300'
                   : isCurrent
@@ -1548,6 +1571,29 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
               }`}
             >
               {filled ? '•' : ''}
+              {isCurrent && !pcError && (
+                // Same focus-gated sweep as the email/password fields —
+                // ring-only cutout filled with the animated brand
+                // gradient, but here it tracks whichever box the typing
+                // cursor is actually sitting in rather than a single
+                // fixed input.
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 rounded-xl"
+                  style={{ animation: SWEEP_REVEAL_ANIMATION, ...SWEEP_REVEAL_STYLE }}
+                >
+                  <div
+                    className="absolute inset-0 rounded-xl"
+                    style={{
+                      padding: '1.5px',
+                      WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                      WebkitMaskComposite: 'xor',
+                      maskComposite: 'exclude',
+                      ...liquidFillStyle(),
+                    } as React.CSSProperties}
+                  />
+                </div>
+              )}
             </div>
           );
         })}
