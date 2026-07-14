@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { NO_SELECT_CSS } from '../styles/noSelect';
 import { DateField, TimeField } from './ui/Primitives';
+import { AkyosMark } from './shared/AkyosMark';
 import {
   Sparkles, Loader2, RefreshCcw, ArrowRight, ArrowLeft, ClipboardList,
   Clock3, Dumbbell, Target, CheckCircle2, BookOpen, GraduationCap,
@@ -291,7 +292,7 @@ function OnboardingShell({
             </>
           )}
           <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg shadow-md shadow-violet-500/20 ${mobileHeader ? 'hidden lg:flex' : ''}`} style={liquidFillStyle()}>
-            <GraduationCap className="h-4.5 w-4.5 text-neutral-950" strokeWidth={2} />
+            <AkyosMark className="h-4.5 w-4.5 text-neutral-950" />
           </div>
           <div className={`min-w-0 ${mobileHeader ? 'hidden lg:block' : ''}`}>
             <h2 className="truncate text-[14px] font-semibold leading-none tracking-tight text-neutral-50">Akyos</h2>

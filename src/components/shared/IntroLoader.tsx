@@ -1,8 +1,9 @@
 // One-time animated splash screen shown while the app boots (progress line
 // + upward curtain wipe reveal).
 import React, { useState, useEffect } from 'react';
-import { GraduationCap, Settings, Save } from 'lucide-react';
+import { Settings, Save } from 'lucide-react';
 import { liquidFillStyle } from '../../lib/liquidFill';
+import { AkyosMark } from './AkyosMark';
 
 export function IntroLoader({ onFinish }) {
   const [percent, setPercent] = useState(0);
@@ -74,7 +75,7 @@ export function IntroLoader({ onFinish }) {
         }`}
       >
         <div className="mb-5 flex h-9 w-9 items-center justify-center rounded-lg shadow-lg shadow-violet-500/20" style={liquidFillStyle({ animation: 'fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both' })}>
-          <GraduationCap className="h-4.5 w-4.5 text-neutral-950" strokeWidth={2} />
+          <AkyosMark className="h-4.5 w-4.5 text-neutral-950" />
         </div>
 
         <span

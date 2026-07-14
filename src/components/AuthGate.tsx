@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Lock, Mail, Loader2, ShieldCheck, CheckCircle2, GraduationCap } from 'lucide-react';
+import { Lock, Mail, Loader2, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { AkyosMark } from './shared/AkyosMark';
 import { supabase } from '../lib/supabaseClient';
 import {
   pullFromCloud,
@@ -224,7 +225,7 @@ function IntroReveal({ onComplete }: { onComplete: () => void }) {
           className="relative flex h-14 w-14 items-center justify-center rounded-2xl shadow-lg shadow-violet-500/30"
           style={liquidFillStyle()}
         >
-          <GraduationCap className="h-7 w-7 text-neutral-950" strokeWidth={2} />
+          <AkyosMark className="h-7 w-7 text-neutral-950" />
         </div>
 
         <div className="text-center">
@@ -557,7 +558,7 @@ function OnePercentIntro({ onComplete }: { onComplete: () => void }) {
           className="absolute inset-0 flex items-center justify-center"
           style={{ opacity: badgeContentVisible ? 1 : 0, transition: `opacity ${ONE_PCT_BADGE_REVEAL_MS}ms ease-out` }}
         >
-          <GraduationCap className="h-7 w-7 text-neutral-950" strokeWidth={2} />
+          <AkyosMark className="h-7 w-7 text-neutral-950" />
         </div>
       </div>
 
