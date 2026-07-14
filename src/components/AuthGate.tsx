@@ -1356,12 +1356,21 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
                 }`}
               >
                 {filled ? '•' : ''}
-                {isCurrent && !pcSetupError && (
+                {isCurrent && !pcSetupError && !showIntro && (
                   // Same focus-gated sweep as the email/password fields —
                   // ring-only cutout filled with the animated brand
                   // gradient, but here it tracks whichever box the typing
                   // cursor is actually sitting in rather than a single
                   // fixed input.
+                  //
+                  // Gated on `!showIntro` too: this stage can mount while
+                  // IntroReveal is still up top (opaque, then fading), and
+                  // without this the very first box's sweep would start
+                  // its 3s clock right then and finish underneath it — so
+                  // by the time the overlay actually clears, box one would
+                  // already look like a plain static border that's "been
+                  // there since ages" instead of sweeping in like every
+                  // other box does when it becomes current later.
                   <div
                     aria-hidden
                     className="pointer-events-none absolute inset-0 rounded-xl"
@@ -1571,12 +1580,18 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
               }`}
             >
               {filled ? '•' : ''}
-              {isCurrent && !pcError && (
+              {isCurrent && !pcError && !showIntro && (
                 // Same focus-gated sweep as the email/password fields —
                 // ring-only cutout filled with the animated brand
                 // gradient, but here it tracks whichever box the typing
                 // cursor is actually sitting in rather than a single
                 // fixed input.
+                //
+                // Gated on `!showIntro` too — see the matching comment on
+                // the setPasscode box above: without it, this box's sweep
+                // can start (and finish) underneath IntroReveal's still-
+                // fading overlay, so it's already sitting fully "revealed"
+                // and static the instant the overlay clears.
                 <div
                   aria-hidden
                   className="pointer-events-none absolute inset-0 rounded-xl"
