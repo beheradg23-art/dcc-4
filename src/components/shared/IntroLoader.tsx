@@ -75,7 +75,7 @@ export function IntroLoader({ onFinish }) {
         }`}
       >
         <div className="mb-5 flex h-9 w-9 items-center justify-center rounded-lg shadow-lg shadow-violet-500/20" style={liquidFillStyle({ animation: 'fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both' })}>
-          <AkyosMark className="h-4.5 w-4.5 text-neutral-950" />
+          <AkyosMark className="h-3.5 w-3.5 text-neutral-950" />
         </div>
 
         <span
