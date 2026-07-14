@@ -11,9 +11,9 @@
 //
 // public/sw.js posts a PLAY_NOTIFICATION_SOUND message to every open
 // client whenever it shows a push notification or the Pomodoro-complete
-// notification; this file just listens for that and plays the chime.
+// notification; this file just listens for that and plays the clip.
 
-const SOUND_URL = '/sounds/akyos-chime.wav';
+const SOUND_URL = '/sounds/tuturu_1.mp3';
 
 let primed = false;
 let audio: HTMLAudioElement | null = null;
