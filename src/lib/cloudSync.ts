@@ -222,6 +222,21 @@ export async function setPasscodeHash(userId: string, hash: string): Promise<voi
   if (error) throw error;
 }
 
+/** Wipes the stored passcode hash (cloud only — caller is responsible for
+ * also clearing the local `PASSCODE_HASH_KEY` cache and any lockout state).
+ * Used by the "forgot passcode" recovery flow once identity has been
+ * re-proven some other way (current account password, or an emailed
+ * recovery link) — after this, `decidePostSyncStage` in AuthGate finds no
+ * hash and routes straight to "choose a new passcode" instead of "enter
+ * your passcode", the same screen a brand-new account sees.
+ */
+export async function clearPasscodeHash(userId: string): Promise<void> {
+  const { error } = await supabase
+    .from('user_data')
+    .upsert({ user_id: userId, passcode_hash: null }, { onConflict: 'user_id' });
+  if (error) throw error;
+}
+
 export async function getPasscodeHash(userId: string): Promise<string | null> {
   const { data, error } = await supabase
     .from('user_data')
@@ -231,6 +246,18 @@ export async function getPasscodeHash(userId: string): Promise<string | null> {
   if (error) throw error;
   return data?.passcode_hash ?? null;
 }
+
+// Persisted (not sessionStorage — an emailed recovery link often opens in a
+// brand-new tab, which wouldn't share a sessionStorage value) marker that
+// AuthGate sets right before sending a recovery email FROM the "forgot
+// passcode" flow specifically, so that once that emailed link is clicked
+// and a new account password is saved, the passcode also gets wiped in the
+// same step — one recovery email covers both "forgot my password" and
+// "forgot my passcode" when they're the same underlying event. Cleared the
+// moment it's consumed, and defensively on any *ordinary* "forgot password"
+// entry too, so a stale flag from an abandoned attempt can never wipe a
+// passcode the person never actually asked to reset.
+export const PASSCODE_RECOVERY_PENDING_KEY = 'dcc_passcode_recovery_pending';
 
 // ---------- Passcode attempt lockout ----------
 // Purely a client-side speed bump against rapid repeated guessing typed

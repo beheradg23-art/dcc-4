@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Lock, Mail, Loader2, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { Lock, Mail, Loader2, ShieldCheck, CheckCircle2, KeyRound } from 'lucide-react';
 import { AkyosMark } from './shared/AkyosMark';
 import { supabase } from '../lib/supabaseClient';
 import {
@@ -8,6 +8,7 @@ import {
   hashPasscode,
   verifyPasscode,
   setPasscodeHash,
+  clearPasscodeHash,
   getPasscodeHash,
   ensureAccountIsolation,
   resetLocalAccountState,
@@ -16,6 +17,7 @@ import {
   usePasscodeLockoutMs,
   LAST_ACTIVE_USER_KEY,
   PASSCODE_HASH_KEY,
+  PASSCODE_RECOVERY_PENDING_KEY,
 } from '../lib/cloudSync';
 import PasswordField from './PasswordField';
 import { NO_SELECT_CSS } from '../styles/noSelect';
@@ -792,7 +794,7 @@ const cascadeStyle = (index: number): React.CSSProperties => ({
 // stops it from looping.
 const SYNCED_FLAG = 'dcc_cloud_synced_this_session';
 
-type Stage = 'checking' | 'auth' | 'syncing' | 'setPasscode' | 'passcode' | 'forgotPassword' | 'resetPassword';
+type Stage = 'checking' | 'auth' | 'syncing' | 'setPasscode' | 'passcode' | 'passcodeRecovery' | 'forgotPassword' | 'resetPassword';
 
 export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
   const [stage, setStage] = useState<Stage>('checking');
@@ -852,6 +854,23 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
   // Ticks down on its own once too many wrong guesses trip the cooldown —
   // see registerFailedPasscodeAttempt/usePasscodeLockoutMs in cloudSync.ts.
   const pcLockoutMs = usePasscodeLockoutMs();
+
+  // --- "forgot passcode" recovery state ---
+  // Re-proves identity via the account's real password (which the person
+  // typically still remembers fine — the passcode is just a rarely-typed
+  // shortcut on top of it) rather than letting a signed-in-but-locked
+  // device reset its own passcode with zero verification, which would make
+  // the passcode pointless as a lock screen.
+  const [recoveryEmail, setRecoveryEmail] = useState('');
+  const [recoveryPassword, setRecoveryPassword] = useState('');
+  const [recoveryError, setRecoveryError] = useState('');
+  const [recoveryBusy, setRecoveryBusy] = useState(false);
+  const recoveryPasswordRef = useRef<HTMLInputElement>(null);
+  // Only controls where the "Back" button on the forgotPassword/resetPassword
+  // screens points within THIS same session — separate from the persisted
+  // PASSCODE_RECOVERY_PENDING_KEY flag, which is what actually survives the
+  // gap while the person goes and clicks the link in their email.
+  const [cameFromPasscodeRecovery, setCameFromPasscodeRecovery] = useState(false);
 
   // --- forgot-password (send reset email) state ---
   const [resetEmail, setResetEmail] = useState('');
@@ -1028,6 +1047,59 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pcValue, pendingUserId]);
+
+  // --- "forgot passcode" recovery: fetch the account email to display/verify against ---
+  useEffect(() => {
+    if (stage !== 'passcodeRecovery') return;
+    let cancelled = false;
+    supabase.auth.getUser().then(({ data }) => {
+      if (!cancelled) setRecoveryEmail(data.user?.email ?? '');
+    });
+    const t = setTimeout(() => recoveryPasswordRef.current?.focus(), 150);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [stage]);
+
+  const handleVerifyPasswordForRecovery = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pendingUserId || !recoveryEmail) return;
+    setRecoveryError('');
+    setRecoveryBusy(true);
+    try {
+      // Re-authenticating IS the proof of identity here — a valid session
+      // already exists (that's how we got to the passcode gate at all), so
+      // this isn't logging in for the first time, it's confirming "yes,
+      // I'm still the person who knows this account's real password" before
+      // letting the passcode itself be reset. Skipping this check would
+      // turn "forgot passcode" into a way for anyone with a signed-in,
+      // temporarily-unattended device to bypass the lock screen outright.
+      const { error } = await supabase.auth.signInWithPassword({
+        email: recoveryEmail,
+        password: recoveryPassword,
+      });
+      if (error) throw error;
+
+      await clearPasscodeHash(pendingUserId);
+      localStorage.removeItem(PASSCODE_HASH_KEY);
+      clearPasscodeAttempts();
+      setRecoveryPassword('');
+      setPcValue('');
+      setPcError(false);
+      setStage('setPasscode');
+    } catch (err: any) {
+      setRecoveryError(
+        err?.message?.includes('Invalid login credentials')
+          ? "That password isn't right."
+          : err?.message || 'Could not verify your password. Try again.'
+      );
+      setRecoveryPassword('');
+      recoveryPasswordRef.current?.focus();
+    } finally {
+      setRecoveryBusy(false);
+    }
+  };
 
   // --- new-account passcode setup (two-step: enter, then confirm) ---
   useEffect(() => {
@@ -1214,8 +1286,27 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
       const { data } = await supabase.auth.getSession();
-      if (data.session?.user) {
-        await syncThenContinue(data.session.user.id);
+      const userId = data.session?.user?.id;
+      if (userId) {
+        // This password reset was reached via "forgot passcode" -> "I don't
+        // remember my password either" -> emailed link — proving control of
+        // the account's email inbox is at least as strong a check as the
+        // passcode itself, so this is the moment to also clear it. Order
+        // matters: this has to happen before syncThenContinue, since that's
+        // what decides whether the person lands back at "enter your
+        // passcode" (hash still present) or "choose a new passcode" (hash
+        // gone) below.
+        if (localStorage.getItem(PASSCODE_RECOVERY_PENDING_KEY) === '1') {
+          localStorage.removeItem(PASSCODE_RECOVERY_PENDING_KEY);
+          try {
+            await clearPasscodeHash(userId);
+          } catch (e) {
+            console.error('[AuthGate] failed to clear passcode hash during recovery', e);
+          }
+          localStorage.removeItem(PASSCODE_HASH_KEY);
+          clearPasscodeAttempts();
+        }
+        await syncThenContinue(userId);
       } else {
         setStage('auth');
       }
@@ -1381,6 +1472,13 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
           {authMode === 'signin' && (
             <button
               onClick={() => {
+                // This is an ordinary "I forgot my account password" entry,
+                // unrelated to passcode recovery — make sure a leftover flag
+                // from some earlier abandoned "forgot passcode" attempt
+                // can't cause this unrelated reset to also wipe a passcode
+                // nobody asked to touch.
+                localStorage.removeItem(PASSCODE_RECOVERY_PENDING_KEY);
+                setCameFromPasscodeRecovery(false);
                 setResetEmail(email);
                 setResetError('');
                 setResetSent(false);
@@ -1489,7 +1587,9 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
           </h1>
           <p className="mb-8 max-w-xs text-center text-[12.5px] leading-relaxed text-neutral-500">
             {resetSent
-              ? "Check your inbox — we've sent a link to reset your password."
+              ? cameFromPasscodeRecovery
+                ? "Check your inbox — the link lets you set a new password, and you'll choose a new passcode right after."
+                : "Check your inbox — we've sent a link to reset your password."
               : "Enter your account email and we'll send you a reset link."}
           </p>
 
@@ -1549,12 +1649,21 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
 
           <button
             onClick={() => {
+              if (cameFromPasscodeRecovery) {
+                // They're still signed in — bailing out here should land
+                // them back at "enter your password to reset your
+                // passcode", not the full sign-in form they don't need.
+                localStorage.removeItem(PASSCODE_RECOVERY_PENDING_KEY);
+                setRecoveryError('');
+                setStage('passcodeRecovery');
+                return;
+              }
               setAuthError('');
               setStage('auth');
             }}
             className="mt-6 text-[12px] font-medium text-violet-400 hover:text-violet-300"
           >
-            Back to sign in
+            {cameFromPasscodeRecovery ? 'Back' : 'Back to sign in'}
           </button>
         </div>
       </div>
@@ -1605,6 +1714,75 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
             {newPasswordBusy ? 'Saving…' : 'Save New Password'}
           </button>
         </form>
+      </div>
+    );
+  }
+
+  if (stage === 'passcodeRecovery') {
+    return (
+      <div className="fixed inset-0 z-[999] flex flex-col items-center justify-center bg-zinc-950 px-6">
+        <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl shadow-lg shadow-violet-500/20" style={liquidFillStyle()}>
+          <KeyRound className="h-5 w-5 text-neutral-950" strokeWidth={2} />
+        </div>
+
+        <h1 className="mb-1.5 text-[15px] font-semibold tracking-tight text-neutral-50">
+          Reset Your Passcode
+        </h1>
+        <p className="mb-8 max-w-xs text-center text-[12.5px] leading-relaxed text-neutral-500">
+          {recoveryEmail
+            ? `Enter the account password for ${recoveryEmail} to continue.`
+            : 'Enter your account password to continue.'}
+        </p>
+
+        <form onSubmit={handleVerifyPasswordForRecovery} className="w-full max-w-xs space-y-3">
+          <PasswordField
+            value={recoveryPassword}
+            onChange={setRecoveryPassword}
+            required
+            autoComplete="current-password"
+            placeholder="Account password"
+            inputRef={recoveryPasswordRef}
+            className="w-full rounded-xl border border-neutral-800 bg-neutral-900/80 px-4 py-3 pr-11 text-[13px] text-neutral-100 placeholder-neutral-600 outline-none transition-colors focus:border-violet-500/50"
+          />
+          {recoveryError && <p className="text-[12px] text-rose-400">{recoveryError}</p>}
+          <button
+            type="submit"
+            disabled={recoveryBusy || !recoveryPassword || !recoveryEmail}
+            className="w-full rounded-xl py-3 text-[13px] font-semibold text-neutral-950 transition-opacity disabled:opacity-60"
+            style={liquidFillStyle()}
+          >
+            {recoveryBusy ? 'Verifying…' : 'Verify & Reset Passcode'}
+          </button>
+        </form>
+
+        <button
+          onClick={() => {
+            // Same recovery email your account password already uses —
+            // clicking the emailed link proves identity on its own, so
+            // that flow clears the passcode too once a new password is
+            // saved. See PASSCODE_RECOVERY_PENDING_KEY in cloudSync.ts.
+            localStorage.setItem(PASSCODE_RECOVERY_PENDING_KEY, '1');
+            setCameFromPasscodeRecovery(true);
+            setResetEmail(recoveryEmail);
+            setResetError('');
+            setResetSent(false);
+            setStage('forgotPassword');
+          }}
+          className="mt-5 text-[11.5px] font-medium text-neutral-500 hover:text-neutral-300"
+        >
+          Forgot your password too? Email me a reset link
+        </button>
+
+        <button
+          onClick={() => {
+            setRecoveryError('');
+            setRecoveryPassword('');
+            setStage('passcode');
+          }}
+          className="mt-6 text-[11.5px] font-medium text-neutral-600 hover:text-neutral-400"
+        >
+          Back
+        </button>
       </div>
     );
   }
@@ -1663,6 +1841,17 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
       </p>
 
       <button
+        onClick={() => {
+          setRecoveryPassword('');
+          setRecoveryError('');
+          setStage('passcodeRecovery');
+        }}
+        className="mt-6 text-[12px] font-medium text-violet-400 hover:text-violet-300"
+      >
+        Forgot passcode?
+      </button>
+
+      <button
         onClick={async () => {
           // PHASE 2 FIX: bring this in line with AccountPage's sign-out —
           // full wipe, not just the passcode hash, and sign-out happens
@@ -1673,7 +1862,7 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
           localStorage.removeItem(LAST_ACTIVE_USER_KEY);
           window.location.reload();
         }}
-        className="mt-10 text-[11.5px] font-medium text-neutral-600 hover:text-neutral-400"
+        className="mt-3 text-[11.5px] font-medium text-neutral-600 hover:text-neutral-400"
       >
         Not you? Sign out
       </button>
