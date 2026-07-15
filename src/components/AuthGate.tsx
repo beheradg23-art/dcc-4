@@ -6,10 +6,14 @@ import {
   pullFromCloud,
   pushToCloud,
   hashPasscode,
+  verifyPasscode,
   setPasscodeHash,
   getPasscodeHash,
   ensureAccountIsolation,
   resetLocalAccountState,
+  registerFailedPasscodeAttempt,
+  clearPasscodeAttempts,
+  usePasscodeLockoutMs,
   LAST_ACTIVE_USER_KEY,
   PASSCODE_HASH_KEY,
 } from '../lib/cloudSync';
@@ -845,6 +849,9 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
   const [pcError, setPcError] = useState(false);
   const [pcChecking, setPcChecking] = useState(false);
   const pcInputRef = useRef<HTMLInputElement>(null);
+  // Ticks down on its own once too many wrong guesses trip the cooldown —
+  // see registerFailedPasscodeAttempt/usePasscodeLockoutMs in cloudSync.ts.
+  const pcLockoutMs = usePasscodeLockoutMs();
 
   // --- forgot-password (send reset email) state ---
   const [resetEmail, setResetEmail] = useState('');
@@ -978,16 +985,38 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
   // --- returning-user passcode check ---
   useEffect(() => {
     if (pcValue.length !== PASSCODE_LENGTH || !pendingUserId) return;
+    // Guessing is blocked entirely while a cooldown from prior wrong
+    // attempts is still running — reset the boxes without even checking.
+    if (pcLockoutMs > 0) {
+      setPcError(true);
+      setTimeout(() => {
+        setPcValue('');
+        setPcError(false);
+      }, 500);
+      return;
+    }
     let cancelled = false;
     setPcChecking(true);
     (async () => {
-      const hash = await hashPasscode(pcValue, pendingUserId);
       const cached = localStorage.getItem(PASSCODE_HASH_KEY);
+      const { valid, upgradedHash } = await verifyPasscode(pcValue, pendingUserId, cached);
       if (cancelled) return;
       setPcChecking(false);
-      if (hash === cached) {
+      if (valid) {
+        clearPasscodeAttempts();
+        // A correct guess against an old (pre-PBKDF2) hash — silently
+        // upgrade the stored hash to the stretched format now, both in the
+        // cloud and the local cache, so this account never gets checked
+        // against the weaker scheme again.
+        if (upgradedHash) {
+          localStorage.setItem(PASSCODE_HASH_KEY, upgradedHash);
+          setPasscodeHash(pendingUserId, upgradedHash).catch((e) =>
+            console.error('[AuthGate] failed to upgrade passcode hash', e)
+          );
+        }
         onUnlock();
       } else {
+        registerFailedPasscodeAttempt();
         setPcError(true);
         setTimeout(() => {
           setPcValue('');
@@ -1623,14 +1652,14 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
           inputMode="numeric"
           pattern="[0-9]*"
           autoComplete="off"
-          disabled={pcChecking}
+          disabled={pcChecking || pcLockoutMs > 0}
           aria-label="Passcode"
           className="absolute inset-0 h-full w-full cursor-default opacity-0"
         />
       </div>
 
-      <p className={`mt-5 h-4 text-[12px] font-medium text-rose-400 transition-opacity duration-150 ${pcError ? 'opacity-100' : 'opacity-0'}`}>
-        Incorrect passcode
+      <p className={`mt-5 max-w-xs min-h-[16px] text-center text-[12px] font-medium leading-relaxed text-rose-400 transition-opacity duration-150 ${pcError || pcLockoutMs > 0 ? 'opacity-100' : 'opacity-0'}`}>
+        {pcLockoutMs > 0 ? `Too many attempts — try again in ${Math.ceil(pcLockoutMs / 1000)}s` : 'Incorrect passcode'}
       </p>
 
       <button

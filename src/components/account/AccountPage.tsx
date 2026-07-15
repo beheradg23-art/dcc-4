@@ -18,7 +18,8 @@ import PasswordField from '../PasswordField';
 import PasscodeChangeCard from '../PasscodeChangeCard';
 import {
   SYNC_KEYS, resetLocalAccountState, LAST_ACTIVE_USER_KEY,
-  hashPasscode, getPasscodeHash, PASSCODE_HASH_KEY,
+  verifyPasscode, getPasscodeHash, setPasscodeHash, PASSCODE_HASH_KEY,
+  registerFailedPasscodeAttempt, clearPasscodeAttempts, usePasscodeLockoutMs,
 } from '../../lib/cloudSync';
 
 export function DataBackupCard({ globalHistory, setGlobalHistory }: { globalHistory: DailyCheckLog; setGlobalHistory: React.Dispatch<React.SetStateAction<DailyCheckLog>> }) {
@@ -249,6 +250,7 @@ export function DeleteAccountCard() {
   const [busy, setBusy] = useState(false);
   const passcodeRef = useRef<HTMLInputElement>(null);
   const confirmRef = useRef<HTMLInputElement>(null);
+  const lockoutMs = usePasscodeLockoutMs();
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
@@ -278,16 +280,27 @@ export function DeleteAccountCard() {
   // --- verify current passcode, same check PasscodeChangeCard uses ---
   useEffect(() => {
     if (step !== 'passcode' || passcode.length !== DELETE_PASSCODE_LENGTH || !userId) return;
+    if (lockoutMs > 0) {
+      setPasscodeError(true);
+      setTimeout(() => setPasscode(''), 500);
+      return;
+    }
     let cancelled = false;
     (async () => {
       try {
-        const hash = await hashPasscode(passcode, userId);
         const cached = localStorage.getItem(PASSCODE_HASH_KEY) || (await getPasscodeHash(userId).catch(() => null));
+        const { valid, upgradedHash } = await verifyPasscode(passcode, userId, cached);
         if (cancelled) return;
-        if (hash === cached) {
+        if (valid) {
+          clearPasscodeAttempts();
           setPasscodeError(false);
+          if (upgradedHash) {
+            localStorage.setItem(PASSCODE_HASH_KEY, upgradedHash);
+            setPasscodeHash(userId, upgradedHash).catch(() => {});
+          }
           setStep('confirm-text');
         } else {
+          registerFailedPasscodeAttempt();
           haptic.error();
           setPasscodeError(true);
           setTimeout(() => {
@@ -305,7 +318,7 @@ export function DeleteAccountCard() {
     return () => {
       cancelled = true;
     };
-  }, [passcode, step, userId]);
+  }, [passcode, step, userId, lockoutMs]);
 
   const handleDelete = async () => {
     if (confirmText !== 'DELETE') return;
@@ -379,7 +392,9 @@ export function DeleteAccountCard() {
 
           {step === 'passcode' && (
             <>
-              <p className="text-[12px] text-neutral-400">Enter your current passcode to continue</p>
+              <p className="text-[12px] text-neutral-400">
+                {lockoutMs > 0 ? 'Too many attempts' : 'Enter your current passcode to continue'}
+              </p>
               <input
                 ref={passcodeRef}
                 value={passcode}
@@ -388,13 +403,19 @@ export function DeleteAccountCard() {
                 inputMode="numeric"
                 pattern="[0-9]*"
                 autoComplete="off"
+                disabled={lockoutMs > 0}
                 aria-label="Current passcode"
-                className={`w-32 rounded-lg border px-3 py-2.5 text-center text-[15px] tracking-[0.4em] outline-none transition-colors ${
+                className={`w-32 rounded-lg border px-3 py-2.5 text-center text-[15px] tracking-[0.4em] outline-none transition-colors disabled:opacity-50 ${
                   passcodeError
                     ? 'border-rose-500/50 bg-rose-500/[0.06] text-rose-300 animate-shake'
                     : 'border-neutral-800 bg-neutral-950/60 text-neutral-100 focus:border-rose-500/50'
                 }`}
               />
+              {lockoutMs > 0 && (
+                <p className="text-[11.5px] font-medium text-rose-400">
+                  Try again in {Math.ceil(lockoutMs / 1000)}s
+                </p>
+              )}
             </>
           )}
 

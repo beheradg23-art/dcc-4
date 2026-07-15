@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Fingerprint } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
-import { hashPasscode, setPasscodeHash, getPasscodeHash, PASSCODE_HASH_KEY } from '../lib/cloudSync';
+import { hashPasscode, verifyPasscode, setPasscodeHash, getPasscodeHash, PASSCODE_HASH_KEY, registerFailedPasscodeAttempt, clearPasscodeAttempts, usePasscodeLockoutMs } from '../lib/cloudSync';
 import { toast } from '../lib/toast';
 import { haptic } from '../lib/haptics';
 
@@ -24,12 +24,14 @@ function PasscodeBoxes({
   onChange,
   inputRef,
   label,
+  disabled,
 }: {
   value: string;
   error: boolean;
   onChange: (v: string) => void;
   inputRef: React.RefObject<HTMLInputElement>;
   label: string;
+  disabled?: boolean;
 }) {
   const boxes = Array.from({ length: PASSCODE_LENGTH });
   return (
@@ -62,6 +64,7 @@ function PasscodeBoxes({
         inputMode="numeric"
         pattern="[0-9]*"
         autoComplete="off"
+        disabled={disabled}
         aria-label={label}
         className="absolute inset-0 h-full w-full cursor-default opacity-0"
       />
@@ -78,6 +81,7 @@ export default function PasscodeChangeCard() {
   const [error, setError] = useState(false);
   const [busy, setBusy] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const lockoutMs = usePasscodeLockoutMs();
 
   const currentRef = useRef<HTMLInputElement>(null);
   const nextRef = useRef<HTMLInputElement>(null);
@@ -113,16 +117,27 @@ export default function PasscodeChangeCard() {
   // --- step 1: verify current passcode ---
   useEffect(() => {
     if (step !== 'current' || current.length !== PASSCODE_LENGTH || !userId) return;
+    if (lockoutMs > 0) {
+      setError(true);
+      setTimeout(() => setCurrent(''), 500);
+      return;
+    }
     let cancelled = false;
     (async () => {
       try {
-        const hash = await hashPasscode(current, userId);
         const cached = localStorage.getItem(PASSCODE_HASH_KEY) || (await getPasscodeHash(userId).catch(() => null));
+        const { valid, upgradedHash } = await verifyPasscode(current, userId, cached);
         if (cancelled) return;
-        if (hash === cached) {
+        if (valid) {
+          clearPasscodeAttempts();
           setError(false);
+          if (upgradedHash) {
+            localStorage.setItem(PASSCODE_HASH_KEY, upgradedHash);
+            setPasscodeHash(userId, upgradedHash).catch(() => {});
+          }
           setStep('new');
         } else {
+          registerFailedPasscodeAttempt();
           haptic.error();
           setError(true);
           setTimeout(() => {
@@ -140,7 +155,7 @@ export default function PasscodeChangeCard() {
     return () => {
       cancelled = true;
     };
-  }, [current, step, userId]);
+  }, [current, step, userId, lockoutMs]);
 
   // --- step 2 -> 3: capture new passcode, then ask for confirmation ---
   useEffect(() => {
@@ -204,9 +219,25 @@ export default function PasscodeChangeCard() {
 
       {open && (
         <div className="mt-4 flex flex-col items-start gap-3 animate-fadeIn">
-          <p className="text-[12px] text-neutral-400">{busy ? 'Saving…' : stepCopy[step]}</p>
+          <p className="text-[12px] text-neutral-400">
+            {busy ? 'Saving…' : lockoutMs > 0 ? 'Too many attempts' : stepCopy[step]}
+          </p>
           {step === 'current' && (
-            <PasscodeBoxes value={current} error={error} onChange={setCurrent} inputRef={currentRef} label="Current passcode" />
+            <>
+              <PasscodeBoxes
+                value={current}
+                error={error}
+                onChange={setCurrent}
+                inputRef={currentRef}
+                label="Current passcode"
+                disabled={lockoutMs > 0}
+              />
+              {lockoutMs > 0 && (
+                <p className="text-[11.5px] font-medium text-rose-400">
+                  Try again in {Math.ceil(lockoutMs / 1000)}s
+                </p>
+              )}
+            </>
           )}
           {step === 'new' && (
             <PasscodeBoxes value={next} error={false} onChange={setNext} inputRef={nextRef} label="New passcode" />
