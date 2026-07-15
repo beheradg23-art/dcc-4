@@ -713,14 +713,18 @@ export default function JEEDashboard() {
         <footer className="mt-8 pb-2 text-center space-y-1.5">
           <div className="flex items-center justify-center gap-x-2.5 gap-y-1 flex-wrap text-[11px] text-neutral-600">
             <a
-              href="mailto:kiwieatspumpkin@gmail.com"
+              href="https://mail.google.com/mail/?view=cm&fs=1&to=kiwieatspumpkin@gmail.com"
+              target="_blank"
+              rel="noopener noreferrer"
               className="hover:text-neutral-400 transition-colors"
             >
               Contact Akyos
             </a>
             <span className="text-neutral-800">•</span>
             <a
-              href="mailto:kiwieatspumpkin@gmail.com?subject=To%20Report%20a%20Bug"
+              href="https://mail.google.com/mail/?view=cm&fs=1&to=kiwieatspumpkin@gmail.com&su=To%20Report%20a%20Bug"
+              target="_blank"
+              rel="noopener noreferrer"
               className="hover:text-neutral-400 transition-colors"
             >
               Report a Bug
