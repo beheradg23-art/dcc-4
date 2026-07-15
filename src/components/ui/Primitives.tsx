@@ -514,6 +514,15 @@ export interface ModalData {
   arrayTitle?: string;
   focusPoints?: string[];
   cues?: string;
+  // Optional extra sections used by the Performance Calendar's day-detail
+  // modal: Pomodoro subject-hours logged that day, and any mock tests
+  // logged on that date. Kept separate from arrayItems/arrayTitle (the
+  // daily checklist) so all three can appear together without one
+  // overwriting another.
+  studyItems?: string[];
+  studyTitle?: string;
+  testItems?: string[];
+  testTitle?: string;
 }
 
 export function GlobalDetailModal({ modalData, onClose }: { modalData: ModalData | null; onClose: () => void }) {
@@ -556,6 +565,32 @@ export function GlobalDetailModal({ modalData, onClose }: { modalData: ModalData
                 {modalData.arrayItems.map((item, idx) => (
                   <li key={idx} className="flex items-start gap-2 text-sm text-neutral-300 bg-neutral-950/30 px-3 py-2 rounded-lg border border-neutral-800/40">
                     <span className="text-xs text-neutral-600 mt-0.5 font-mono">[{idx + 1}]</span>
+                    <span className="leading-snug">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {modalData.studyItems && modalData.studyItems.length > 0 && (
+            <div>
+              <div className="text-[11px] uppercase tracking-wider text-neutral-500 font-bold mb-2">{modalData.studyTitle || 'Study Log'}</div>
+              <ul className="space-y-2">
+                {modalData.studyItems.map((item, idx) => (
+                  <li key={idx} className="flex items-start gap-2 text-sm text-neutral-300 bg-indigo-500/[0.03] border border-indigo-500/20 px-3 py-2 rounded-lg">
+                    <span className="leading-snug">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {modalData.testItems && modalData.testItems.length > 0 && (
+            <div>
+              <div className="text-[11px] uppercase tracking-wider text-neutral-500 font-bold mb-2">{modalData.testTitle || 'Tests Logged'}</div>
+              <ul className="space-y-2">
+                {modalData.testItems.map((item, idx) => (
+                  <li key={idx} className="flex items-start gap-2 text-sm text-neutral-300 bg-amber-500/[0.03] border border-amber-500/20 px-3 py-2 rounded-lg">
                     <span className="leading-snug">{item}</span>
                   </li>
                 ))}

@@ -533,9 +533,70 @@ export function AccountPage({
 }
 
 export function PerformanceCalendar({ globalHistory, setGlobalHistory, setModal }: { globalHistory: DailyCheckLog; setGlobalHistory: React.Dispatch<React.SetStateAction<DailyCheckLog>>; setModal: (data: ModalData | null) => void }) {
-  const { trackerItems } = React.useContext(ConfigContext);
+  const { trackerItems, subjects } = React.useContext(ConfigContext);
   const [currentNavDate, setCurrentNavDate] = useState(new Date());
-  
+
+  // Pomodoro subject-hours and mock-test logs are each already date-stamped
+  // the moment they're created (Ash's Clock tags every completed Focus Gate
+  // with the date it finished; Mock Tests tags every entry with the date
+  // picked in the form) — see 'pomodoro_subject_log' / 'mock_test_log' in
+  // cloudSync's SYNC_KEYS. That per-entry date stamp is what makes this
+  // calendar "just work" across a midnight rollover with no extra timer of
+  // its own: a session finishing at 11:58pm is tagged with today's date,
+  // one finishing at 12:02am is tagged with tomorrow's, so each day's
+  // total is always attributed to the day it actually happened on.
+  const [pomodoroLog] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('pomodoro_subject_log');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [testLog] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('mock_test_log');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // date -> { subjectKey: minutes }
+  const subjectMinutesByDate = useMemo(() => {
+    const map: Record<string, Record<string, number>> = {};
+    pomodoroLog.forEach((entry: any) => {
+      if (!entry?.date || !entry?.subject) return;
+      if (!map[entry.date]) map[entry.date] = {};
+      map[entry.date][entry.subject] = (map[entry.date][entry.subject] || 0) + (Number(entry.minutes) || 0);
+    });
+    return map;
+  }, [pomodoroLog]);
+
+  // date -> tests logged that day
+  const testsByDate = useMemo(() => {
+    const map: Record<string, any[]> = {};
+    testLog.forEach((t: any) => {
+      if (!t?.date) return;
+      if (!map[t.date]) map[t.date] = [];
+      map[t.date].push(t);
+    });
+    return map;
+  }, [testLog]);
+
+  const formatHrs = (mins: number) => {
+    if (!mins) return '0m';
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  };
+
+  // Old test entries stored raw numbers per subject with an implicit max of
+  // 100 (see the same back-compat normalization in MockTestTab); handle
+  // both shapes here so older logged tests still display correctly.
+  const normalizeScore = (val: any): { score: number; max: number } =>
+    typeof val === 'number' ? { score: val, max: 100 } : val;
+
   const year = currentNavDate.getFullYear();
   const month = currentNavDate.getMonth();
 
@@ -565,12 +626,39 @@ export function PerformanceCalendar({ globalHistory, setGlobalHistory, setModal 
     const completedCount = Object.values(itemsCompleted).filter(Boolean).length;
     const percentage = Math.round((completedCount / trackerItems.length) * 100);
 
+    const subjectMinutes = subjectMinutesByDate[dateStr] || {};
+    const studyItems = Object.entries(subjectMinutes)
+      .filter(([, mins]) => (mins as number) > 0)
+      .sort(([, a], [, b]) => (b as number) - (a as number))
+      .map(([key, mins]) => {
+        const found = subjects.find((s: any) => s.key === key);
+        return `${found?.label || key}: ${formatHrs(mins as number)}`;
+      });
+    const totalStudyMinutes = Object.values(subjectMinutes).reduce((a: number, b: number) => a + b, 0);
+    if (studyItems.length > 0) {
+      studyItems.unshift(`Total: ${formatHrs(totalStudyMinutes)} across ${studyItems.length} subject${studyItems.length === 1 ? '' : 's'}`);
+    }
+
+    const dayTests = testsByDate[dateStr] || [];
+    const testItems = dayTests.map((t: any) => {
+      const scoreParts = Object.entries(t.scores || {}).map(([key, val]) => {
+        const { score, max } = normalizeScore(val);
+        const found = subjects.find((s: any) => s.key === key);
+        return `${found?.label || key} ${score}/${max}`;
+      });
+      return `${t.label}${scoreParts.length ? ' — ' + scoreParts.join(', ') : ''}`;
+    });
+
     setModal({
       title: `Execution Analysis: ${dateStr}`,
       subtitle: `${getDayName(dateStr)} · Efficiency Index: ${percentage}%`,
       icon: Calendar,
       arrayTitle: `Logged Metric Parameters (${completedCount}/${trackerItems.length})`,
       arrayItems: arrayItems,
+      studyItems,
+      studyTitle: 'Study Log (Pomodoro)',
+      testItems,
+      testTitle: 'Tests Logged This Day',
       cues: percentage === 100 ? 'Absolute perfect operation architecture verified.' : 'Identify points of focus slippage to correct trends.'
     });
   };
@@ -631,11 +719,13 @@ export function PerformanceCalendar({ globalHistory, setGlobalHistory, setModal 
           const isCurrentDay = dateStr === getLocalDateString();
           const dayChecks = dateStr && globalHistory[dateStr] ? Object.values(globalHistory[dateStr]).filter(Boolean).length : 0;
           const dayPct = dateStr && trackerItems.length ? Math.round((dayChecks / trackerItems.length) * 100) : 0;
+          const hasStudy = !!dateStr && Object.values(subjectMinutesByDate[dateStr] || {}).some((m) => (m as number) > 0);
+          const hasTest = !!dateStr && (testsByDate[dateStr] || []).length > 0;
           return (
             <div
               key={idx}
               onClick={() => dateStr && handlePastDateClick(dateStr)}
-              title={dateStr ? `${dateStr}: ${dayPct}% complete${isCurrentDay ? ' (today)' : ''}` : undefined}
+              title={dateStr ? `${dateStr}: ${dayPct}% complete${hasStudy ? ' · study logged' : ''}${hasTest ? ' · test logged' : ''}${isCurrentDay ? ' (today)' : ''}` : undefined}
               className={`aspect-square rounded-xl border flex flex-col items-center justify-center relative text-xs transition-all duration-150 ${
                 dateStr ? 'cursor-pointer hover:scale-105' : 'opacity-0 pointer-events-none'
               } ${getHeatmapColor(dateStr)} ${isCurrentDay ? 'ring-2 ring-indigo-400 ring-offset-2 ring-offset-neutral-950' : ''}`}
@@ -647,6 +737,12 @@ export function PerformanceCalendar({ globalHistory, setGlobalHistory, setModal 
                   {globalHistory[dateStr] && Object.values(globalHistory[dateStr]).filter(Boolean).length > 0 && (
                     <span className={`absolute bottom-1.5 h-1 w-1 rounded-full ${dateStr === getLocalDateString() || Object.values(globalHistory[dateStr]).filter(Boolean).length === trackerItems.length ? 'bg-neutral-950' : 'bg-current'}`} />
                   )}
+                  {hasStudy && (
+                    <span className="absolute top-1 left-1 h-1.5 w-1.5 rounded-full bg-indigo-400 shadow-[0_0_4px_rgba(129,140,248,0.9)]" />
+                  )}
+                  {hasTest && (
+                    <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-amber-400 shadow-[0_0_4px_rgba(251,191,36,0.9)]" />
+                  )}
                 </>
               )}
             </div>
@@ -655,13 +751,19 @@ export function PerformanceCalendar({ globalHistory, setGlobalHistory, setModal 
       </div>
 
       <div className="mt-6 pt-4 border-t border-neutral-800 flex flex-wrap gap-4 items-center justify-between text-xs text-neutral-400">
-        <div className="flex items-center gap-1.5">
-          <span className="text-neutral-500 font-mono">Legend Matrix:</span>
-          <div className="flex items-center gap-1"><div className="h-3 w-3 rounded bg-neutral-900 border border-neutral-800" /> <span>0%</span></div>
-          <div className="flex items-center gap-1"><div className="h-3 w-3 rounded bg-rose-950/60 border border-rose-800/40" /> <span>1-30%</span></div>
-          <div className="flex items-center gap-1"><div className="h-3 w-3 rounded bg-amber-950/60 border border-amber-800/40" /> <span>31-60%</span></div>
-          <div className="flex items-center gap-1"><div className="h-3 w-3 rounded bg-violet-950/40 border border-violet-800/40" /> <span>61-99%</span></div>
-          <div className="flex items-center gap-1"><div className="h-3 w-3 rounded" style={liquidFillStyle()} /> <span>100%</span></div>
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-neutral-500 font-mono">Legend Matrix:</span>
+            <div className="flex items-center gap-1"><div className="h-3 w-3 rounded bg-neutral-900 border border-neutral-800" /> <span>0%</span></div>
+            <div className="flex items-center gap-1"><div className="h-3 w-3 rounded bg-rose-950/60 border border-rose-800/40" /> <span>1-30%</span></div>
+            <div className="flex items-center gap-1"><div className="h-3 w-3 rounded bg-amber-950/60 border border-amber-800/40" /> <span>31-60%</span></div>
+            <div className="flex items-center gap-1"><div className="h-3 w-3 rounded bg-violet-950/40 border border-violet-800/40" /> <span>61-99%</span></div>
+            <div className="flex items-center gap-1"><div className="h-3 w-3 rounded" style={liquidFillStyle()} /> <span>100%</span></div>
+          </div>
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-1"><div className="h-1.5 w-1.5 rounded-full bg-indigo-400" /> <span>Study logged</span></div>
+            <div className="flex items-center gap-1"><div className="h-1.5 w-1.5 rounded-full bg-amber-400" /> <span>Test logged</span></div>
+          </div>
         </div>
         <p className="text-[11px] text-neutral-500">Click any historic metric square to trace detailed logs.</p>
       </div>
