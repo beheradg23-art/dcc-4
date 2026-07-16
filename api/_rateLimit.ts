@@ -40,7 +40,21 @@ export async function isRateLimited(
   return (data as number) > max;
 }
 
+// SECURITY FIX: `x-forwarded-for` is set by whatever HTTP client makes the
+// request unless the edge/proxy in front of this function overwrites it —
+// on some hosts a caller can simply send their own `x-forwarded-for` header
+// and get a fresh rate-limit bucket per request. On Vercel specifically,
+// `x-vercel-forwarded-for` is the one header Vercel's own edge network sets
+// itself from the real TCP connection, appended AFTER any incoming header
+// of the same name — so it can't be spoofed by the caller the way a bare
+// `x-forwarded-for` can (see https://vercel.com/docs/edge-network/headers).
+// Prefer it, and only fall back to `x-forwarded-for`/socket address for
+// local dev or non-Vercel hosting where that header won't be present.
 export function getClientIp(req: { headers: Record<string, string | string[] | undefined>; socket?: { remoteAddress?: string } }): string {
+  const vercelIp = req.headers['x-vercel-forwarded-for'];
+  const vercelFirst = Array.isArray(vercelIp) ? vercelIp[0] : vercelIp;
+  if (vercelFirst) return vercelFirst.split(',')[0].trim();
+
   const forwarded = req.headers['x-forwarded-for'];
   const first = Array.isArray(forwarded) ? forwarded[0] : forwarded;
   const ip = first ? first.split(',')[0].trim() : req.socket?.remoteAddress;

@@ -645,6 +645,26 @@ export function hydrateCountdown(raw: any, fallbackIndex = 0): CountdownItem {
   };
 }
 
+// SECURITY FIX (defense in depth): previously `{ ...DEFAULT_PROFILE,
+// ...raw.profile }` copied every key present on a saved/synced profile
+// object with no allow-list. Nothing in this app currently turns an
+// arbitrary profile key into an XSS sink, but if Supabase Row Level
+// Security on `user_data` were ever misconfigured (see the RLS migration
+// and the audit note it closes), this was the mechanism by which a
+// crafted/poisoned config from a DIFFERENT account could land unfiltered
+// in someone's app state. Only keys that already exist on DEFAULT_PROFILE
+// are ever copied across; anything else in a saved profile is silently
+// dropped instead of merged in.
+function pickKnownProfileFields(raw: Record<string, unknown>): Partial<typeof DEFAULT_PROFILE> {
+  const picked: Record<string, unknown> = {};
+  for (const key of Object.keys(DEFAULT_PROFILE)) {
+    if (Object.prototype.hasOwnProperty.call(raw, key)) {
+      picked[key] = (raw as Record<string, unknown>)[key];
+    }
+  }
+  return picked as Partial<typeof DEFAULT_PROFILE>;
+}
+
 export function deserializeConfig(raw: any) {
   // Migration chain, oldest to newest, so nobody's already-set countdown
   // silently disappears when this shipped as multi-countdown:
@@ -672,7 +692,7 @@ export function deserializeConfig(raw: any) {
     profile: raw?.profile && typeof raw.profile === 'object'
       ? {
           ...DEFAULT_PROFILE,
-          ...raw.profile,
+          ...pickKnownProfileFields(raw.profile),
           // Migration: pre-birthdate saves only have a static numeric
           // `age`. Back-calculate an approximate birthdate from it so age
           // starts auto-updating going forward instead of staying frozen.

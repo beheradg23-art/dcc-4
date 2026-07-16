@@ -128,5 +128,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { error: clearError } = await adminClient.rpc('clear_passcode_lockout', { p_user_id: userId });
   if (clearError) console.error('[change-passcode] Failed to clear passcode lockout', { userId, error: clearError });
 
-  return res.status(200).json({ success: true, passcodeHash: newHash });
+  // SECURITY FIX: this used to also return `passcodeHash: newHash` here so
+  // the client could cache it locally for offline unlock. That meant the
+  // full PBKDF2 hash (salt + digest) round-tripped through this response —
+  // if it were ever logged (proxy/CDN access logs, error tracking, browser
+  // extensions inspecting fetch responses) or read via an XSS bug, it would
+  // be an offline-crackable artifact with no live rate limit slowing down a
+  // guesser. The client already knows both `newPasscode` and `userId` and
+  // uses the exact same PBKDF2 construction (see hashPasscode() in
+  // src/lib/cloudSync.ts, kept in lock-step with _passcodeCrypto.ts on
+  // purpose) — so it can derive the identical local cache value itself
+  // instead of receiving it from the server. Nothing sensitive needs to
+  // cross the wire in either direction here.
+  res.setHeader('Cache-Control', 'no-store');
+  return res.status(200).json({ success: true });
 }

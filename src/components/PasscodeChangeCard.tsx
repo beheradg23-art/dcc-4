@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Fingerprint } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
-import { verifyPasscode, setPasscodeHash, getPasscodeHash, PASSCODE_HASH_KEY, registerFailedPasscodeAttempt, clearPasscodeAttempts, usePasscodeLockoutMs } from '../lib/cloudSync';
+import { verifyPasscode, setPasscodeHash, getPasscodeHash, hashPasscode, PASSCODE_HASH_KEY, registerFailedPasscodeAttempt, clearPasscodeAttempts, usePasscodeLockoutMs } from '../lib/cloudSync';
 import { toast } from '../lib/toast';
 import { haptic } from '../lib/haptics';
 
@@ -200,9 +200,12 @@ export default function PasscodeChangeCard() {
         const resBody = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(resBody?.error || 'Could not update your passcode.');
 
-        if (resBody?.passcodeHash) {
-          localStorage.setItem(PASSCODE_HASH_KEY, resBody.passcodeHash);
-        }
+        // SECURITY FIX: the server no longer echoes the new hash back (see
+        // api/change-passcode.ts) — it never needs to leave this device.
+        // Recompute the exact same pbkdf2:<iterations>:<salt>:<hash> value
+        // locally so the offline-unlock cache still gets refreshed.
+        const localHash = await hashPasscode(confirm, userId);
+        localStorage.setItem(PASSCODE_HASH_KEY, localHash);
         haptic.success();
         toast.success('Passcode updated.');
         closeCard();
@@ -234,6 +237,9 @@ export default function PasscodeChangeCard() {
         <div className="flex-1 min-w-0">
           <h3 className="text-[13.5px] font-bold text-neutral-100">Change Passcode</h3>
           <p className="text-[11.5px] text-neutral-500">Update the 6-digit code that unlocks the app</p>
+          <p className="text-[11px] text-neutral-600 mt-0.5">
+            This is a privacy screen for your device, not encryption — your data isn't scrambled by it.
+          </p>
         </div>
       </button>
 
