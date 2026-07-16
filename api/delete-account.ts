@@ -164,7 +164,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Also clean up this user's lockout row now that the account is gone —
   // not strictly necessary (it's keyed by a user id that no longer exists
   // and will never collide with a real future user), but tidy.
-  await adminClient.rpc('clear_passcode_lockout', { p_user_id: userId }).catch(() => {});
+  try {
+    await adminClient.rpc('clear_passcode_lockout', { p_user_id: userId });
+  } catch {
+    // best-effort cleanup only; failure here shouldn't affect the response
+  }
 
   return res.status(200).json({ success: true });
 }
