@@ -102,21 +102,27 @@ export function ChangePasswordCard() {
 
 // ---------- Delete Account (inside Account Menu) ----------
 //
-// Required auth, two layers:
+// Required auth, three layers:
 // 1. Client-side gate (this component): the person must re-enter their
 //    current 6-digit app passcode — verified the same way
 //    PasscodeChangeCard.tsx verifies it, against the cached/cloud hash —
 //    and then type the literal word DELETE, before the delete request is
 //    ever sent. Either step failing/being skipped means no request goes
 //    out.
-// 2. Server-side gate (api/delete-account.ts): deleting a Supabase Auth
-//    user requires the *service role* key, a secret that must never reach
-//    the browser, so the actual deletion can only happen in that
+// 2. Server-side session gate (api/delete-account.ts): deleting a Supabase
+//    Auth user requires the *service role* key, a secret that must never
+//    reach the browser, so the actual deletion can only happen in that
 //    serverless function. It independently re-verifies the caller's
 //    Supabase session token (never trusting a user id from the request
 //    body) before deleting anything — so even a request that somehow
 //    skipped step 1 still can't delete an account without a currently
 //    valid session for that exact account.
+// 3. Server-side passcode gate (api/delete-account.ts): the passcode
+//    entered in step 1 is sent along with the request and independently
+//    re-verified server-side against the stored hash before anything is
+//    deleted — so a bare stolen/leaked session token alone (e.g. via an
+//    XSS payload reading localStorage) is no longer enough by itself to
+//    delete the account.
 //
 // This is deliberately NOT reachable from ChangePasswordCard/PasscodeChangeCard
 // above — it's its own card so the destructive action has its own,
@@ -215,7 +221,8 @@ export function DeleteAccountCard() {
 
       const res = await fetch('/api/delete-account', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${accessToken}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ passcode }),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body?.error || 'Could not delete your account.');

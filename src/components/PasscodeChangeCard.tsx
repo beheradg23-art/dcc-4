@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Fingerprint } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
-import { hashPasscode, verifyPasscode, setPasscodeHash, getPasscodeHash, PASSCODE_HASH_KEY, registerFailedPasscodeAttempt, clearPasscodeAttempts, usePasscodeLockoutMs } from '../lib/cloudSync';
+import { verifyPasscode, setPasscodeHash, getPasscodeHash, PASSCODE_HASH_KEY, registerFailedPasscodeAttempt, clearPasscodeAttempts, usePasscodeLockoutMs } from '../lib/cloudSync';
 import { toast } from '../lib/toast';
 import { haptic } from '../lib/haptics';
 
@@ -10,9 +10,11 @@ import { haptic } from '../lib/haptics';
 // page, without going through "forgot my passcode" / sign-out-and-back-in.
 //
 // Flow: current passcode (verified against the cached/cloud hash) -> new
-// passcode -> confirm new passcode -> hash + save (cloud + local cache),
-// same hashPasscode/setPasscodeHash plumbing AuthGate already uses for
-// first-time setup, so both stay in sync.
+// passcode -> confirm new passcode -> saved via /api/change-passcode.ts,
+// which independently re-verifies the current passcode server-side before
+// writing the new hash (see that file for why). AuthGate's first-time-setup
+// flow still writes the hash directly via setPasscodeHash — there's no
+// "current" passcode to prove there, so nothing to gate on.
 // ---------------------------------------------------------------------------
 
 const PASSCODE_LENGTH = 6;
@@ -180,9 +182,27 @@ export default function PasscodeChangeCard() {
     (async () => {
       setBusy(true);
       try {
-        const hash = await hashPasscode(confirm, userId);
-        await setPasscodeHash(userId, hash);
-        localStorage.setItem(PASSCODE_HASH_KEY, hash);
+        const { data: sessionData } = await supabase.auth.getSession();
+        const accessToken = sessionData.session?.access_token;
+        if (!accessToken) throw new Error('Your session has expired — sign in again and retry.');
+
+        // Routed through /api/change-passcode.ts rather than writing the
+        // hash directly from the client: that endpoint independently
+        // re-verifies `current` against the stored hash server-side before
+        // writing anything, so a bare stolen session token (without the
+        // passcode) can no longer be used to overwrite the passcode. See
+        // that file's comment for the full rationale.
+        const res = await fetch('/api/change-passcode', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+          body: JSON.stringify({ currentPasscode: current, newPasscode: confirm }),
+        });
+        const resBody = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(resBody?.error || 'Could not update your passcode.');
+
+        if (resBody?.passcodeHash) {
+          localStorage.setItem(PASSCODE_HASH_KEY, resBody.passcodeHash);
+        }
         haptic.success();
         toast.success('Passcode updated.');
         closeCard();

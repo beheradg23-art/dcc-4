@@ -18,6 +18,9 @@ import {
   LAST_ACTIVE_USER_KEY,
   PASSCODE_HASH_KEY,
   PASSCODE_RECOVERY_PENDING_KEY,
+  PASSCODE_RECOVERY_GOOGLE_PENDING_KEY,
+  setPasscodeRecoveryGooglePending,
+  consumePasscodeRecoveryGooglePending,
 } from '../lib/cloudSync';
 import PasswordField from './PasswordField';
 import { NO_SELECT_CSS } from '../styles/noSelect';
@@ -793,16 +796,13 @@ const cascadeStyle = (index: number): React.CSSProperties => ({
 // flag stops it from looping.
 const SYNCED_FLAG = 'dcc_cloud_synced_this_session';
 
-// Marks "the person just went to confirm their identity via Google in
-// order to reset a forgotten passcode" — set right before we redirect to
-// Google, consumed on the way back (see the getSession() mount effect
-// below). Deliberately a SEPARATE key from PASSCODE_RECOVERY_PENDING_KEY
-// (the email/password reset one): that key can sit around for a while —
-// person sends themselves a reset email, closes the tab, comes back later
-// — during which a plain page reload must NOT auto-clear the passcode.
-// This key should only ever be consumed within the same OAuth round-trip
-// it was set for.
-const PASSCODE_RECOVERY_GOOGLE_PENDING_KEY = 'dcc_passcode_recovery_google_pending';
+// See PASSCODE_RECOVERY_GOOGLE_PENDING_KEY / setPasscodeRecoveryGooglePending /
+// consumePasscodeRecoveryGooglePending in cloudSync.ts for the "confirm
+// identity via Google to reset a forgotten passcode" flag this component
+// sets and consumes below. It now lives there (rather than as a local
+// constant here) so resetLocalAccountState — the single choke point for
+// account switches/sign-outs — can clear it too, and so it can be bound to
+// the specific user id it was armed for.
 
 type Stage = 'checking' | 'auth' | 'syncing' | 'setPasscode' | 'passcode' | 'passcodeRecovery' | 'forgotPassword' | 'resetPassword';
 
@@ -980,8 +980,15 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
         // the passcode now, before syncThenContinue decides whether this
         // lands on "enter your passcode" (hash still present) or "choose a
         // new one" (hash gone).
-        if (localStorage.getItem(PASSCODE_RECOVERY_GOOGLE_PENDING_KEY) === '1') {
-          localStorage.removeItem(PASSCODE_RECOVERY_GOOGLE_PENDING_KEY);
+        //
+        // consumePasscodeRecoveryGooglePending only returns true if the
+        // flag was armed for THIS EXACT userId. If a different person's
+        // leftover flag (or an unrelated stale flag) is sitting there, this
+        // resolves to false and their passcode is left untouched — closing
+        // the cross-account bug where an abandoned recovery attempt by one
+        // person could wipe a different person's passcode after they later
+        // signed into the same browser.
+        if (consumePasscodeRecoveryGooglePending(userId)) {
           try {
             await clearPasscodeHash(userId);
           } catch (e) {
@@ -1117,7 +1124,12 @@ export default function AuthGate({ onUnlock }: { onUnlock: () => void }) {
   }, [stage]);
 
   const handleGoogleVerifyForRecovery = () => {
-    localStorage.setItem(PASSCODE_RECOVERY_GOOGLE_PENDING_KEY, '1');
+    // Bind the flag to the account that's actually asking for recovery —
+    // see setPasscodeRecoveryGooglePending in cloudSync.ts. pendingUserId is
+    // always set by the time this screen is reachable (it's populated by
+    // decidePostSyncStage right after the initial sign-in that landed on the
+    // passcode gate in the first place).
+    if (pendingUserId) setPasscodeRecoveryGooglePending(pendingUserId);
     handleGoogleSignIn();
   };
 

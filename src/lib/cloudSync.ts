@@ -51,6 +51,15 @@ export function resetLocalAccountState(): void {
     try { localStorage.removeItem(key); } catch { /* ignore */ }
   });
   try { localStorage.removeItem(PASSCODE_HASH_KEY); } catch { /* ignore */ }
+  // Any in-flight passcode-recovery flag is scoped to whichever account was
+  // active when it was set. The instant the browser's local account state
+  // is being wiped/switched (sign-out, "Not you?", or ensureAccountIsolation
+  // detecting a different incoming user), a leftover flag from an abandoned
+  // recovery attempt must not survive to silently clear a DIFFERENT
+  // person's passcode later. See PASSCODE_RECOVERY_GOOGLE_PENDING_KEY and
+  // PASSCODE_RECOVERY_PENDING_KEY below for the bug this closes.
+  try { localStorage.removeItem(PASSCODE_RECOVERY_GOOGLE_PENDING_KEY); } catch { /* ignore */ }
+  try { localStorage.removeItem(PASSCODE_RECOVERY_PENDING_KEY); } catch { /* ignore */ }
 }
 
 /**
@@ -257,6 +266,42 @@ export async function getPasscodeHash(userId: string): Promise<string | null> {
 // entry too, so a stale flag from an abandoned attempt can never wipe a
 // passcode the person never actually asked to reset.
 export const PASSCODE_RECOVERY_PENDING_KEY = 'dcc_passcode_recovery_pending';
+
+// Marks "the person just went to confirm their identity via Google in order
+// to reset a forgotten passcode" — set right before AuthGate redirects to
+// Google, consumed on the way back. Deliberately a SEPARATE key from
+// PASSCODE_RECOVERY_PENDING_KEY (the email/password reset one above): that
+// key can sit around for a while — person sends themselves a reset email,
+// closes the tab, comes back later — during which a plain page reload must
+// NOT auto-clear the passcode. This key should only ever be consumed within
+// the same OAuth round-trip it was set for.
+//
+// The stored value is "<userId>:1", not a bare "1" — bound to the specific
+// account that asked for recovery. A leftover/un-cleared flag can then only
+// ever apply to that same account's next sign-in, never to some different
+// person who happens to sign into Google on the same browser afterwards.
+// (resetLocalAccountState clears this outright on any sign-out/account
+// switch, which is the primary defense; the userId binding is a second,
+// independent layer in case some future code path wipes local state without
+// going through resetLocalAccountState.)
+export const PASSCODE_RECOVERY_GOOGLE_PENDING_KEY = 'dcc_passcode_recovery_google_pending';
+
+/** Arms the Google-recovery flag for exactly this user id. */
+export function setPasscodeRecoveryGooglePending(userId: string): void {
+  try { localStorage.setItem(PASSCODE_RECOVERY_GOOGLE_PENDING_KEY, `${userId}:1`); } catch { /* ignore */ }
+}
+
+/**
+ * Consumes the Google-recovery flag IF AND ONLY IF it was armed for this
+ * exact user id — returns whether it matched. Clears the flag either way,
+ * since a mismatched flag is stale/irrelevant and must not linger either.
+ */
+export function consumePasscodeRecoveryGooglePending(userId: string): boolean {
+  let raw: string | null = null;
+  try { raw = localStorage.getItem(PASSCODE_RECOVERY_GOOGLE_PENDING_KEY); } catch { /* ignore */ }
+  try { localStorage.removeItem(PASSCODE_RECOVERY_GOOGLE_PENDING_KEY); } catch { /* ignore */ }
+  return raw === `${userId}:1`;
+}
 
 // ---------- Passcode attempt lockout ----------
 // Purely a client-side speed bump against rapid repeated guessing typed

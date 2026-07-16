@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import { verifyPasscodeServerSide, isPlausiblePasscode } from './_passcodeCrypto';
 
 // --- Best-effort per-IP rate limiting -------------------------------------
 // In-memory only: this resets on every cold start and isn't shared across
@@ -46,18 +47,25 @@ function getClientIp(req: VercelRequest): string {
 // never ship to the browser. The anon key the client already uses (see
 // src/lib/supabaseClient.ts) deliberately has no permission to do this.
 //
-// Required auth, two layers (see DeleteAccountCard in
+// Required auth, THREE layers (see DeleteAccountCard in
 // src/components/account/AccountPage.tsx for the client-side half):
 // 1. Client-side: the person must re-enter their current 6-digit app
 //    passcode and type a literal "DELETE" confirmation before this
 //    endpoint is ever called.
-// 2. Server-side (this file): the request must carry a valid Supabase
-//    access token (the caller's own session JWT) in the Authorization
-//    header. That token is verified against Supabase itself using the
-//    low-privilege anon key — never trusting any user id the client might
-//    send — and only the EXACT user id that token resolves to is ever
-//    deleted. A caller can never pass an arbitrary id and delete someone
-//    else's account.
+// 2. Server-side session check (this file): the request must carry a valid
+//    Supabase access token (the caller's own session JWT) in the
+//    Authorization header. That token is verified against Supabase itself
+//    using the low-privilege anon key — never trusting any user id the
+//    client might send — and only the EXACT user id that token resolves to
+//    is ever deleted. A caller can never pass an arbitrary id and delete
+//    someone else's account.
+// 3. Server-side passcode check (this file): the request must ALSO include
+//    the correct current passcode, which this endpoint independently
+//    verifies against the stored hash before deleting anything. This is
+//    what makes layer 1 a real second factor rather than just a UI speed
+//    bump — a bare stolen/leaked session token (e.g. via an XSS payload
+//    reading localStorage) is no longer sufficient on its own to delete the
+//    account; the caller also has to actually know the passcode.
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -66,6 +74,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const clientIp = getClientIp(req);
   if (isRateLimited(clientIp)) {
     return res.status(429).json({ error: 'Too many requests — please try again later.' });
+  }
+
+  const passcode = (req.body as { passcode?: unknown } | undefined)?.passcode;
+  if (!isPlausiblePasscode(passcode)) {
+    return res.status(400).json({ error: 'Missing or invalid passcode.' });
   }
 
   const authHeader = req.headers.authorization || '';
@@ -100,10 +113,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const userId = userData.user.id;
 
   // Step 2: only now, bound to a verified session's own user id, use the
-  // service-role client (full admin rights) to actually delete things.
+  // service-role client (full admin rights) for everything else — reading
+  // the stored passcode hash to check the guess against, then (if it
+  // checks out) actually deleting things.
   const adminClient = createClient(supabaseUrl, serviceRoleKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
+
+  // Step 3: independently verify the passcode server-side, against the
+  // stored hash — not just trusting that the client-side UI already did
+  // this. See _passcodeCrypto.ts.
+  const { data: userRow, error: userRowError } = await adminClient
+    .from('user_data')
+    .select('passcode_hash')
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (userRowError) {
+    console.error('[delete-account] Failed to load passcode hash', { userId, error: userRowError });
+    return res.status(500).json({ error: 'Could not verify your passcode. Please try again.' });
+  }
+  const passcodeOk = verifyPasscodeServerSide(passcode, userId, userRow?.passcode_hash ?? null);
+  if (!passcodeOk) {
+    return res.status(401).json({ error: 'Incorrect passcode.' });
+  }
 
   // Delete the cloud data row first (config, logs, passcode hash — see
   // cloudSync.ts's `user_data` table). If this fails, bail out before
