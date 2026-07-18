@@ -53,3 +53,36 @@ html.theme-mono-light #theme-overlay {
   -webkit-backdrop-filter: grayscale(1) invert(1) contrast(1.05);
   backdrop-filter: grayscale(1) invert(1) contrast(1.05);
 }
+
+/* ---------------------------------------------------------------------
+   Color-wash themes: sepia() + saturate() + hue-rotate() is the standard
+   recipe for tinting an entire rendered page toward a target hue family
+   (the trick behind most "Instagram-style" CSS filters) — sepia first
+   collapses the page to a warm monochrome base, then hue-rotate spins
+   that base (and whatever hue variance survives) toward the target
+   color, and saturate pushes it vivid enough to read as a real theme
+   rather than a faint tint. Every gradient/animation underneath keeps
+   animating exactly as before; only the hues shift.
+   These are a tuned starting point — nudge the hue-rotate() degree or
+   saturate() amount per theme if you want the tint warmer/cooler or
+   stronger/subtler; each is a single line.
+   ------------------------------------------------------------------- */
+html.theme-ember #theme-overlay {
+  -webkit-backdrop-filter: sepia(0.6) saturate(2.2) hue-rotate(-8deg) brightness(1.05) contrast(1.08);
+  backdrop-filter: sepia(0.6) saturate(2.2) hue-rotate(-8deg) brightness(1.05) contrast(1.08);
+}
+
+html.theme-blush #theme-overlay {
+  -webkit-backdrop-filter: sepia(0.45) saturate(2.5) hue-rotate(300deg) brightness(1.05) contrast(1.05);
+  backdrop-filter: sepia(0.45) saturate(2.5) hue-rotate(300deg) brightness(1.05) contrast(1.05);
+}
+
+html.theme-crimson #theme-overlay {
+  -webkit-backdrop-filter: sepia(0.55) saturate(2.4) hue-rotate(-30deg) brightness(0.92) contrast(1.15);
+  backdrop-filter: sepia(0.55) saturate(2.4) hue-rotate(-30deg) brightness(0.92) contrast(1.15);
+}
+
+html.theme-jade #theme-overlay {
+  -webkit-backdrop-filter: sepia(0.35) saturate(1.7) hue-rotate(130deg) brightness(1.1) contrast(1.05);
+  backdrop-filter: sepia(0.35) saturate(1.7) hue-rotate(130deg) brightness(1.1) contrast(1.05);
+}
