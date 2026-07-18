@@ -1039,18 +1039,30 @@ export function Card({ children, className = '', onClick }: { children: React.Re
       onMouseUp={handleUp}
       onTouchStart={handleDown}
       onTouchEnd={handleUp}
-      className={`cursor-target relative overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-900/60 backdrop-blur-sm p-5 will-change-transform ${
-        onClick ? 'cursor-pointer hover:border-neutral-700' : ''
+      className={`cursor-target relative overflow-hidden rounded-[28px] border border-white/[0.08] bg-white/[0.035] backdrop-blur-2xl backdrop-saturate-150 shadow-[0_8px_32px_-12px_rgba(0,0,0,0.55)] p-5 will-change-transform ${
+        onClick ? 'cursor-pointer hover:border-white/[0.14] hover:bg-white/[0.05]' : ''
       } ${className}`}
       style={{
         transform: `perspective(900px) rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg) scale(${pressed ? 0.975 : 1})`,
-        transition: hovering ? 'transform 100ms linear' : 'transform 500ms cubic-bezier(0.16, 1, 0.3, 1)',
+        transition: hovering ? 'transform 100ms linear, border-color 200ms ease-out, background-color 200ms ease-out' : 'transform 500ms cubic-bezier(0.16, 1, 0.3, 1), border-color 200ms ease-out, background-color 200ms ease-out',
       }}
     >
+      {/* Glass "sheen": a soft light-to-dark diagonal wash plus a bright
+          hairline along the top edge — the two cues (subtle top-lit
+          gradient + a crisp top highlight) that read as frosted glass
+          catching light from above, rather than a flat tinted panel. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 rounded-[28px] bg-gradient-to-br from-white/[0.05] via-transparent to-transparent"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent"
+      />
       {hovering && (
         <div
-          className="pointer-events-none absolute inset-0 transition-opacity duration-300"
-          style={{ background: `radial-gradient(420px circle at ${spot.x}% ${spot.y}%, rgba(255,255,255,0.06), transparent 65%)` }}
+          className="pointer-events-none absolute inset-0 rounded-[28px] transition-opacity duration-300"
+          style={{ background: `radial-gradient(420px circle at ${spot.x}% ${spot.y}%, rgba(255,255,255,0.08), transparent 65%)` }}
         />
       )}
       {sweep.mounted && (
@@ -1080,11 +1092,11 @@ export function Card({ children, className = '', onClick }: { children: React.Re
         // the pointer leaves.
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 rounded-2xl"
+          className="pointer-events-none absolute inset-0 rounded-[28px]"
           style={{ animation: sweep.animation, ...SWEEP_REVEAL_STYLE }}
         >
           <div
-            className="absolute inset-0 rounded-2xl"
+            className="absolute inset-0 rounded-[28px]"
             style={{
               padding: '1.5px',
               WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',

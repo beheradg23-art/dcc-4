@@ -1,11 +1,11 @@
 // Training & Fuel tab: the gym block (with AI-generated exercise guides,
 // falling back to the static EXERCISE_GUIDE) and the diet/meal log.
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Dumbbell, CheckCircle2, Circle, Target, Droplets, Flame, Activity,
   ArrowUpRight, Settings,
 } from 'lucide-react';
-import { ConfigContext, resolveDietValues, getLocalDateString, DailyCheckLog } from '../../lib/appConfig';
+import { ConfigContext, resolveDietValues, getLocalDateString, getDayName, DailyCheckLog } from '../../lib/appConfig';
 import { isSectionVisibleForDomains, type GoalDomain } from '../../lib/questionnaire';
 import { EXERCISE_GUIDE } from '../../lib/staticContent';
 import { Card, StatPill, ModalData } from '../ui/Primitives';
@@ -73,7 +73,17 @@ export function TrainingFuelTab({ setModal, dietLog, setDietLog, currentDateStr 
   // actually started writing a real value) still sees both, unchanged.
   const showWorkout = isSectionVisibleForDomains('tf_workout', domains as GoalDomain[] | null);
   const showFuel = isSectionVisibleForDomains('tf_fuel', domains as GoalDomain[] | null);
-  const [activeDay, setActiveDay] = useState(training[0].day);
+  // Was hardcoded to training[0] — the routine's first entry, which
+  // happens to be Monday (see TRAINING_SPLIT in appConfig.ts) — so the
+  // workout tab always opened on Monday's split regardless of what day
+  // it actually was. Now it opens on whichever day matches today
+  // (currentDateStr, same "today" every other tab uses), falling back to
+  // the first entry only if today's weekday isn't in the routine at all
+  // (e.g. a routine with fewer than 7 configured days).
+  const [activeDay, setActiveDay] = useState(() => {
+    const todayName = getDayName(currentDateStr);
+    return training.find((d) => d.day === todayName) ? todayName : training[0].day;
+  });
   const dayData = training.find((d) => d.day === activeDay) || training[0];
   // If the routine gets edited in Settings and the previously-selected day
   // no longer exists, fall back to the first day instead of showing nothing.
@@ -83,6 +93,18 @@ export function TrainingFuelTab({ setModal, dietLog, setDietLog, currentDateStr 
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [training]);
+  // If the tab is left open across midnight (or currentDateStr otherwise
+  // rolls over to a new day), jump the selection to the new day too —
+  // same "today" source as the rest of the app, so this doesn't silently
+  // go stale until the next full reload.
+  const mountedDateRef = useRef(currentDateStr);
+  useEffect(() => {
+    if (currentDateStr === mountedDateRef.current) return;
+    mountedDateRef.current = currentDateStr;
+    const todayName = getDayName(currentDateStr);
+    if (training.find((d) => d.day === todayName)) setActiveDay(todayName);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentDateStr]);
 
   // Calories / protein / hydration auto-estimate from whatever meals are
   // configured below, unless overridden in Settings > Training & Fuel.
