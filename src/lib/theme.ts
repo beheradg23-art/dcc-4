@@ -3,21 +3,28 @@
 // Design: rather than re-skinning every hardcoded Tailwind color utility
 // across the codebase (thousands of `bg-*`/`text-*`/`from-*`/`to-*`
 // classes, none of which were built with theming in mind), the two
-// "Black & White Minimalism" modes are implemented as a single CSS
-// `filter` applied to the whole rendered page (see the `.theme-mono-*`
-// rules in index.css). A `filter` composites over an element's *entire*
-// painted subtree — every color, gradient, shadow, and image beneath it —
-// so nothing can accidentally stay hardcoded/colorful when a mono theme
-// is active, and every animation (including animated gradients) keeps
-// running exactly as-is; only the colors it paints change:
+// "Black & White Minimalism" modes are implemented with a full-viewport
+// overlay (#theme-overlay, a plain sibling element declared in
+// index.html — see index.css) that uses `backdrop-filter` to desaturate
+// everything rendered behind it.
+//
+// This is deliberately NOT a `filter` applied to <html>/<body> as an
+// ancestor of the app: a CSS `filter` on an ancestor makes that ancestor
+// the containing block for every `position: fixed` descendant (sidebar,
+// modal/toast portals, the auth screen's centering wrapper, etc.)
+// instead of the real viewport, which breaks their positioning the
+// moment the page scrolls. `backdrop-filter` on a non-ancestor sibling
+// gets the same "everything desaturates, nothing stays hardcoded"
+// result with zero layout side effects.
 //   - [dark]  -> grayscale(1): every hue collapses to gray, dark stays dark,
 //               light stays light (dark colors read as near-black, light
 //               colors as near-white).
 //   - [light] -> grayscale(1) + invert(1): same desaturation, then the
 //               whole luminance range flips, so the near-black app shell
 //               becomes a near-white one and vice versa.
-// The theme class is applied to <html>, which covers portal-rendered UI
-// (modals, toasts) too, since those still mount under <html>.
+// This module only toggles a class on <html> (theme-mono-dark /
+// theme-mono-light) — the actual recoloring rules live in index.css,
+// keyed off that same class, and apply to #theme-overlay.
 import React from 'react';
 
 export type ThemeMode = 'colorful' | 'mono-dark' | 'mono-light';

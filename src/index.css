@@ -10,27 +10,46 @@
 
 /* ---------------------------------------------------------------------
    Black & White Minimalism themes.
-   One filter, applied to the whole page, so every color anywhere in the
-   app — including gradients, blurred glow orbs, box-shadows, images and
-   anything rendered into a portal (modals/toasts) — desaturates together.
-   Animations (including animated gradients) are untouched: only the
-   colors they paint change, never the motion.
+
+   IMPORTANT: this is intentionally NOT `filter` on <html>/<body>. A CSS
+   `filter` on any ancestor of the app turns that ancestor into the
+   containing block for every `position: fixed` descendant (sidebar,
+   modal/toast portals, the auth screen's centering wrapper, etc.) instead
+   of the real viewport — and since the page scrolls (body is taller than
+   one screen), those "fixed" elements stop tracking the viewport and
+   render relative to body's much taller box instead. That's what caused
+   the sidebar hover/cursor mismatch and the collapsed passcode screen.
+
+   Fixed by using a plain sibling overlay (#theme-overlay in index.html,
+   NOT a wrapper around the app) with `backdrop-filter` instead of
+   `filter`. backdrop-filter recolors whatever is rendered behind an
+   element without that element ever becoming an ancestor of anything —
+   so it can't change any other element's containing block. Same visual
+   result (every color anywhere desaturates, animations keep animating),
+   zero layout side effects.
    [dark]  = grayscale only: dark stays dark, light stays light, as gray.
    [light] = grayscale + inverted luminance: dark shell -> light shell.
    ------------------------------------------------------------------- */
-html,
-body {
-  transition: filter 0.45s ease;
-}
-
 html {
   background-color: #09090b;
 }
 
-html.theme-mono-dark body {
-  filter: grayscale(1) contrast(1.05);
+#theme-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  pointer-events: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  transition: -webkit-backdrop-filter 0.45s ease, backdrop-filter 0.45s ease;
 }
 
-html.theme-mono-light body {
-  filter: grayscale(1) invert(1) contrast(1.05);
+html.theme-mono-dark #theme-overlay {
+  -webkit-backdrop-filter: grayscale(1) contrast(1.05);
+  backdrop-filter: grayscale(1) contrast(1.05);
+}
+
+html.theme-mono-light #theme-overlay {
+  -webkit-backdrop-filter: grayscale(1) invert(1) contrast(1.05);
+  backdrop-filter: grayscale(1) invert(1) contrast(1.05);
 }
