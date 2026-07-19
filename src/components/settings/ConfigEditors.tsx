@@ -1368,6 +1368,8 @@ export function ThemeEditor() {
       </div>
       <p className="mt-4 text-[11px] text-neutral-600 leading-relaxed">
         Black &amp; White Minimalism desaturates every screen — colors, glows and gradients alike — down to grayscale (inverted to a light shell for the light variant). Every animation, including the moving gradients, keeps playing exactly as it does in color; only the colors themselves change.
+        <br className="hidden sm:block" />
+        The color washes work differently on purpose: they only re-hue the app's own violet/fuchsia accent — buttons, selected states, the brand gradient — everywhere it appears. Anything with its own distinct color (a countdown or subject you've set to a specific color, glass-panel backgrounds, etc.) stays exactly as you left it.
       </p>
     </Card>
   );

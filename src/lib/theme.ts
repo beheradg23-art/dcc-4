@@ -1,35 +1,40 @@
 // App-wide appearance/theme system.
 //
-// Design: rather than re-skinning every hardcoded Tailwind color utility
-// across the codebase (thousands of `bg-*`/`text-*`/`from-*`/`to-*`
-// classes, none of which were built with theming in mind), every theme
-// below (including the color washes, not just the two monochrome ones)
-// is implemented with a full-viewport overlay (#theme-overlay, a plain
-// sibling element declared in index.html — see index.css) that uses
-// `backdrop-filter` to recolor everything rendered behind it.
+// Two different mechanisms are in play here, because the two families of
+// theme want different scopes:
 //
-// This is deliberately NOT a `filter` applied to <html>/<body> as an
-// ancestor of the app: a CSS `filter` on an ancestor makes that ancestor
-// the containing block for every `position: fixed` descendant (sidebar,
-// modal/toast portals, the auth screen's centering wrapper, etc.)
-// instead of the real viewport, which breaks their positioning the
-// moment the page scrolls. `backdrop-filter` on a non-ancestor sibling
-// gets the same "everything recolors, nothing stays hardcoded" result
-// with zero layout side effects.
-//   - Black & White [dark]  -> grayscale(1): every hue collapses to gray,
-//               dark stays dark, light stays light.
-//   - Black & White [light] -> grayscale(1) + invert(1): same
-//               desaturation, then the whole luminance range flips, so
-//               the near-black shell becomes a near-white one.
-//   - The 4 color washes below -> sepia() + saturate() + hue-rotate(),
-//               the standard recipe for tinting an entire rendered page
-//               toward a target hue family (same trick behind most
-//               "Instagram-style" CSS filters) while keeping every
-//               existing gradient/animation intact — only the hue and
-//               intensity shift, nothing stops moving.
+// 1. Black & White Minimalism [dark]/[light] are meant to affect
+//    *everything* on screen, no exceptions — so they're a full-viewport
+//    overlay (#theme-overlay, a plain sibling element declared in
+//    index.html — see index.css) using `backdrop-filter: grayscale()`
+//    (+ `invert()` for the light variant). backdrop-filter recolors
+//    whatever is rendered behind an element without that element ever
+//    becoming an ancestor of anything in the real DOM, which matters:
+//    a plain `filter` on <html>/<body> would make that ancestor the
+//    containing block for every `position: fixed` descendant (sidebar,
+//    modal/toast portals, the auth screen's centering wrapper...) instead
+//    of the real viewport, breaking their positioning the moment the
+//    page scrolls. backdrop-filter on a non-ancestor sibling gets the
+//    same "everything recolors" result with zero layout side effects.
+//
+// 2. The 4 color washes (Ember Forge, Blush Riot, Crimson Veil, Jade
+//    Frost) are scoped narrower on purpose: they re-hue *only* the app's
+//    actual brand accent (violet/fuchsia, plus the indigo stop used
+//    alongside them in the brand gradients), not literally every color
+//    on screen. A blanket page-level filter can't do that — hue-rotate
+//    shifts every hue uniformly, so it would just as happily repaint the
+//    countdown/subject color palettes' amber, emerald, cyan, etc., which
+//    are meant to stay put regardless of theme. Instead, Tailwind's
+//    `violet`/`fuchsia` scales are pointed at CSS custom properties (see
+//    tailwind.config.js), and those variables' values change per theme
+//    (see index.css) — so every existing `violet-*`/`fuchsia-*` class
+//    anywhere in the app picks up the new hue automatically, with zero
+//    component files touched, while every other color is untouched.
+//
 // This module only toggles a class on <html> — the actual recoloring
-// rules live in index.css, keyed off that same class, applied to
-// #theme-overlay.
+// rules live in index.css, keyed off that same class (applied to
+// #theme-overlay for the two B&W themes, to the --violet-*/--fuchsia-*/
+// --brand-indigo-* variables for the 4 color washes).
 import React from 'react';
 
 export type ThemeMode = 'colorful' | 'mono-dark' | 'mono-light' | 'ember' | 'blush' | 'crimson' | 'jade';
@@ -39,10 +44,10 @@ export const THEME_STORAGE_KEY = 'app_theme_v1';
 export const THEME_OPTIONS: { id: ThemeMode; label: string; description: string }[] = [
   { id: 'mono-dark', label: 'Black & White Minimalism', description: 'Dark — every color desaturates to gray on a near-black shell' },
   { id: 'mono-light', label: 'Black & White Minimalism', description: 'Light — same desaturation, inverted to a near-white shell' },
-  { id: 'ember', label: 'Ember Forge', description: 'Warm, fiery orange & amber wash over every screen' },
-  { id: 'blush', label: 'Blush Riot', description: 'Bold, glam pink & magenta wash over every screen' },
-  { id: 'crimson', label: 'Crimson Veil', description: 'Deep, moody vampiric red & black wash over every screen' },
-  { id: 'jade', label: 'Jade Frost', description: 'Crisp, clean green & white wash over every screen' },
+  { id: 'ember', label: 'Ember Forge', description: 'Warm, fiery orange & amber brand accent' },
+  { id: 'blush', label: 'Blush Riot', description: 'Bold, glam pink & magenta brand accent' },
+  { id: 'crimson', label: 'Crimson Veil', description: 'Deep, moody vampiric red brand accent' },
+  { id: 'jade', label: 'Jade Frost', description: 'Crisp, clean green brand accent' },
   { id: 'colorful', label: 'Colorful (Default)', description: "Akyos' full color palette" },
 ];
 

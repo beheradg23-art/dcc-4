@@ -155,7 +155,7 @@ export default function LegalPage({
       <div
         aria-hidden
         className="pointer-events-none absolute left-1/2 top-0 h-72 w-[36rem] -translate-x-1/2 rounded-full opacity-20 blur-3xl"
-        style={{ background: 'radial-gradient(circle, #7c3aed 0%, transparent 70%)' }}
+        style={{ background: 'radial-gradient(circle, rgb(var(--violet-600)) 0%, transparent 70%)' }}
       />
 
       {/* Header */}

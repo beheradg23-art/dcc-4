@@ -27,7 +27,12 @@ export const LIQUID_ANIMATION = 'akyos-liquid-fill 6s ease-in-out infinite';
 export const LIQUID_GRADIENT_FILL: React.CSSProperties = {
   backgroundImage:
     'linear-gradient(100deg, transparent 8%, rgba(255,255,255,0.16) 28%, rgba(255,255,255,0.30) 42%, rgba(255,255,255,0.30) 50%, rgba(255,255,255,0.16) 58%, transparent 78%), ' +
-    'linear-gradient(115deg, #4f46e5 0%, #7c3aed 22%, #d946ef 45%, #7c3aed 68%, #4f46e5 85%, #d946ef 100%)',
+    // Reads the same --violet-*/--fuchsia-*/--brand-indigo-600 variables the
+    // rest of the brand palette uses (see index.css), so this gradient
+    // re-hues along with every other brand-colored element when the
+    // Appearance theme changes, instead of staying pinned to the default
+    // colorful theme's indigo/violet/fuchsia forever.
+    'linear-gradient(115deg, rgb(var(--brand-indigo-600)) 0%, rgb(var(--violet-600)) 22%, rgb(var(--fuchsia-500)) 45%, rgb(var(--violet-600)) 68%, rgb(var(--brand-indigo-600)) 85%, rgb(var(--fuchsia-500)) 100%)',
   backgroundSize: '340% 340%, 300% 300%',
   backgroundPosition: '0% 50%, 0% 50%',
   animation: LIQUID_ANIMATION,

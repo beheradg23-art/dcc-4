@@ -496,7 +496,7 @@ export default function JEEDashboard() {
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <div className="absolute -top-40 -left-40 h-[32rem] w-[32rem] rounded-full bg-fuchsia-500/10 blur-[120px]" />
         <div className="absolute top-1/3 -right-40 h-[28rem] w-[28rem] rounded-full bg-violet-600/10 blur-[120px]" />
-        <div className="absolute bottom-0 left-1/4 h-[24rem] w-[24rem] rounded-full bg-indigo-600/10 blur-[110px]" />
+        <div className="absolute bottom-0 left-1/4 h-[24rem] w-[24rem] rounded-full blur-[110px]" style={{ backgroundColor: 'rgb(var(--brand-indigo-600) / 0.1)' }} />
       </div>
       {!introDone && <IntroLoader onFinish={() => setIntroDone(true)} />}
 

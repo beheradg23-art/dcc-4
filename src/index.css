@@ -55,34 +55,107 @@ html.theme-mono-light #theme-overlay {
 }
 
 /* ---------------------------------------------------------------------
-   Color-wash themes: sepia() + saturate() + hue-rotate() is the standard
-   recipe for tinting an entire rendered page toward a target hue family
-   (the trick behind most "Instagram-style" CSS filters) — sepia first
-   collapses the page to a warm monochrome base, then hue-rotate spins
-   that base (and whatever hue variance survives) toward the target
-   color, and saturate pushes it vivid enough to read as a real theme
-   rather than a faint tint. Every gradient/animation underneath keeps
-   animating exactly as before; only the hues shift.
-   These are a tuned starting point — nudge the hue-rotate() degree or
-   saturate() amount per theme if you want the tint warmer/cooler or
-   stronger/subtler; each is a single line.
+   Brand accent variables (feed Tailwind's `violet`/`fuchsia` scales —
+   see tailwind.config.js). Defaults below are exactly today's colorful
+   theme's violet/fuchsia values, so the default look is unchanged.
    ------------------------------------------------------------------- */
-html.theme-ember #theme-overlay {
-  -webkit-backdrop-filter: sepia(0.6) saturate(2.2) hue-rotate(-8deg) brightness(1.05) contrast(1.08);
-  backdrop-filter: sepia(0.6) saturate(2.2) hue-rotate(-8deg) brightness(1.05) contrast(1.08);
+:root {
+  --violet-50: 245 243 255;
+  --violet-100: 237 233 254;
+  --violet-200: 221 214 254;
+  --violet-300: 196 181 253;
+  --violet-400: 167 139 250;
+  --violet-500: 139 92 246;
+  --violet-600: 124 58 237;
+  --violet-700: 109 40 217;
+  --violet-800: 91 33 182;
+  --violet-900: 76 29 149;
+  --violet-950: 46 16 101;
+  --fuchsia-50: 253 244 255;
+  --fuchsia-100: 250 232 255;
+  --fuchsia-200: 245 208 254;
+  --fuchsia-300: 240 171 252;
+  --fuchsia-400: 232 121 249;
+  --fuchsia-500: 217 70 239;
+  --fuchsia-600: 192 38 211;
+  --fuchsia-700: 162 28 175;
+  --fuchsia-800: 134 25 143;
+  --fuchsia-900: 112 26 117;
+  --fuchsia-950: 74 4 78;
+  /* Third stop of the brand liquid-fill gradient (see liquidFill.ts) — kept
+     as its own variable rather than reusing Tailwind's `indigo` scale so it
+     doesn't also re-hue the countdown/subject palettes' unrelated "sky"
+     (indigo) option. */
+  --brand-indigo-600: 79 70 229;
+  --brand-indigo-400: 129 140 248;
 }
 
-html.theme-blush #theme-overlay {
-  -webkit-backdrop-filter: sepia(0.45) saturate(2.5) hue-rotate(300deg) brightness(1.05) contrast(1.05);
-  backdrop-filter: sepia(0.45) saturate(2.5) hue-rotate(300deg) brightness(1.05) contrast(1.05);
+/* ---------------------------------------------------------------------
+   Color-wash themes (Ember Forge / Blush Riot / Crimson Veil / Jade
+   Frost): each just re-hues the --violet-*/--fuchsia-* variables above
+   (a fixed hue rotation of the default scale, precomputed so every stop
+   keeps its original lightness/saturation — only the hue moves).
+   Because every `violet-*`/`fuchsia-*` Tailwind class in the app reads
+   from these same variables, this changes the app's actual brand accent
+   everywhere it's used (buttons, selected states, the sweep-gradient
+   highlight, active nav, etc.) with zero other files touched — and,
+   just as important, it changes *only* those two color scales. Every
+   other color in the app (glass-panel backgrounds/borders, and every
+   other named color in the countdown/subject color palettes — amber,
+   emerald, rose, cyan, orange, lime, pink, teal, indigo/sky) is untouched,
+   including the countdown/subject palettes' own "violet"/"fuchsia" named
+   options — those two are deliberately pinned to raw hex in
+   appConfig.ts specifically so a countdown or subject someone colored
+   violet doesn't shift when the theme does.
+   ------------------------------------------------------------------- */
+html.theme-ember {
+  --violet-50: 255 247 243; --violet-100: 254 240 233; --violet-200: 254 228 214;
+  --violet-300: 253 208 181; --violet-400: 250 186 139; --violet-500: 246 165 92;
+  --violet-600: 237 154 58; --violet-700: 217 139 40; --violet-800: 182 116 33;
+  --violet-900: 149 96 29; --violet-950: 101 60 16;
+  --fuchsia-50: 255 255 244; --fuchsia-100: 255 254 232; --fuchsia-200: 254 253 208;
+  --fuchsia-300: 250 252 171; --fuchsia-400: 245 249 121; --fuchsia-500: 233 239 70;
+  --fuchsia-600: 201 211 38; --fuchsia-700: 164 175 28; --fuchsia-800: 132 143 25;
+  --fuchsia-900: 107 117 26; --fuchsia-950: 70 78 4;
+  --brand-indigo-600: 229 106 70;
+  --brand-indigo-400: 248 138 129;
 }
 
-html.theme-crimson #theme-overlay {
-  -webkit-backdrop-filter: sepia(0.55) saturate(2.4) hue-rotate(-30deg) brightness(0.92) contrast(1.15);
-  backdrop-filter: sepia(0.55) saturate(2.4) hue-rotate(-30deg) brightness(0.92) contrast(1.15);
+html.theme-blush {
+  --violet-50: 255 243 251; --violet-100: 254 233 246; --violet-200: 254 214 240;
+  --violet-300: 253 181 226; --violet-400: 250 139 203; --violet-500: 246 92 173;
+  --violet-600: 237 58 141; --violet-700: 217 40 118; --violet-800: 182 33 99;
+  --violet-900: 149 29 82; --violet-950: 101 16 57;
+  --fuchsia-50: 255 244 244; --fuchsia-100: 255 232 233; --fuchsia-200: 254 208 209;
+  --fuchsia-300: 252 172 171; --fuchsia-400: 249 125 121; --fuchsia-500: 239 76 70;
+  --fuchsia-600: 211 48 38; --fuchsia-700: 175 39 28; --fuchsia-800: 143 36 25;
+  --fuchsia-900: 117 36 26; --fuchsia-950: 78 12 4;
+  --brand-indigo-600: 229 70 193;
+  --brand-indigo-400: 248 129 239;
 }
 
-html.theme-jade #theme-overlay {
-  -webkit-backdrop-filter: sepia(0.35) saturate(1.7) hue-rotate(130deg) brightness(1.1) contrast(1.05);
-  backdrop-filter: sepia(0.35) saturate(1.7) hue-rotate(130deg) brightness(1.1) contrast(1.05);
+html.theme-crimson {
+  --violet-50: 255 243 245; --violet-100: 254 233 236; --violet-200: 254 214 220;
+  --violet-300: 253 181 190; --violet-400: 250 139 148; --violet-500: 246 92 96;
+  --violet-600: 237 64 58; --violet-700: 217 50 40; --violet-800: 182 41 33;
+  --violet-900: 149 36 29; --violet-950: 101 18 16;
+  --fuchsia-50: 255 249 244; --fuchsia-100: 255 242 232; --fuchsia-200: 254 230 208;
+  --fuchsia-300: 252 213 171; --fuchsia-400: 249 189 121; --fuchsia-500: 239 161 70;
+  --fuchsia-600: 211 134 38; --fuchsia-700: 175 113 28; --fuchsia-800: 143 95 25;
+  --fuchsia-900: 117 82 26; --fuchsia-950: 78 49 4;
+  --brand-indigo-600: 229 70 114;
+  --brand-indigo-400: 248 129 180;
+}
+
+html.theme-jade {
+  --violet-50: 243 255 246; --violet-100: 233 254 239; --violet-200: 214 254 224;
+  --violet-300: 181 253 202; --violet-400: 139 250 176; --violet-500: 92 246 152;
+  --violet-600: 58 237 139; --violet-700: 40 217 124; --violet-800: 33 182 103;
+  --violet-900: 29 149 86; --violet-950: 16 101 53;
+  --fuchsia-50: 244 255 254; --fuchsia-100: 232 255 252; --fuchsia-200: 208 254 249;
+  --fuchsia-300: 171 252 247; --fuchsia-400: 121 249 243; --fuchsia-500: 70 239 231;
+  --fuchsia-600: 38 211 206; --fuchsia-700: 28 175 174; --fuchsia-800: 25 142 143;
+  --fuchsia-900: 26 114 117; --fuchsia-950: 4 76 78;
+  --brand-indigo-600: 70 229 92;
+  --brand-indigo-400: 130 248 129;
 }

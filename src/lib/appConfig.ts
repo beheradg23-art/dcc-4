@@ -1027,8 +1027,8 @@ export const TABS = [
 // generateProfileTargets() already uses for targets[].color.
 export const SUBJECT_COLOR_PALETTE: Record<string, { text: string; bg: string; border: string; dot: string }> = {
   sky:      { text: 'text-indigo-400',      bg: 'bg-indigo-500/10',      border: 'border-indigo-500/30',      dot: 'bg-indigo-400' },
-  violet:   { text: 'text-violet-400',   bg: 'bg-violet-500/10',   border: 'border-violet-500/30',   dot: 'bg-violet-400' },
-  fuchsia:  { text: 'text-fuchsia-400',  bg: 'bg-fuchsia-500/10',  border: 'border-fuchsia-500/30',  dot: 'bg-fuchsia-400' },
+  violet:   { text: 'text-[#a78bfa]',   bg: 'bg-[#8b5cf6]/10',   border: 'border-[#8b5cf6]/30',   dot: 'bg-[#a78bfa]' },
+  fuchsia:  { text: 'text-[#e879f9]',  bg: 'bg-[#d946ef]/10',  border: 'border-[#d946ef]/30',  dot: 'bg-[#e879f9]' },
   amber:    { text: 'text-amber-400',    bg: 'bg-amber-500/10',    border: 'border-amber-500/30',    dot: 'bg-amber-400' },
   emerald:  { text: 'text-emerald-400',  bg: 'bg-emerald-500/10',  border: 'border-emerald-500/30',  dot: 'bg-emerald-400' },
   rose:     { text: 'text-rose-400',     bg: 'bg-rose-500/10',     border: 'border-rose-500/30',     dot: 'bg-rose-400' },
@@ -1060,8 +1060,8 @@ export function getSubjectHex(key: string, subjects: { key: string; color: strin
 // variants means less chance two active targets look identical.
 export const COUNTDOWN_COLOR_PALETTE: Record<string, { text: string; tileBg: string; tileBorder: string; barBg: string; dot: string }> = {
   sky:      { text: 'text-indigo-400',      tileBg: 'bg-indigo-500/[0.03]',      tileBorder: 'border-indigo-500/20',      barBg: 'bg-indigo-500/60',      dot: 'bg-indigo-400' },
-  violet:   { text: 'text-violet-400',   tileBg: 'bg-violet-500/[0.03]',   tileBorder: 'border-violet-500/20',   barBg: 'bg-violet-500/60',   dot: 'bg-violet-400' },
-  fuchsia:  { text: 'text-fuchsia-400',  tileBg: 'bg-fuchsia-500/[0.03]',  tileBorder: 'border-fuchsia-500/20',  barBg: 'bg-fuchsia-500/60',  dot: 'bg-fuchsia-400' },
+  violet:   { text: 'text-[#a78bfa]',   tileBg: 'bg-[#8b5cf6]/[0.03]',   tileBorder: 'border-[#8b5cf6]/20',   barBg: 'bg-[#8b5cf6]/60',   dot: 'bg-[#a78bfa]' },
+  fuchsia:  { text: 'text-[#e879f9]',  tileBg: 'bg-[#d946ef]/[0.03]',  tileBorder: 'border-[#d946ef]/20',  barBg: 'bg-[#d946ef]/60',  dot: 'bg-[#e879f9]' },
   amber:    { text: 'text-amber-400',    tileBg: 'bg-amber-500/[0.03]',    tileBorder: 'border-amber-500/20',    barBg: 'bg-amber-500/60',    dot: 'bg-amber-400' },
   emerald:  { text: 'text-emerald-400',  tileBg: 'bg-emerald-500/[0.03]',  tileBorder: 'border-emerald-500/20',  barBg: 'bg-emerald-500/60',  dot: 'bg-emerald-400' },
   rose:     { text: 'text-rose-400',     tileBg: 'bg-rose-500/[0.03]',     tileBorder: 'border-rose-500/20',     barBg: 'bg-rose-500/60',     dot: 'bg-rose-400' },
