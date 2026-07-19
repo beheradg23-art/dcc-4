@@ -227,7 +227,7 @@ const LANDING_WORD_IN_MS = 520; // blur/fade/settle in — slightly slower than 
 // Google Fonts) — with a sane fallback stack in case that CDN is ever
 // unreachable, so the headline degrades gracefully instead of breaking.
 const LANDING_FONT_IMPORTS = `
-  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;900&display=swap');
   @import url('https://fonts.cdnfonts.com/css/edwardian-script-itc');
 `;
 const POPPINS_SEMIBOLD_STACK = "'Poppins', sans-serif";
