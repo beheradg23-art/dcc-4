@@ -135,10 +135,18 @@ export function DateField({
     return { year: base.getFullYear(), month: base.getMonth() };
   });
 
+  // 'days' is the normal grid. 'months' and 'years' are quick-jump panels so
+  // picking an old birthdate (or any far-off date) doesn't mean clicking the
+  // month arrow dozens of times — click the year in the header instead.
+  const [pickerMode, setPickerMode] = useState<'days' | 'months' | 'years'>('days');
+  const YEARS_PER_PAGE = 12;
+  const [yearPageStart, setYearPageStart] = useState(view.year - 5);
+
   useEffect(() => {
     if (!open) return;
     const base = parseISODate(value) || new Date();
     setView({ year: base.getFullYear(), month: base.getMonth() });
+    setPickerMode('days');
   }, [open]);
 
   const shiftMonth = (delta: number) =>
@@ -146,6 +154,12 @@ export function DateField({
       const d = new Date(v.year, v.month + delta, 1);
       return { year: d.getFullYear(), month: d.getMonth() };
     });
+
+  const openYearPicker = () => {
+    setYearPageStart(view.year - 5);
+    setPickerMode('years');
+  };
+  const openMonthPicker = () => setPickerMode('months');
 
   const commit = (d: Date) => {
     onChange({ target: { value: toISODate(d) } });
@@ -178,25 +192,123 @@ export function DateField({
             <div className="flex items-center justify-between mb-2 px-0.5">
               <button
                 type="button"
-                onClick={() => shiftMonth(-1)}
+                onClick={() => {
+                  if (pickerMode === 'days') shiftMonth(-1);
+                  else if (pickerMode === 'months') setView((v) => ({ ...v, year: v.year - 1 }));
+                  else setYearPageStart((p) => p - YEARS_PER_PAGE);
+                }}
                 className="cursor-target h-7 w-7 flex items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200 transition-colors"
-                aria-label="Previous month"
+                aria-label={pickerMode === 'days' ? 'Previous month' : pickerMode === 'months' ? 'Previous year' : 'Previous years'}
               >
                 <ChevronRight className="h-3.5 w-3.5 rotate-180" strokeWidth={2} />
               </button>
-              <span className="text-[12.5px] font-bold text-neutral-200">
-                {MONTH_LABELS[view.month]} {view.year}
-              </span>
+
+              {pickerMode === 'days' && (
+                <span className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={openMonthPicker}
+                    className="cursor-target rounded-md px-1.5 py-0.5 text-[12.5px] font-bold text-neutral-200 hover:bg-neutral-800 transition-colors"
+                  >
+                    {MONTH_LABELS[view.month]}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={openYearPicker}
+                    className="cursor-target rounded-md px-1.5 py-0.5 text-[12.5px] font-bold text-neutral-200 hover:bg-neutral-800 transition-colors"
+                  >
+                    {view.year}
+                  </button>
+                </span>
+              )}
+              {pickerMode === 'months' && (
+                <button
+                  type="button"
+                  onClick={openYearPicker}
+                  className="cursor-target rounded-md px-1.5 py-0.5 text-[12.5px] font-bold text-neutral-200 hover:bg-neutral-800 transition-colors"
+                >
+                  {view.year}
+                </button>
+              )}
+              {pickerMode === 'years' && (
+                <span className="text-[12.5px] font-bold text-neutral-200">
+                  {yearPageStart} – {yearPageStart + YEARS_PER_PAGE - 1}
+                </span>
+              )}
+
               <button
                 type="button"
-                onClick={() => shiftMonth(1)}
+                onClick={() => {
+                  if (pickerMode === 'days') shiftMonth(1);
+                  else if (pickerMode === 'months') setView((v) => ({ ...v, year: v.year + 1 }));
+                  else setYearPageStart((p) => p + YEARS_PER_PAGE);
+                }}
                 className="cursor-target h-7 w-7 flex items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200 transition-colors"
-                aria-label="Next month"
+                aria-label={pickerMode === 'days' ? 'Next month' : pickerMode === 'months' ? 'Next year' : 'Next years'}
               >
                 <ChevronRight className="h-3.5 w-3.5" strokeWidth={2} />
               </button>
             </div>
 
+            {pickerMode === 'years' && (
+              <div className="grid grid-cols-3 gap-1.5 py-1">
+                {Array.from({ length: YEARS_PER_PAGE }, (_, i) => yearPageStart + i).map((y) => {
+                  const isSelectedYear = y === view.year;
+                  const isThisYear = y === new Date().getFullYear();
+                  return (
+                    <button
+                      key={y}
+                      type="button"
+                      onClick={() => {
+                        setView((v) => ({ ...v, year: y }));
+                        setPickerMode('months');
+                      }}
+                      className={`cursor-target h-9 flex items-center justify-center rounded-lg text-[12px] transition-colors ${
+                        isSelectedYear
+                          ? 'font-bold text-neutral-50'
+                          : isThisYear
+                          ? 'border border-purple-500/50 text-purple-300 font-semibold'
+                          : 'text-neutral-300 hover:bg-neutral-800'
+                      }`}
+                      style={isSelectedYear ? liquidFillStyle() : undefined}
+                    >
+                      {y}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {pickerMode === 'months' && (
+              <div className="grid grid-cols-3 gap-1.5 py-1">
+                {MONTH_LABELS.map((label, i) => {
+                  const isSelectedMonth = i === view.month;
+                  const isThisMonth = i === new Date().getMonth() && view.year === new Date().getFullYear();
+                  return (
+                    <button
+                      key={label}
+                      type="button"
+                      onClick={() => {
+                        setView((v) => ({ ...v, month: i }));
+                        setPickerMode('days');
+                      }}
+                      className={`cursor-target h-9 flex items-center justify-center rounded-lg text-[12px] transition-colors ${
+                        isSelectedMonth
+                          ? 'font-bold text-neutral-50'
+                          : isThisMonth
+                          ? 'border border-purple-500/50 text-purple-300 font-semibold'
+                          : 'text-neutral-300 hover:bg-neutral-800'
+                      }`}
+                      style={isSelectedMonth ? liquidFillStyle() : undefined}
+                    >
+                      {label.slice(0, 3)}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {pickerMode === 'days' && (
             <div className="grid grid-cols-7">
               {WEEKDAY_LABELS.map((w) => (
                 <div key={w} className="h-6 flex items-center justify-center text-[10px] font-semibold text-neutral-600">
@@ -229,6 +341,8 @@ export function DateField({
                   </div>
                 );
               })}
+            </div>
+            )}
             </div>
 
             <div className="flex items-center justify-between mt-2 pt-2 border-t border-neutral-800 px-0.5">
