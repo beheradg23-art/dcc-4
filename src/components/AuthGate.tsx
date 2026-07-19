@@ -32,6 +32,7 @@ import { SWEEP_REVEAL_STYLE, SWEEP_REVEAL_KEYFRAMES, useSweepReveal } from '../l
 // exists — see the `magnetic-cursor-active` rule in index.css, which is
 // global for the same reason.
 import { MagneticCursor } from './ui/Primitives';
+import { GlyphMatrix } from './ui/GlyphMatrix';
 
 const PASSCODE_LENGTH = 6;
 
@@ -387,6 +388,28 @@ function SignInVisualPanel() {
               WebkitMaskImage: 'radial-gradient(ellipse 80% 65% at 50% 38%, #000 40%, transparent 100%)',
             }}
           />
+
+          {/* Glyph Matrix: a quiet grid of mutating monospace glyphs,
+              layered over the dot grid for extra depth. Kept faint and
+              masked to the same top-weighted region as the dot grid so it
+              reads as ambient texture, not noise competing with the copy. */}
+          <div
+            className="absolute inset-0 opacity-[0.16]"
+            style={{
+              maskImage: 'radial-gradient(ellipse 80% 65% at 50% 38%, #000 40%, transparent 100%)',
+              WebkitMaskImage: 'radial-gradient(ellipse 80% 65% at 50% 38%, #000 40%, transparent 100%)',
+            }}
+          >
+            <GlyphMatrix
+              glyphs="01·•+*/\<>="
+              cellSize={14}
+              mutationRate={0.04}
+              interval={90}
+              fadeBottom={0.7}
+              color="#c4b5fd"
+              className="h-full w-full"
+            />
+          </div>
 
           {/* Guardian render, floating in the empty space to the right of
               the copy — just the slow float/rotate drift, no glow behind
