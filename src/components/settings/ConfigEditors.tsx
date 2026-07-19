@@ -7,7 +7,7 @@ import {
   LayoutGrid, Clock3, Dumbbell, BookOpen, Sparkles, Target, GraduationCap,
   Weight, Droplets, Moon, Sun, Utensils, Flame, ChevronRight, ChevronDown,
   Activity, ClipboardList, Trash2, Plus, Settings, Save, PenLine, RefreshCcw,
-  Check, Heart, Droplet, Leaf,
+  Check, Heart, Droplet, Leaf, Waves, Sunset, Gem,
 } from 'lucide-react';
 import { ThemeMode, THEME_OPTIONS, useTheme } from '../../lib/theme';
 import {
@@ -1320,10 +1320,12 @@ export function SectionLabelsEditor() {
 const THEME_OPTION_ICONS: Record<ThemeMode, React.ComponentType<{ className?: string }>> = {
   'mono-dark': Moon,
   'mono-light': Sun,
-  ember: Flame,
+  'lagoon-fizz': Waves,
   blush: Heart,
   crimson: Droplet,
   jade: Leaf,
+  'golden-hour': Sunset,
+  'velvet-orchid': Gem,
   colorful: Sparkles,
 };
 

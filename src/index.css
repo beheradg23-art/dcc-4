@@ -131,11 +131,12 @@ html.theme-mono-light #theme-overlay {
 }
 
 /* ---------------------------------------------------------------------
-   Color-wash themes (Ember Forge / Blush Riot / Crimson Veil / Jade
-   Frost): each just re-hues the --violet-*, --fuchsia-*, --purple-*, and
-   --indigo-* variables above, plus the three bespoke Clock-tab variables
-   (a fixed hue rotation of the default scale, precomputed so every stop
-   keeps its original lightness/saturation — only the hue moves).
+   Color-wash themes (Lagoon Fizz / Blush Riot / Crimson Veil / Jade
+   Frost / Golden Hour / Velvet Orchid): each just re-hues the
+   --violet-*, --fuchsia-*, --purple-*, and --indigo-* variables above,
+   plus the three bespoke Clock-tab variables (a fixed hue rotation of
+   the default scale, precomputed so every stop keeps its original
+   lightness/saturation — only the hue moves).
    Because every `violet-*`, `fuchsia-*`, `purple-*`, and `indigo-*`
    Tailwind class in the app reads from these same variables, this
    changes the app's actual brand accent everywhere it's used (buttons,
@@ -150,25 +151,25 @@ html.theme-mono-light #theme-overlay {
    countdown or subject someone colored violet, fuchsia, or sky re-hues
    the same way every other brand-accent element in the app does.
    ------------------------------------------------------------------- */
-html.theme-ember {
-  --violet-50: 255 247 243; --violet-100: 254 240 233; --violet-200: 254 228 214;
-  --violet-300: 253 208 181; --violet-400: 250 186 139; --violet-500: 246 165 92;
-  --violet-600: 237 154 58; --violet-700: 217 139 40; --violet-800: 182 116 33;
-  --violet-900: 149 96 29; --violet-950: 101 60 16;
-  --fuchsia-50: 255 255 244; --fuchsia-100: 255 254 232; --fuchsia-200: 254 253 208;
-  --fuchsia-300: 250 252 171; --fuchsia-400: 245 249 121; --fuchsia-500: 233 239 70;
-  --fuchsia-600: 201 211 38; --fuchsia-700: 164 175 28; --fuchsia-800: 132 143 25;
-  --fuchsia-900: 107 117 26; --fuchsia-950: 70 78 4;
-  --indigo-50: 255 238 239; --indigo-100: 255 224 226; --indigo-200: 254 199 201;
-  --indigo-300: 252 165 165; --indigo-400: 248 138 129; --indigo-500: 241 120 99;
-  --indigo-600: 229 106 70; --indigo-700: 202 91 56; --indigo-800: 163 74 48;
-  --indigo-900: 129 63 46; --indigo-950: 75 38 27;
-  --purple-50: 255 252 245; --purple-100: 255 247 232; --purple-200: 255 240 213;
-  --purple-300: 254 228 180; --purple-400: 252 212 132; --purple-500: 247 195 85;
-  --purple-600: 234 178 51; --purple-700: 206 155 34; --purple-800: 168 130 33;
-  --purple-900: 135 106 28; --purple-950: 100 75 7;
-  --clock-tile-top: 77 54 26; --clock-tile-bottom: 46 31 15; --clock-card-to: 38 26 10;
-  --brand-hue-rotate: 130deg;
+html.theme-lagoon-fizz {
+  --violet-50: 243 255 255; --violet-100: 233 254 254; --violet-200: 214 254 253;
+  --violet-300: 181 252 253; --violet-400: 139 244 250; --violet-500: 92 230 246;
+  --violet-600: 58 207 237; --violet-700: 40 183 217; --violet-800: 33 154 182;
+  --violet-900: 29 126 149; --violet-950: 16 88 101;
+  --fuchsia-50: 244 248 255; --fuchsia-100: 232 242 255; --fuchsia-200: 208 226 254;
+  --fuchsia-300: 171 199 252; --fuchsia-400: 121 164 249; --fuchsia-500: 70 126 239;
+  --fuchsia-600: 38 92 211; --fuchsia-700: 28 70 175; --fuchsia-800: 25 58 143;
+  --fuchsia-900: 26 49 117; --fuchsia-950: 4 23 78;
+  --indigo-50: 238 255 248; --indigo-100: 224 255 242; --indigo-200: 199 254 232;
+  --indigo-300: 165 252 220; --indigo-400: 129 248 213; --indigo-500: 99 241 210;
+  --indigo-600: 70 229 206; --indigo-700: 56 202 184; --indigo-800: 48 163 147;
+  --indigo-900: 46 129 115; --indigo-950: 27 75 68;
+  --purple-50: 245 252 255; --purple-100: 232 249 255; --purple-200: 213 243 255;
+  --purple-300: 180 233 254; --purple-400: 132 216 252; --purple-500: 85 196 247;
+  --purple-600: 51 175 234; --purple-700: 34 148 206; --purple-800: 33 121 168;
+  --purple-900: 28 96 135; --purple-950: 7 67 100;
+  --clock-tile-top: 26 68 77; --clock-tile-bottom: 15 41 46; --clock-card-to: 10 33 38;
+  --brand-hue-rotate: 288deg;
 }
 
 html.theme-blush {
@@ -234,6 +235,48 @@ html.theme-jade {
   --brand-hue-rotate: 245deg;
 }
 
+html.theme-golden-hour {
+  --violet-50: 255 249 243; --violet-100: 254 244 233; --violet-200: 254 234 214;
+  --violet-300: 253 220 181; --violet-400: 250 204 139; --violet-500: 246 190 92;
+  --violet-600: 237 184 58; --violet-700: 217 168 40; --violet-800: 182 141 33;
+  --violet-900: 149 116 29; --violet-950: 101 74 16;
+  --fuchsia-50: 253 255 244; --fuchsia-100: 252 255 232; --fuchsia-200: 248 254 208;
+  --fuchsia-300: 237 252 171; --fuchsia-400: 223 249 121; --fuchsia-500: 205 239 70;
+  --fuchsia-600: 172 211 38; --fuchsia-700: 139 175 28; --fuchsia-800: 113 143 25;
+  --fuchsia-900: 92 117 26; --fuchsia-950: 57 78 4;
+  --indigo-50: 255 240 238; --indigo-100: 255 227 224; --indigo-200: 254 206 199;
+  --indigo-300: 252 179 165; --indigo-400: 248 158 129; --indigo-500: 241 143 99;
+  --indigo-600: 229 132 70; --indigo-700: 202 116 56; --indigo-800: 163 93 48;
+  --indigo-900: 129 77 46; --indigo-950: 75 46 27;
+  --purple-50: 255 253 245; --purple-100: 255 251 232; --purple-200: 255 247 213;
+  --purple-300: 254 241 180; --purple-400: 252 232 132; --purple-500: 247 222 85;
+  --purple-600: 234 208 51; --purple-700: 206 183 34; --purple-800: 168 152 33;
+  --purple-900: 135 124 28; --purple-950: 100 90 7;
+  --clock-tile-top: 77 62 26; --clock-tile-bottom: 46 36 15; --clock-card-to: 38 30 10;
+  --brand-hue-rotate: 140deg;
+}
+
+html.theme-velvet-orchid {
+  --violet-50: 250 243 255; --violet-100: 246 233 254; --violet-200: 238 214 254;
+  --violet-300: 226 181 253; --violet-400: 213 139 250; --violet-500: 203 92 246;
+  --violet-600: 199 58 237; --violet-700: 183 40 217; --violet-800: 153 33 182;
+  --violet-900: 126 29 149; --violet-950: 81 16 101;
+  --fuchsia-50: 255 244 252; --fuchsia-100: 255 232 250; --fuchsia-200: 254 208 244;
+  --fuchsia-300: 252 171 230; --fuchsia-400: 249 121 213; --fuchsia-500: 239 70 191;
+  --fuchsia-600: 211 38 158; --fuchsia-700: 175 28 127; --fuchsia-800: 143 25 103;
+  --fuchsia-900: 117 26 84; --fuchsia-950: 78 4 51;
+  --indigo-50: 241 238 255; --indigo-100: 230 224 255; --indigo-200: 211 199 254;
+  --indigo-300: 186 165 252; --indigo-400: 168 129 248; --indigo-500: 155 99 241;
+  --indigo-600: 145 70 229; --indigo-700: 128 56 202; --indigo-800: 103 48 163;
+  --indigo-900: 84 46 129; --indigo-950: 50 27 75;
+  --purple-50: 254 245 255; --purple-100: 253 232 255; --purple-200: 250 213 255;
+  --purple-300: 247 180 254; --purple-400: 242 132 252; --purple-500: 236 85 247;
+  --purple-600: 223 51 234; --purple-700: 198 34 206; --purple-800: 163 33 168;
+  --purple-900: 133 28 135; --purple-950: 98 7 100;
+  --clock-tile-top: 66 26 77; --clock-tile-bottom: 39 15 46; --clock-card-to: 33 10 38;
+  --brand-hue-rotate: 25deg;
+}
+
 /* Opt-in class for raster brand art (currently just the sign-in Guardian
    render) so it re-hues with --brand-hue-rotate above. Not applied
    globally to every <img> — most images in the app are just content
@@ -244,9 +287,11 @@ html.theme-jade {
    everything (including this image) via the #theme-overlay
    backdrop-filter above, and stacking a hue-rotate on top of a
    grayscale/invert would fight with it for no visual benefit. */
-html.theme-ember .akyos-brand-hue,
+html.theme-lagoon-fizz .akyos-brand-hue,
 html.theme-blush .akyos-brand-hue,
 html.theme-crimson .akyos-brand-hue,
-html.theme-jade .akyos-brand-hue {
+html.theme-jade .akyos-brand-hue,
+html.theme-golden-hour .akyos-brand-hue,
+html.theme-velvet-orchid .akyos-brand-hue {
   filter: hue-rotate(var(--brand-hue-rotate));
 }

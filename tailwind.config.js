@@ -13,7 +13,7 @@ export default {
       // selected states, active nav, the sweep-gradient brand highlight,
       // etc.) is generated from these two scales. Re-pointing them at CSS
       // custom properties — instead of Tailwind's fixed hex values — is
-      // what lets the Appearance color-wash themes (Ember Forge, Blush
+      // what lets the Appearance color-wash themes (Lagoon Fizz, Blush
       // Riot, Crimson Veil, Jade Frost) re-hue *only* the app's actual
       // brand accent everywhere it's used, without a single component
       // file changing and without touching any other color in the app.
