@@ -526,11 +526,23 @@ export default function JEEDashboard() {
       <aside
         onMouseEnter={() => setSidebarExpanded(true)}
         onMouseLeave={() => setSidebarExpanded(false)}
-        className={`fixed inset-y-0 left-0 z-50 flex w-[240px] shrink-0 flex-col border-r border-neutral-800/70 bg-neutral-950/98 ${SIDEBAR_TRANSITION} lg:sticky lg:top-0 lg:z-20 lg:h-screen lg:translate-x-0 lg:bg-neutral-950/50 lg:backdrop-blur-xl ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-[240px] shrink-0 flex-col overflow-hidden border-r border-white/[0.08] bg-white/[0.045] backdrop-blur-2xl backdrop-saturate-150 shadow-[8px_0_32px_-12px_rgba(0,0,0,0.55)] ${SIDEBAR_TRANSITION} lg:sticky lg:top-0 lg:z-20 lg:h-screen lg:translate-x-0 lg:bg-white/[0.035] ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } ${sidebarExpanded ? 'lg:w-[240px]' : 'lg:w-[68px]'}`}
       >
-        <div className="flex items-center gap-2.5 px-4 pt-5 pb-4">
+        {/* Glass "sheen" — same top-lit diagonal wash + hairline highlight
+            treatment as the dashboard's <Card> bento boxes, so the rail
+            reads as one continuous frosted-glass surface with the rest of
+            the app rather than a flat opaque panel. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/[0.05] via-transparent to-transparent"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-y-3 right-0 w-px bg-gradient-to-b from-transparent via-white/20 to-transparent"
+        />
+        <div className="relative flex items-center gap-2.5 px-4 pt-5 pb-4">
           {/* Hover expands the rail on desktop, but a tablet at this same
               width (e.g. iPad landscape) has no mouse to hover with — the
               rail would otherwise be stuck collapsed with no way to reach
@@ -558,7 +570,7 @@ export default function JEEDashboard() {
           </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-3 pb-4 no-scrollbar" role="tablist" aria-label="Main sections">
+        <nav className="relative flex-1 overflow-y-auto px-3 pb-4 no-scrollbar" role="tablist" aria-label="Main sections">
           <div className="space-y-1">
             {visibleTabs.map((tab) => {
               const Icon = ICON_OPTIONS[config.tabIcons[tab.id as TabLabelKey]] || tab.icon;
@@ -588,7 +600,7 @@ export default function JEEDashboard() {
         </nav>
 
         {/* Settings & Account — pinned to the bottom of the rail */}
-        <div className="mt-auto border-t border-neutral-800/70 px-3 py-3 space-y-1">
+        <div className="relative mt-auto border-t border-white/[0.08] px-3 py-3 space-y-1">
           <button
             onClick={() => { setActiveTab('settings'); setSidebarOpen(false); }}
             title={config.tabLabels.settings}
@@ -630,9 +642,20 @@ export default function JEEDashboard() {
         {/* Sticky header — brand, streak, rank, and EQ stay pinned while the page scrolls beneath */}
         <header
           onMouseEnter={() => setSidebarExpanded(false)}
-          className="sticky top-0 z-30 flex flex-row items-center justify-between gap-3 border-b border-neutral-800/70 bg-zinc-950/85 backdrop-blur-xl px-4 sm:px-6 lg:px-8 py-3.5"
+          className="sticky top-0 z-30 flex flex-row items-center justify-between gap-3 overflow-hidden border-b border-white/[0.08] bg-white/[0.045] backdrop-blur-2xl backdrop-saturate-150 shadow-[0_8px_32px_-12px_rgba(0,0,0,0.55)] px-4 sm:px-6 lg:px-8 py-3.5"
         >
-          <div className="flex items-center gap-3 min-w-0">
+          {/* Glass "sheen" — same treatment as <Card> and the sidebar rail,
+              so the header reads as one continuous frosted-glass surface
+              rather than a flat tinted bar. */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/[0.05] via-transparent to-transparent"
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-5 bottom-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"
+          />
+          <div className="relative flex items-center gap-3 min-w-0">
             <button
               onClick={() => setSidebarOpen(true)}
               aria-label="Open navigation"
@@ -650,7 +673,7 @@ export default function JEEDashboard() {
               <p className="text-[12.5px] text-neutral-500 mt-1 truncate">Your Answer to Chaos</p>
             </div>
           </div>
-          <div className="flex items-center gap-2.5 shrink-0">
+          <div className="relative flex items-center gap-2.5 shrink-0">
             <MobileStatusStrip streak={currentStreak} hunterRank={hunterRank} overallPct={overallPct} />
             <StreakFlame streak={currentStreak} />
             <div
