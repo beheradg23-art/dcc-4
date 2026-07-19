@@ -88,6 +88,20 @@ html.theme-mono-light #theme-overlay {
      (indigo) option. */
   --brand-indigo-600: 79 70 229;
   --brand-indigo-400: 129 140 248;
+  /* Separate from --violet-* on purpose: Tailwind's `purple` and `violet`
+     are two distinct scales, and the Clock tab (plus a few Primitives.tsx
+     pieces) uses `purple-*` specifically. */
+  --purple-50: 250 245 255;
+  --purple-100: 243 232 255;
+  --purple-200: 233 213 255;
+  --purple-300: 216 180 254;
+  --purple-400: 192 132 252;
+  --purple-500: 168 85 247;
+  --purple-600: 147 51 234;
+  --purple-700: 126 34 206;
+  --purple-800: 107 33 168;
+  --purple-900: 88 28 135;
+  --purple-950: 59 7 100;
 }
 
 /* ---------------------------------------------------------------------
@@ -119,6 +133,10 @@ html.theme-ember {
   --fuchsia-900: 107 117 26; --fuchsia-950: 70 78 4;
   --brand-indigo-600: 229 106 70;
   --brand-indigo-400: 248 138 129;
+  --purple-50: 255 252 245; --purple-100: 255 247 232; --purple-200: 255 240 213;
+  --purple-300: 254 228 180; --purple-400: 252 212 132; --purple-500: 247 195 85;
+  --purple-600: 234 178 51; --purple-700: 206 155 34; --purple-800: 168 130 33;
+  --purple-900: 135 106 28; --purple-950: 100 75 7;
 }
 
 html.theme-blush {
@@ -132,6 +150,10 @@ html.theme-blush {
   --fuchsia-900: 117 36 26; --fuchsia-950: 78 12 4;
   --brand-indigo-600: 229 70 193;
   --brand-indigo-400: 248 129 239;
+  --purple-50: 255 245 248; --purple-100: 255 232 240; --purple-200: 255 213 228;
+  --purple-300: 254 180 206; --purple-400: 252 132 172; --purple-500: 247 85 137;
+  --purple-600: 234 51 107; --purple-700: 206 34 85; --purple-800: 168 33 71;
+  --purple-900: 135 28 57; --purple-950: 100 7 32;
 }
 
 html.theme-crimson {
@@ -145,6 +167,10 @@ html.theme-crimson {
   --fuchsia-900: 117 82 26; --fuchsia-950: 78 49 4;
   --brand-indigo-600: 229 70 114;
   --brand-indigo-400: 248 129 180;
+  --purple-50: 255 247 245; --purple-100: 255 235 232; --purple-200: 255 219 213;
+  --purple-300: 254 191 180; --purple-400: 252 152 132; --purple-500: 247 114 85;
+  --purple-600: 234 86 51; --purple-700: 206 69 34; --purple-800: 168 62 33;
+  --purple-900: 135 52 28; --purple-950: 100 28 7;
 }
 
 html.theme-jade {
@@ -158,4 +184,8 @@ html.theme-jade {
   --fuchsia-900: 26 114 117; --fuchsia-950: 4 76 78;
   --brand-indigo-600: 70 229 92;
   --brand-indigo-400: 130 248 129;
+  --purple-50: 245 255 251; --purple-100: 232 255 245; --purple-200: 213 255 237;
+  --purple-300: 180 254 222; --purple-400: 132 252 202; --purple-500: 85 247 181;
+  --purple-600: 51 234 162; --purple-700: 34 206 140; --purple-800: 33 168 118;
+  --purple-900: 28 135 97; --purple-950: 7 100 67;
 }
