@@ -343,7 +343,6 @@ export function DateField({
               })}
             </div>
             )}
-            </div>
 
             <div className="flex items-center justify-between mt-2 pt-2 border-t border-neutral-800 px-0.5">
               <button
