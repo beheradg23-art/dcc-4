@@ -59,7 +59,7 @@ const LIQUID_GRADIENT_FILL: React.CSSProperties = {
     'linear-gradient(100deg, transparent 8%, rgba(255,255,255,0.16) 28%, rgba(255,255,255,0.30) 42%, rgba(255,255,255,0.30) 50%, rgba(255,255,255,0.16) 58%, transparent 78%), ' +
     // Same brand variables as src/lib/liquidFill.ts (see index.css) — kept
     // in sync so this screen re-hues with the rest of the app's theme too.
-    'linear-gradient(115deg, rgb(var(--brand-indigo-600)) 0%, rgb(var(--violet-600)) 22%, rgb(var(--fuchsia-500)) 45%, rgb(var(--violet-600)) 68%, rgb(var(--brand-indigo-600)) 85%, rgb(var(--fuchsia-500)) 100%)',
+    'linear-gradient(115deg, rgb(var(--indigo-600)) 0%, rgb(var(--violet-600)) 22%, rgb(var(--fuchsia-500)) 45%, rgb(var(--violet-600)) 68%, rgb(var(--indigo-600)) 85%, rgb(var(--fuchsia-500)) 100%)',
   backgroundSize: '340% 340%, 300% 300%',
   backgroundPosition: '0% 50%, 0% 50%',
   animation: LIQUID_ANIMATION,
@@ -239,7 +239,7 @@ function AkyosWordRotator() {
           lineHeight: 1.6,
           filter: 'drop-shadow(0 2px 14px rgba(167,139,250,0.35))',
           backgroundImage:
-            'linear-gradient(110deg, rgb(var(--violet-400)) 0%, rgb(var(--fuchsia-300)) 25%, rgb(var(--brand-indigo-400)) 50%, rgb(var(--fuchsia-300)) 75%, rgb(var(--violet-400)) 100%)',
+            'linear-gradient(110deg, rgb(var(--violet-400)) 0%, rgb(var(--fuchsia-300)) 25%, rgb(var(--indigo-400)) 50%, rgb(var(--fuchsia-300)) 75%, rgb(var(--violet-400)) 100%)',
           backgroundSize: '250% 100%',
           WebkitBackgroundClip: 'text',
           backgroundClip: 'text',
@@ -867,7 +867,7 @@ function OnePercentIntro({ onComplete }: { onComplete: () => void }) {
             style={{
               animation: 'akyos-liquid-gradient 3s ease-in-out infinite',
               backgroundImage:
-                'linear-gradient(110deg, rgb(var(--violet-400)) 0%, rgb(var(--fuchsia-300)) 25%, rgb(var(--brand-indigo-400)) 50%, rgb(var(--fuchsia-300)) 75%, rgb(var(--violet-400)) 100%)',
+                'linear-gradient(110deg, rgb(var(--violet-400)) 0%, rgb(var(--fuchsia-300)) 25%, rgb(var(--indigo-400)) 50%, rgb(var(--fuchsia-300)) 75%, rgb(var(--violet-400)) 100%)',
               backgroundSize: '250% 100%',
               WebkitBackgroundClip: 'text',
               backgroundClip: 'text',

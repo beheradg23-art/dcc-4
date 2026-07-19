@@ -1026,7 +1026,7 @@ export const TABS = [
 // looks the chosen color up in this fixed palette. Same 'color name' idea
 // generateProfileTargets() already uses for targets[].color.
 export const SUBJECT_COLOR_PALETTE: Record<string, { text: string; bg: string; border: string; dot: string }> = {
-  sky:      { text: 'text-indigo-400',      bg: 'bg-indigo-500/10',      border: 'border-indigo-500/30',      dot: 'bg-indigo-400' },
+  sky:      { text: 'text-[#818cf8]',      bg: 'bg-[#6366f1]/10',      border: 'border-[#6366f1]/30',      dot: 'bg-[#818cf8]' },
   violet:   { text: 'text-[#a78bfa]',   bg: 'bg-[#8b5cf6]/10',   border: 'border-[#8b5cf6]/30',   dot: 'bg-[#a78bfa]' },
   fuchsia:  { text: 'text-[#e879f9]',  bg: 'bg-[#d946ef]/10',  border: 'border-[#d946ef]/30',  dot: 'bg-[#e879f9]' },
   amber:    { text: 'text-amber-400',    bg: 'bg-amber-500/10',    border: 'border-amber-500/30',    dot: 'bg-amber-400' },
@@ -1059,7 +1059,7 @@ export function getSubjectHex(key: string, subjects: { key: string; color: strin
 // wider set — countdowns often sit side by side in one card, so more
 // variants means less chance two active targets look identical.
 export const COUNTDOWN_COLOR_PALETTE: Record<string, { text: string; tileBg: string; tileBorder: string; barBg: string; dot: string }> = {
-  sky:      { text: 'text-indigo-400',      tileBg: 'bg-indigo-500/[0.03]',      tileBorder: 'border-indigo-500/20',      barBg: 'bg-indigo-500/60',      dot: 'bg-indigo-400' },
+  sky:      { text: 'text-[#818cf8]',      tileBg: 'bg-[#6366f1]/[0.03]',      tileBorder: 'border-[#6366f1]/20',      barBg: 'bg-[#6366f1]/60',      dot: 'bg-[#818cf8]' },
   violet:   { text: 'text-[#a78bfa]',   tileBg: 'bg-[#8b5cf6]/[0.03]',   tileBorder: 'border-[#8b5cf6]/20',   barBg: 'bg-[#8b5cf6]/60',   dot: 'bg-[#a78bfa]' },
   fuchsia:  { text: 'text-[#e879f9]',  tileBg: 'bg-[#d946ef]/[0.03]',  tileBorder: 'border-[#d946ef]/20',  barBg: 'bg-[#d946ef]/60',  dot: 'bg-[#e879f9]' },
   amber:    { text: 'text-amber-400',    tileBg: 'bg-amber-500/[0.03]',    tileBorder: 'border-amber-500/20',    barBg: 'bg-amber-500/60',    dot: 'bg-amber-400' },

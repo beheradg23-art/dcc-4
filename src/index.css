@@ -82,12 +82,20 @@ html.theme-mono-light #theme-overlay {
   --fuchsia-800: 134 25 143;
   --fuchsia-900: 112 26 117;
   --fuchsia-950: 74 4 78;
-  /* Third stop of the brand liquid-fill gradient (see liquidFill.ts) — kept
-     as its own variable rather than reusing Tailwind's `indigo` scale so it
-     doesn't also re-hue the countdown/subject palettes' unrelated "sky"
-     (indigo) option. */
-  --brand-indigo-600: 79 70 229;
-  --brand-indigo-400: 129 140 248;
+  /* Full indigo scale, same treatment as violet/fuchsia/purple above —
+     covers generic UI accents (focus rings, active tabs, calendar
+     selection, etc.) that leaned on `indigo-*` rather than `violet-*`. */
+  --indigo-50: 238 242 255;
+  --indigo-100: 224 231 255;
+  --indigo-200: 199 210 254;
+  --indigo-300: 165 180 252;
+  --indigo-400: 129 140 248;
+  --indigo-500: 99 102 241;
+  --indigo-600: 79 70 229;
+  --indigo-700: 67 56 202;
+  --indigo-800: 55 48 163;
+  --indigo-900: 49 46 129;
+  --indigo-950: 30 27 75;
   /* Separate from --violet-* on purpose: Tailwind's `purple` and `violet`
      are two distinct scales, and the Clock tab (plus a few Primitives.tsx
      pieces) uses `purple-*` specifically. */
@@ -113,21 +121,24 @@ html.theme-mono-light #theme-overlay {
 
 /* ---------------------------------------------------------------------
    Color-wash themes (Ember Forge / Blush Riot / Crimson Veil / Jade
-   Frost): each just re-hues the --violet-* and --fuchsia-* variables above
+   Frost): each just re-hues the --violet-*, --fuchsia-*, --purple-*, and
+   --indigo-* variables above, plus the three bespoke Clock-tab variables
    (a fixed hue rotation of the default scale, precomputed so every stop
    keeps its original lightness/saturation — only the hue moves).
-   Because every `violet-*`/`fuchsia-*` Tailwind class in the app reads
-   from these same variables, this changes the app's actual brand accent
-   everywhere it's used (buttons, selected states, the sweep-gradient
-   highlight, active nav, etc.) with zero other files touched — and,
-   just as important, it changes *only* those two color scales. Every
-   other color in the app (glass-panel backgrounds/borders, and every
-   other named color in the countdown/subject color palettes — amber,
-   emerald, rose, cyan, orange, lime, pink, teal, indigo/sky) is untouched,
-   including the countdown/subject palettes' own "violet"/"fuchsia" named
-   options — those two are deliberately pinned to raw hex in
-   appConfig.ts specifically so a countdown or subject someone colored
-   violet doesn't shift when the theme does.
+   Because every `violet-*`, `fuchsia-*`, `purple-*`, and `indigo-*`
+   Tailwind class in the app reads from these same variables, this
+   changes the app's actual brand accent everywhere it's used (buttons,
+   selected states, the sweep-gradient highlight, active nav, focus
+   rings, calendar selection, etc.) with zero other files touched — and,
+   just as important, it changes only the app's own violet, fuchsia,
+   purple, and indigo accent scales. Every other named color in the
+   countdown/subject color palettes — amber, emerald, rose, cyan,
+   orange, lime, pink, teal — is untouched, including those palettes'
+   own "violet", "fuchsia", and "sky" entries: those three are
+   deliberately pinned to raw hex in appConfig.ts specifically so a
+   countdown or subject someone colored violet, fuchsia, or sky doesn't
+   shift when the theme does, the same way every other named color there
+   already doesn't.
    ------------------------------------------------------------------- */
 html.theme-ember {
   --violet-50: 255 247 243; --violet-100: 254 240 233; --violet-200: 254 228 214;
@@ -138,8 +149,10 @@ html.theme-ember {
   --fuchsia-300: 250 252 171; --fuchsia-400: 245 249 121; --fuchsia-500: 233 239 70;
   --fuchsia-600: 201 211 38; --fuchsia-700: 164 175 28; --fuchsia-800: 132 143 25;
   --fuchsia-900: 107 117 26; --fuchsia-950: 70 78 4;
-  --brand-indigo-600: 229 106 70;
-  --brand-indigo-400: 248 138 129;
+  --indigo-50: 255 238 239; --indigo-100: 255 224 226; --indigo-200: 254 199 201;
+  --indigo-300: 252 165 165; --indigo-400: 248 138 129; --indigo-500: 241 120 99;
+  --indigo-600: 229 106 70; --indigo-700: 202 91 56; --indigo-800: 163 74 48;
+  --indigo-900: 129 63 46; --indigo-950: 75 38 27;
   --purple-50: 255 252 245; --purple-100: 255 247 232; --purple-200: 255 240 213;
   --purple-300: 254 228 180; --purple-400: 252 212 132; --purple-500: 247 195 85;
   --purple-600: 234 178 51; --purple-700: 206 155 34; --purple-800: 168 130 33;
@@ -156,8 +169,10 @@ html.theme-blush {
   --fuchsia-300: 252 172 171; --fuchsia-400: 249 125 121; --fuchsia-500: 239 76 70;
   --fuchsia-600: 211 48 38; --fuchsia-700: 175 39 28; --fuchsia-800: 143 36 25;
   --fuchsia-900: 117 36 26; --fuchsia-950: 78 12 4;
-  --brand-indigo-600: 229 70 193;
-  --brand-indigo-400: 248 129 239;
+  --indigo-50: 254 238 255; --indigo-100: 253 224 255; --indigo-200: 252 199 254;
+  --indigo-300: 252 165 252; --indigo-400: 248 129 239; --indigo-500: 241 99 220;
+  --indigo-600: 229 70 193; --indigo-700: 202 56 167; --indigo-800: 163 48 137;
+  --indigo-900: 129 46 112; --indigo-950: 75 27 64;
   --purple-50: 255 245 248; --purple-100: 255 232 240; --purple-200: 255 213 228;
   --purple-300: 254 180 206; --purple-400: 252 132 172; --purple-500: 247 85 137;
   --purple-600: 234 51 107; --purple-700: 206 34 85; --purple-800: 168 33 71;
@@ -174,8 +189,10 @@ html.theme-crimson {
   --fuchsia-300: 252 213 171; --fuchsia-400: 249 189 121; --fuchsia-500: 239 161 70;
   --fuchsia-600: 211 134 38; --fuchsia-700: 175 113 28; --fuchsia-800: 143 95 25;
   --fuchsia-900: 117 82 26; --fuchsia-950: 78 49 4;
-  --brand-indigo-600: 229 70 114;
-  --brand-indigo-400: 248 129 180;
+  --indigo-50: 255 238 248; --indigo-100: 255 224 241; --indigo-200: 254 199 228;
+  --indigo-300: 252 165 209; --indigo-400: 248 129 180; --indigo-500: 241 99 149;
+  --indigo-600: 229 70 114; --indigo-700: 202 56 94; --indigo-800: 163 48 79;
+  --indigo-900: 129 46 71; --indigo-950: 75 27 40;
   --purple-50: 255 247 245; --purple-100: 255 235 232; --purple-200: 255 219 213;
   --purple-300: 254 191 180; --purple-400: 252 152 132; --purple-500: 247 114 85;
   --purple-600: 234 86 51; --purple-700: 206 69 34; --purple-800: 168 62 33;
@@ -192,8 +209,10 @@ html.theme-jade {
   --fuchsia-300: 171 252 247; --fuchsia-400: 121 249 243; --fuchsia-500: 70 239 231;
   --fuchsia-600: 38 211 206; --fuchsia-700: 28 175 174; --fuchsia-800: 25 142 143;
   --fuchsia-900: 26 114 117; --fuchsia-950: 4 76 78;
-  --brand-indigo-600: 70 229 92;
-  --brand-indigo-400: 130 248 129;
+  --indigo-50: 241 255 238; --indigo-100: 228 255 224; --indigo-200: 205 254 199;
+  --indigo-300: 173 252 165; --indigo-400: 130 248 129; --indigo-500: 99 241 108;
+  --indigo-600: 70 229 92; --indigo-700: 56 202 79; --indigo-800: 48 163 65;
+  --indigo-900: 46 129 56; --indigo-950: 27 75 34;
   --purple-50: 245 255 251; --purple-100: 232 255 245; --purple-200: 213 255 237;
   --purple-300: 180 254 222; --purple-400: 132 252 202; --purple-500: 85 247 181;
   --purple-600: 51 234 162; --purple-700: 34 206 140; --purple-800: 33 168 118;

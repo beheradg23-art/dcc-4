@@ -73,6 +73,25 @@ export default {
           900: 'rgb(var(--purple-900) / <alpha-value>)',
           950: 'rgb(var(--purple-950) / <alpha-value>)',
         },
+        // Generic UI accents (focus rings, selection outlines, active tab
+        // pills, calendar selection rings, etc.) turned out to lean on
+        // Tailwind's `indigo` scale as often as `violet` — same treatment.
+        // (The countdown/subject palettes' "sky" option, which is also
+        // built from `indigo-*` classes, is pinned to raw hex in
+        // appConfig.ts for the same reason violet/fuchsia are.)
+        indigo: {
+          50: 'rgb(var(--indigo-50) / <alpha-value>)',
+          100: 'rgb(var(--indigo-100) / <alpha-value>)',
+          200: 'rgb(var(--indigo-200) / <alpha-value>)',
+          300: 'rgb(var(--indigo-300) / <alpha-value>)',
+          400: 'rgb(var(--indigo-400) / <alpha-value>)',
+          500: 'rgb(var(--indigo-500) / <alpha-value>)',
+          600: 'rgb(var(--indigo-600) / <alpha-value>)',
+          700: 'rgb(var(--indigo-700) / <alpha-value>)',
+          800: 'rgb(var(--indigo-800) / <alpha-value>)',
+          900: 'rgb(var(--indigo-900) / <alpha-value>)',
+          950: 'rgb(var(--indigo-950) / <alpha-value>)',
+        },
       },
     },
   },

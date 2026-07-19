@@ -19,22 +19,28 @@
 //
 // 2. The 4 color washes (Ember Forge, Blush Riot, Crimson Veil, Jade
 //    Frost) are scoped narrower on purpose: they re-hue *only* the app's
-//    actual brand accent (violet/fuchsia, plus the indigo stop used
-//    alongside them in the brand gradients), not literally every color
-//    on screen. A blanket page-level filter can't do that — hue-rotate
-//    shifts every hue uniformly, so it would just as happily repaint the
-//    countdown/subject color palettes' amber, emerald, cyan, etc., which
-//    are meant to stay put regardless of theme. Instead, Tailwind's
-//    `violet`/`fuchsia` scales are pointed at CSS custom properties (see
-//    tailwind.config.js), and those variables' values change per theme
-//    (see index.css) — so every existing `violet-*`/`fuchsia-*` class
-//    anywhere in the app picks up the new hue automatically, with zero
-//    component files touched, while every other color is untouched.
+//    actual brand accent colors (violet, fuchsia, purple, and indigo —
+//    every one of them used somewhere as UI chrome: buttons, focus
+//    rings, active states, the brand gradient), not literally every
+//    color on screen. A blanket page-level filter can't do that —
+//    hue-rotate shifts every hue uniformly, so it would just as happily
+//    repaint the countdown/subject color palettes' amber, emerald,
+//    cyan, etc., which are meant to stay put regardless of theme.
+//    Instead, those four Tailwind scales are pointed at CSS custom
+//    properties (see tailwind.config.js), and those variables' values
+//    change per theme (see index.css) — so every existing `violet-*`,
+//    `fuchsia-*`, `purple-*`, and `indigo-*` class anywhere in the app
+//    picks up the new hue automatically, with zero component files
+//    touched, while every other color is untouched. (The countdown/
+//    subject palettes' own "violet", "fuchsia", and "sky" — sky being
+//    built from indigo — entries are the one exception: those are
+//    pinned to raw hex in appConfig.ts so a countdown or subject
+//    someone deliberately colored that way doesn't shift either.)
 //
 // This module only toggles a class on <html> — the actual recoloring
 // rules live in index.css, keyed off that same class (applied to
-// #theme-overlay for the two B&W themes, to the --violet-*/--fuchsia-*/
-// --brand-indigo-* variables for the 4 color washes).
+// #theme-overlay for the two B&W themes, to the --violet-*, --fuchsia-*,
+// --purple-*, and --indigo-* variables for the 4 color washes).
 import React from 'react';
 
 export type ThemeMode = 'colorful' | 'mono-dark' | 'mono-light' | 'ember' | 'blush' | 'crimson' | 'jade';
