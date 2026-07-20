@@ -1010,42 +1010,47 @@ export function SubjectsAndSyllabusEditor() {
         <label className={fieldLabel}>Subjects</label>
         <div className="space-y-2">
           {localSubjects.map((s) => (
-            <div key={s.key} className="flex items-center gap-2">
-              <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${SUBJECT_COLOR_PALETTE[s.color]?.dot || 'bg-neutral-600'}`} />
-              <input
-                value={s.label}
-                onChange={(e) => patchSubject(s.key, { label: e.target.value })}
-                className={`flex-1 ${fieldInput}`}
-              />
-              <select
-                value={s.color}
-                onChange={(e) => patchSubject(s.key, { color: e.target.value })}
-                className={`w-28 shrink-0 ${fieldInput}`}
-              >
-                {SUBJECT_COLOR_NAMES.map((c) => <option key={c} value={c}>{c}</option>)}
-              </select>
-              <button
-                type="button"
-                onClick={() => patchSubject(s.key, { inMockTest: !(s.inMockTest !== false) })}
-                title={s.inMockTest !== false ? 'Shows a score box in the Mock Test Tracker — click to remove' : 'Hidden from the Mock Test Tracker — click to include'}
-                aria-pressed={s.inMockTest !== false}
-                aria-label={s.inMockTest !== false ? 'Shown in Mock Test Tracker, click to hide' : 'Hidden from Mock Test Tracker, click to show'}
-                className={`cursor-target shrink-0 flex items-center gap-1.5 rounded-lg border px-2.5 h-8 text-[11px] font-medium transition-colors ${
-                  s.inMockTest !== false
-                    ? 'border-violet-500/30 bg-violet-500/[0.08] text-violet-300'
-                    : 'border-neutral-800 bg-neutral-900 text-neutral-500 hover:text-neutral-300 hover:border-neutral-700'
-                }`}
-              >
-                <ClipboardList className="h-3.5 w-3.5" strokeWidth={1.75} />
-                <span className="hidden sm:inline">Mock Test</span>
-              </button>
-              <button
-                onClick={() => removeSubject(s.key)}
-                aria-label={`Remove subject ${s.label || s.key}`}
-                className="cursor-target shrink-0 flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-800 bg-neutral-900 text-neutral-500 hover:text-rose-400 hover:border-rose-500/30 transition-colors"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
+            <div key={s.key} className="rounded-lg border border-neutral-800 bg-neutral-950/40 p-2.5">
+              <div className="flex items-center gap-2">
+                <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${SUBJECT_COLOR_PALETTE[s.color]?.dot || 'bg-neutral-600'}`} />
+                <input
+                  value={s.label}
+                  onChange={(e) => patchSubject(s.key, { label: e.target.value })}
+                  placeholder="Subject name"
+                  className="min-w-0 flex-1 rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-[14px] font-medium text-neutral-50 placeholder:text-neutral-600 focus:outline-none focus:border-violet-500/60"
+                />
+                <button
+                  onClick={() => removeSubject(s.key)}
+                  aria-label={`Remove subject ${s.label || s.key}`}
+                  className="cursor-target shrink-0 flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-800 bg-neutral-900 text-neutral-500 hover:text-rose-400 hover:border-rose-500/30 transition-colors"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <div className="mt-2 flex items-center gap-2 pl-[18px]">
+                <select
+                  value={s.color}
+                  onChange={(e) => patchSubject(s.key, { color: e.target.value })}
+                  className={`w-28 shrink-0 ${fieldInput}`}
+                >
+                  {SUBJECT_COLOR_NAMES.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => patchSubject(s.key, { inMockTest: !(s.inMockTest !== false) })}
+                  title={s.inMockTest !== false ? 'Shows a score box in the Mock Test Tracker — click to remove' : 'Hidden from the Mock Test Tracker — click to include'}
+                  aria-pressed={s.inMockTest !== false}
+                  aria-label={s.inMockTest !== false ? 'Shown in Mock Test Tracker, click to hide' : 'Hidden from Mock Test Tracker, click to show'}
+                  className={`cursor-target shrink-0 flex items-center gap-1.5 rounded-lg border px-2.5 h-8 text-[11px] font-medium transition-colors ${
+                    s.inMockTest !== false
+                      ? 'border-violet-500/30 bg-violet-500/[0.08] text-violet-300'
+                      : 'border-neutral-800 bg-neutral-900 text-neutral-500 hover:text-neutral-300 hover:border-neutral-700'
+                  }`}
+                >
+                  <ClipboardList className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  <span className="hidden sm:inline">Mock Test</span>
+                </button>
+              </div>
             </div>
           ))}
         </div>
