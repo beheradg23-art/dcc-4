@@ -24,6 +24,15 @@ import { generateProfileTargets } from '../../lib/contentGen';
 export const btnGhost = 'cursor-target flex items-center gap-1.5 rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-2 text-[12px] font-semibold text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800 transition-colors';
 export const btnSave = (dirty: boolean) => `cursor-target flex items-center gap-1.5 rounded-lg border px-3 py-2 text-[12px] font-semibold transition-colors ${dirty ? 'border-violet-500/30 bg-violet-500/10 text-violet-300 hover:bg-violet-500/15' : 'border-neutral-800 bg-neutral-900 text-neutral-600'}`;
 export const fieldInput = 'w-full rounded-lg border border-neutral-800 bg-neutral-950/50 px-2.5 py-1.5 text-[12px] text-neutral-200 focus:outline-none focus:border-neutral-600';
+// Same look as fieldInput but without `w-full` — for any field that needs a
+// fixed width (e.g. `w-24 shrink-0`) rather than filling its flex slot.
+// fieldInput's own `w-full` would otherwise collide with that width class:
+// both set the `width` property on the same element, and CSS resolves the
+// tie by stylesheet order rather than by class-attribute order, so w-full
+// silently wins and the field balloons to fill the row (pushing/overlapping
+// whatever sits next to it — that was the exercise "Sets" field and the
+// subject color field both doing this).
+export const fieldInputFixedWidth = 'rounded-lg border border-neutral-800 bg-neutral-950/50 px-2.5 py-1.5 text-[12px] text-neutral-200 focus:outline-none focus:border-neutral-600';
 export const fieldLabel = 'text-[10px] uppercase tracking-wide text-neutral-600 font-semibold block mb-1';
 
 export function TrackerItemsEditor() {
@@ -287,7 +296,7 @@ export function TrainingEditor() {
                     {d.exercises.map((ex: any, ei: number) => (
                       <div key={ei} className="flex items-center gap-2">
                         <input value={ex.name} onChange={(e) => patchExercise(i, ei, { name: e.target.value })} className={`flex-1 ${fieldInput}`} placeholder="Exercise name" />
-                        <input value={ex.sets} onChange={(e) => patchExercise(i, ei, { sets: e.target.value })} className={`w-24 shrink-0 ${fieldInput}`} placeholder="Sets" />
+                        <input value={ex.sets} onChange={(e) => patchExercise(i, ei, { sets: e.target.value })} className={`w-24 shrink-0 ${fieldInputFixedWidth}`} placeholder="Sets" />
                         <button onClick={() => removeExercise(i, ei)} aria-label={`Remove exercise ${ex.name || ei + 1}`} className="cursor-target shrink-0 flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-800 bg-neutral-900 text-neutral-500 hover:text-rose-400 hover:border-rose-500/30 transition-colors">
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -1031,7 +1040,7 @@ export function SubjectsAndSyllabusEditor() {
                 <select
                   value={s.color}
                   onChange={(e) => patchSubject(s.key, { color: e.target.value })}
-                  className={`w-28 shrink-0 ${fieldInput}`}
+                  className={`w-28 shrink-0 ${fieldInputFixedWidth}`}
                 >
                   {SUBJECT_COLOR_NAMES.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
